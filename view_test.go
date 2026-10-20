@@ -1090,6 +1090,12 @@ func TestFlagAndTabsPersist(t *testing.T) {
 	tt.Frame()
 	tt.Advance(time.Second)
 	tt.Frame()
+	if err := tt.Click("Show flags"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
 	// A pop-up per flag, each at Default (disabled): the one on the row of
 	// Horizontal tabs is at that row's height, in the first one's column.
 	pop, ok := tt.Find("Default (disabled)")
