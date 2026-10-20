@@ -13,6 +13,7 @@ so that what is worth sending back can be, cleanly.
 | `pr/card-gap`        | `card-gap` and `pane-gap`, and the corners that follow them. On `pr/split-key`. |
 | `pr/horizontal-tabs` | `tab-layout`, the tab bar with a capsule a project, and ⇧⌘B. On `pr/card-gap`. |
 | `pr/loose-sessions`  | `loose-sessions`: a session in no project. On `main`, alone. |
+| `pr/ring-frame-rate` | The status rings painted at 30 frames a second, not at every refresh. On `main`, alone. |
 | `fork/main`          | What is built and installed: the branches above merged, then the fork's own layer. |
 
 The `pr/*` branches are what could be sent to egoist/kero: plain settings that
@@ -37,7 +38,7 @@ The fork's layer, on top of them in `fork/main`, in this order:
 git fetch origin
 git switch main && git merge --ff-only origin/main
 git switch pr/split-key && git rebase main        # then each branch on the one under it
-git switch fork/main && git merge main pr/horizontal-tabs pr/loose-sessions
+git switch fork/main && git merge main pr/horizontal-tabs pr/loose-sessions pr/ring-frame-rate
 ```
 
 A change to a `pr/*` branch is made there, then merged into `fork/main`; only the
