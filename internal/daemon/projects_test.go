@@ -8,8 +8,8 @@ import (
 	"kero/internal/proto"
 )
 
-// A session's project: with loose-sessions off every session has one,
-// made for its folder where it has none; on, a folder in no project and
+// A session's project: with loose-sessions disabled every session has one,
+// made for its folder where it has none; enabled, a folder in no project and
 // no git repository is in none.
 func TestProjectFor(t *testing.T) {
 	root := t.TempDir()
@@ -23,19 +23,19 @@ func TestProjectFor(t *testing.T) {
 	config := filepath.Join(t.TempDir(), "config")
 	t.Setenv("KERO_CONFIG", config)
 
-	t.Run("off", func(t *testing.T) {
+	t.Run("disabled", func(t *testing.T) {
 		os.Remove(config)
 		d := &Daemon{}
 		if id := d.projectFor("", plain); id == "" {
-			t.Error("a session in a plain folder has no project with the setting off")
+			t.Error("a session in a plain folder has no project with the flag disabled")
 		}
 		if id := d.projectFor("", ""); id == "" {
-			t.Error("a session of no folder has no project with the setting off")
+			t.Error("a session of no folder has no project with the flag disabled")
 		}
 	})
 
-	t.Run("on", func(t *testing.T) {
-		if err := os.WriteFile(config, []byte("loose-sessions = true\n"), 0o644); err != nil {
+	t.Run("enabled", func(t *testing.T) {
+		if err := os.WriteFile(config, []byte("flag = loose-sessions=enabled\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		d := &Daemon{}

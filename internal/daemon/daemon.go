@@ -370,10 +370,10 @@ func newID() string {
 
 // projectFor returns the project a new session goes in: the one named, or
 // the one whose directory holds dir, or a new one for dir's repository. With
-// the loose-sessions setting on, a dir in no project and no repository, or
+// the loose-sessions flag enabled, a dir in no project and no repository, or
 // none, is in no project: "". d.mu is held.
 func (d *Daemon) projectFor(ref, dir string) string {
-	loose := settings.Load().LooseSessions
+	loose := settings.Load().Flag(settings.FlagLooseSessions)
 	if ref != "" {
 		for _, p := range d.projects {
 			if p.ID == ref || strings.EqualFold(p.Name, ref) {

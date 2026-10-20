@@ -656,8 +656,10 @@ type (
 		Direction string  `json:"direction,omitempty"`
 		Ratio     float64 `json:"ratio,omitempty"`
 
-		Project string   `json:"project,omitempty"` // id or name; "" the first
-		Loose   bool     `json:"loose,omitempty"`   // in no project, with loose-sessions on
+		Project string `json:"project,omitempty"` // id or name; "" the first
+		// Loose starts the session in no project, with the loose-sessions
+		// flag enabled; the project is then ignored.
+		Loose   bool     `json:"loose,omitempty"`
 		Name    string   `json:"name,omitempty"`
 		Dir     string   `json:"dir,omitempty"` // "" the project's, else home
 		Command []string `json:"command,omitempty"`
@@ -681,8 +683,8 @@ type (
 	MoveParams struct {
 		ID      string `json:"id"`
 		Project string `json:"project,omitempty"`
-		Loose   bool   `json:"loose,omitempty"`
-		Index   int    `json:"index"` // within the project; -1 last
+		Loose   bool   `json:"loose,omitempty"` // out of its project, with loose-sessions
+		Index   int    `json:"index"`           // within the project; -1 last
 	}
 	SendParams struct {
 		ID   string `json:"id"`

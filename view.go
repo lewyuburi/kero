@@ -46,12 +46,12 @@ const (
 	minRadius     = 4
 )
 
-// looseOn tells that a session may be in no project: with the loose-sessions
-// setting on.
-func looseOn(s settings.Settings) bool { return s.LooseSessions }
-
-// gapOf is the space around the cards: the setting, in points.
+// gapOf is the space around the cards: the setting, in points, when the
+// custom-spacing flag is on, and else the 8 the layout was made with.
 func gapOf(s settings.Settings) float32 {
+	if !s.Flag(settings.FlagCustomSpacing) {
+		return settings.DefaultCardGap
+	}
 	return float32(min(max(s.CardGap, 0), settings.MaxCardGap))
 }
 
@@ -63,9 +63,15 @@ func barMid(gap float32) float32 { return gap + headerH/2 }
 // topBar is the sidebar's title bar, centered on barMid.
 func topBar(gap float32) float32 { return 2 * barMid(gap) }
 
+// looseOn tells that a session may be in no project: with its flag enabled.
+func looseOn(s settings.Settings) bool { return s.Flag(settings.FlagLooseSessions) }
+
 // tabsHorizontal tells that the sessions' tabs run across the top of the
-// window instead of down the sidebar.
-func tabsHorizontal(s settings.Settings) bool { return s.TabLayout == settings.TabsHorizontal }
+// window instead of down the sidebar: chosen, and offered by its flag. With
+// the flag disabled the choice is kept and not used.
+func tabsHorizontal(s settings.Settings) bool {
+	return s.Flag(settings.FlagHorizontalTabs) && s.TabLayout == settings.TabsHorizontal
+}
 
 // cardTop is the space between the bar of tabs and the cards: half the gap
 // at the cards' sides, less the room the bar leaves under its tabs. The
@@ -83,6 +89,9 @@ func barLine(s settings.Settings) float32 {
 
 // paneGapOf is the space between split panes: the cards' gap or its own.
 func paneGapOf(s settings.Settings) float32 {
+	if !s.Flag(settings.FlagCustomSpacing) {
+		return settings.DefaultPaneGap
+	}
 	if s.PaneGapSame {
 		return gapOf(s)
 	}

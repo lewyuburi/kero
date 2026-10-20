@@ -259,7 +259,7 @@ func (d *Daemon) create(p proto.CreateParams) (proto.Session, error) {
 	}
 	d.mu.Lock()
 	project := ""
-	if !(p.Loose && settings.Load().LooseSessions) {
+	if !(p.Loose && settings.Load().Flag(settings.FlagLooseSessions)) {
 		project = d.projectFor(p.Project, dir)
 	}
 	if dir == "" {
@@ -428,7 +428,7 @@ func (d *Daemon) move(p proto.MoveParams) error {
 	if s == nil {
 		return fmt.Errorf("no session %s", p.ID)
 	}
-	if p.Loose && settings.Load().LooseSessions {
+	if p.Loose && settings.Load().Flag(settings.FlagLooseSessions) {
 		s.project = ""
 	} else if p.Project != "" {
 		s.project = d.projectFor(p.Project, "")

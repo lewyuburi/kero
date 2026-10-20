@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"kero/internal/actions"
+	"kero/internal/settings"
 
 	"kero/locales"
 )
@@ -25,7 +26,6 @@ func settingsIndex() []searchEntry {
 		{"general", locales.SetNewSessionsStartIn(), "new-session-directory folder current project home tab"},
 		{"general", locales.SetSessionName(), "session-name title sidebar focused lead folder pane"},
 		{"general", locales.SetFocusFollowsMouse(), "focus-follows-mouse hover pointer niri hyprland sloppy"},
-		{"general", locales.SetLooseSessions(), "loose-sessions project folder repository home no project ungrouped terminal tools"},
 		{"general", locales.SetAskBeforeClosing(), "confirm-close quit kill"},
 		{"general", locales.SetRestoreSessions(), "restore-sessions reboot persist"},
 		{"general", locales.SetResumeAgents(), "resume-agents claude codex pi opencode conversation restore reboot"},
@@ -85,6 +85,10 @@ func settingsIndex() []searchEntry {
 		{"hosts", locales.SetListen(), "listen tailnet tailscale share this computer host port 7373 listen-allow"},
 
 		{"advanced", locales.SetConfigFile(), "configuration ghostty edit file dotfiles"},
+		{"advanced", locales.SetFlags(), "flags experimental custom-spacing chrome features enable disable"},
+		{"advanced", locales.SetCustomSpacing(), "custom-spacing flag panel spacing gap layout"},
+		{"advanced", locales.SetLooseSessions(), "loose-sessions flag session project folder repository home no project ungrouped terminal tools"},
+		{"advanced", locales.SetHorizontalTabs(), "horizontal-tabs flag tabs top bar layout vertical sidebar groups project color tint dia chrome"},
 		{"advanced", "kerod", "daemon background service restart sessions"},
 		{"advanced", locales.SetLog(), "kerod log debug"},
 		{"advanced", locales.SetFolder(), "data directory finder"},
@@ -156,6 +160,16 @@ var pageWords = map[string]string{
 	"advanced":      "config file daemon kerod log reset",
 }
 
+// flagGated are the settings a flag offers, by label, with the flag: their
+// rows are on the page while it is enabled, and so the search finds them.
+func flagGated() map[string]string {
+	return map[string]string{
+		locales.SetTabLayout():   settings.FlagHorizontalTabs,
+		locales.SetCardGap():     settings.FlagCustomSpacing,
+		locales.SetPaneGapSame(): settings.FlagCustomSpacing,
+	}
+}
+
 // matches reports whether every word of a query is in a text.
 func matches(text string, terms []string) bool {
 	text = strings.ToLower(text)
@@ -170,7 +184,7 @@ func matches(text string, terms []string) bool {
 // searchResults returns what a query finds, by page: the labels of the
 // settings it finds, an empty list for a page whose title it is, and
 // nothing for the others. It returns nil for an empty query.
-func searchResults(query string, shortcuts map[string]string) map[string][]string {
+func searchResults(query string, s settings.Settings) map[string][]string {
 	terms := strings.Fields(strings.ToLower(query))
 	if len(terms) == 0 {
 		return nil
@@ -181,7 +195,11 @@ func searchResults(query string, shortcuts map[string]string) map[string][]strin
 			out[p.id] = []string{}
 		}
 	}
-	for _, e := range searchEntries(shortcuts) {
+	gated := flagGated()
+	for _, e := range searchEntries(s.Shortcuts) {
+		if flag, ok := gated[e.label]; ok && !s.Flag(flag) {
+			continue // its row is not on the page: the flag offers it
+		}
 		if matches(e.label+" "+e.words, terms) {
 			out[e.page] = append(out[e.page], e.label)
 		}

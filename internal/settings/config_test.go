@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -294,21 +295,6 @@ func TestOnStatus(t *testing.T) {
 	}
 }
 
-// loose-sessions is off until the file says on, and comes back as written.
-func TestLooseSessions(t *testing.T) {
-	if Default().LooseSessions {
-		t.Error("loose-sessions is on by default")
-	}
-	if s, probs := parse("loose-sessions = true"); !s.LooseSessions || len(probs) != 0 {
-		t.Errorf("on: %v, problems %q", s.LooseSessions, probs)
-	}
-	s := Default()
-	s.LooseSessions = true
-	if out := format(s, ""); !strings.Contains(out, "loose-sessions = true") {
-		t.Errorf("not written:\n%s", out)
-	}
-}
-
 // A gap of 0 is a choice, not a missing value: it stays 0, while one out of
 // range goes back to the default.
 func TestCardGap(t *testing.T) {
@@ -361,8 +347,63 @@ func TestPaneGap(t *testing.T) {
 	}
 }
 
-// tab-layout is vertical until the user chooses horizontal; anything else is
-// a problem and keeps the default.
+// A flag is enabled by its default, which custom-spacing has disabled, and
+// the file's `flag` lines choose over it; a flag nobody knows is a problem.
+func TestFlags(t *testing.T) {
+	if Default().Flag(FlagCustomSpacing) {
+		t.Errorf("custom-spacing enabled by default on %s", runtime.GOOS)
+	}
+	if st := Default().FlagState(FlagCustomSpacing); st != StateDefault {
+		t.Errorf("a new install's custom-spacing is %q", st)
+	}
+	for file, want := range map[string]bool{"flag = custom-spacing=enabled": true, "flag = custom-spacing=disabled": false} {
+		s, probs := parse(file)
+		if s.Flag(FlagCustomSpacing) != want || len(probs) != 0 {
+			t.Errorf("%q: flag %v, problems %q", file, s.Flag(FlagCustomSpacing), probs)
+		}
+	}
+	for _, file := range []string{"flag = custom-spacing", "flag = custom-spacing=on", "flag = nonsense=on"} {
+		if _, probs := parse(file); len(probs) != 1 {
+			t.Errorf("%q: problems %q", file, probs)
+		}
+	}
+	// What the app saves is read back, and the default is not written.
+	s := Default()
+	s.SetFlag(FlagCustomSpacing, StateDisabled)
+	out := format(s, "")
+	if !strings.Contains(out, "flag = custom-spacing=disabled") {
+		t.Errorf("a chosen flag is not written:\n%s", out)
+	}
+	if back, _ := parse(out); back.FlagState(FlagCustomSpacing) != StateDisabled {
+		t.Errorf("read back as %q", back.FlagState(FlagCustomSpacing))
+	}
+	s.SetFlag(FlagCustomSpacing, StateDefault)
+	if out := format(s, ""); strings.Contains(out, "flag") && !strings.Contains(out, "`flag") {
+		t.Errorf("a default flag is written:\n%s", out)
+	}
+	if got := s.Clone(); got.Flags != nil {
+		t.Errorf("cloned flags %v", got.Flags)
+	}
+}
+
+// A flag that was and is not is ignored, where one nobody ever had is a
+// problem.
+func TestRetired(t *testing.T) {
+	file := "flag = tab-groups=enabled\nflag = horizontal-tabs=enabled\n"
+	s, probs := parse(file)
+	if len(probs) != 0 || !s.Flag(FlagHorizontalTabs) {
+		t.Errorf("retired flag: problems %q, horizontal-tabs %v", probs, s.Flag(FlagHorizontalTabs))
+	}
+	if _, probs := parse("tab-colors = on"); len(probs) != 1 {
+		t.Errorf("an unknown key is not a problem: %q", probs)
+	}
+	if _, probs := parse("flag = tab-colors=enabled"); len(probs) != 1 {
+		t.Errorf("an unknown flag is not a problem: %q", probs)
+	}
+}
+
+// tab-layout is vertical until the user chooses, flag or none, and the flag
+// takes nothing from it.
 func TestTabLayout(t *testing.T) {
 	if got := Default().TabLayout; got != TabsVertical {
 		t.Errorf("default tab layout %q", got)
@@ -373,13 +414,14 @@ func TestTabLayout(t *testing.T) {
 	if s, probs := parse("tab-layout = diagonal"); s.TabLayout != TabsVertical || len(probs) != 1 {
 		t.Errorf("diagonal: %q, problems %q", s.TabLayout, probs)
 	}
+	if s, _ := parse("flag = horizontal-tabs=enabled"); s.TabLayout != TabsVertical {
+		t.Errorf("enabling the flag made the layout %q", s.TabLayout)
+	}
 	s := Default()
 	s.TabLayout = TabsHorizontal
+	s.SetFlag(FlagHorizontalTabs, StateEnabled)
 	out := format(s, "")
-	if back, _ := parse(out); back.TabLayout != TabsHorizontal {
-		t.Errorf("the choice does not come back from:\n%s", out)
-	}
-	if out := format(Default(), ""); strings.Contains(out, "\ntab-layout =") {
-		t.Errorf("the default is written:\n%s", out)
+	if back, _ := parse(out); back.TabLayout != TabsHorizontal || !back.Flag(FlagHorizontalTabs) {
+		t.Errorf("choice and flag do not come back from:\n%s", out)
 	}
 }

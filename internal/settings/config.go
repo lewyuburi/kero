@@ -129,12 +129,11 @@ var keys = []key{
 	choiceKey("session-name", "what names a session you or an agent didn't: the program in the pane you're in, else in the one that most needs you; the program in the one that most needs you; or the first pane's folder",
 		func(s *Settings) *string { return &s.SessionName }, proto.NameFocused, proto.NameLead, proto.NameFolder),
 	boolKey("focus-follows-mouse", "focus the pane the pointer moves into", func(s *Settings) *bool { return &s.FocusFollowsMouse }),
-	boolKey("loose-sessions", "let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or on purpose with New Session in Home, or moved out of its project", func(s *Settings) *bool { return &s.LooseSessions }),
 	boolKey("confirm-close", "ask before closing a pane a program runs in", func(s *Settings) *bool { return &s.ConfirmClose }),
 	boolKey("restore-sessions", "start sessions again after kerod restarts, as after a reboot", func(s *Settings) *bool { return &s.RestoreSessions }),
 	boolKey("resume-agents", "as sessions start again, resume the conversation of the coding agent each pane ran", func(s *Settings) *bool { return &s.ResumeAgents }),
 
-	choiceKey("tab-layout", "where the sessions' tabs are: down the side, or across the top of the window", func(s *Settings) *string { return &s.TabLayout }, TabsVertical, TabsHorizontal),
+	choiceKey("tab-layout", "where the sessions' tabs are: down the side, or across the top of the window; the horizontal-tabs flag offers the choice", func(s *Settings) *string { return &s.TabLayout }, TabsVertical, TabsHorizontal),
 	choiceKey("window-theme", "the app's appearance", func(s *Settings) *string { return &s.Appearance }, "system", "light", "dark"),
 	choiceKey("language", "the app's language; system follows the system's", func(s *Settings) *string { return &s.Language }, append([]string{"system"}, Languages...)...),
 	mapChoice("background", "the window's wash", func(s *Settings) *string { return &s.Background },
@@ -333,6 +332,7 @@ var keys = []key{
 			}
 			return nil
 		}},
+	flagKey,
 	{name: "keybind", doc: "<keys>=<action>, over the defaults, as cmd+shift+d=pane.split.down; <keys>=unbind frees keys; see kero actions", list: true,
 		get: func(s *Settings) []string {
 			var out []string

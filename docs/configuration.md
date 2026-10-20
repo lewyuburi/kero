@@ -44,7 +44,6 @@ kero config check             # report unknown keys and bad values
 | `new-session-directory` | `current` | Where a new session starts: `current`, `project` or `home`    |
 | `session-name`          | `focused` | What names a session you haven't: `focused`, `lead` or `folder` ([more](./sessions.md#how-an-unnamed-session-is-named)) |
 | `focus-follows-mouse`   | `false`   | Focus the pane the pointer moves into                         |
-| `loose-sessions` | `false` | Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, one started on purpose with New Session in Home, or one moved out of its project from its menu. See [Sessions](./sessions.md#sessions-with-no-project) |
 | `confirm-close`         | `true`    | Ask before closing a pane that a program is running in        |
 | `restore-sessions`      | `true`    | Start sessions again after kerod restarts, as after a reboot  |
 | `resume-agents`         | `true`    | As sessions start again, resume the conversation of the agent each pane ran |
@@ -54,12 +53,12 @@ kero config check             # report unknown keys and bad values
 | Key                  | Default  | Description                                                     |
 | -------------------- | -------- | --------------------------------------------------------------- |
 | `window-theme`       | `system` | The app's appearance: `system`, `light` or `dark`               |
-| `tab-layout`         | `vertical` | The sessions' tabs: `vertical`, down the sidebar, or `horizontal`, across the top of the window, grouped by project in tinted colors, as Dia's are: a project's name folds it with a click, and its menu renames it or changes its color. The sidebar toggle does nothing while they are across the top, and on macOS the traffic lights move to the bar when Kero next opens. <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>B</kbd> switches |
+| `tab-layout`         | `vertical` | The sessions' tabs: `vertical`, down the sidebar, or `horizontal`, across the top of the window, grouped by project in tinted colors. Needs the `horizontal-tabs` flag, which only offers the choice. The sidebar toggle does nothing while they are across the top |
 | `language`           | `system` | The app's language: `system`, `en` or `zh-Hans`                 |
 | `background`         | `petal`  | The window's wash: `petal`, `mist`, `meadow`, `dusk` or `plain` |
 | `window-translucent` | `true`   | Let the desktop show through the window                         |
-| `card-gap`           | `8`      | Points between the window's edge and the panels, `0` to `12`. At `0` the panels fill the window and take its corners. On macOS the traffic lights follow it when Kero next opens. |
-| `pane-gap`           | `same`   | Points between split panes, `0` to `16`, or `same` to follow `card-gap`. At `0` the panes touch and the corners that meet are square. |
+| `card-gap`           | `8`      | Points between the window's edge and the panels, `0` to `12`. At `0` the panels fill the window and take its corners. Needs the `custom-spacing` flag |
+| `pane-gap`           | `same`   | Points between split panes, `0` to `16`, or `same` to follow `card-gap`. At `0` the panes touch and the corners that meet are square. Needs the `custom-spacing` flag |
 
 ## Terminal
 
@@ -150,6 +149,20 @@ browser-filter-list = easyprivacy
 browser-filter-list = fanboy-cookie
 browser-filter-list = https://example.com/my-filters.txt
 ```
+
+## Flags
+
+Flags are experiments, as Chrome's: each is enabled or disabled by default, which can depend on the platform, and `flag` sets it as `<id>=enabled` or `<id>=disabled`. Repeat it for each flag. Settings › Advanced lists them with their defaults.
+
+```
+flag = custom-spacing=disabled
+```
+
+| Flag             | Default                     | Description |
+| ---------------- | --------------------------- | ----------- |
+| `custom-spacing` | disabled | Lets `card-gap` and `pane-gap` apply, and moves the window controls with them. Disabled, the layout keeps its fixed 8 points |
+| `horizontal-tabs` | disabled | Offers `tab-layout`, and ⇧⌘B to switch it. Enabling it changes nothing by itself: the tabs stay down the sidebar until `tab-layout` says `horizontal`. A project's name folds it with a click, and its menu renames it or changes its color |
+| `loose-sessions` | disabled | Lets a session be in no project: one started in a folder that is neither a project's nor a git repository's, one started on purpose with New Session in Home, or one moved out of its project from its menu. They come first in the sidebar with no header, and across the top outside any group |
 
 ## Keyboard
 

@@ -1908,36 +1908,6 @@ func (msgs Messages) SetDirHome() string {
 	return Catalog.Format(msgs.locale, "setDirHome", nil)
 }
 
-// SetLooseSessions says "Sessions without a project"
-// in the language the app shows.
-func SetLooseSessions() string { return In(i18n.Locale()).SetLooseSessions() }
-
-// SetLooseSessions says "Sessions without a project"
-// in the language of msgs.
-func (msgs Messages) SetLooseSessions() string {
-	return Catalog.Format(msgs.locale, "setLooseSessions", nil)
-}
-
-// SetLooseSessionsDetail says "Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or on pur…"
-// in the language the app shows.
-func SetLooseSessionsDetail() string { return In(i18n.Locale()).SetLooseSessionsDetail() }
-
-// SetLooseSessionsDetail says "Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or on pur…"
-// in the language of msgs.
-func (msgs Messages) SetLooseSessionsDetail() string {
-	return Catalog.Format(msgs.locale, "setLooseSessionsDetail", nil)
-}
-
-// SessionNoProject says "No Project"
-// in the language the app shows.
-func SessionNoProject() string { return In(i18n.Locale()).SessionNoProject() }
-
-// SessionNoProject says "No Project"
-// in the language of msgs.
-func (msgs Messages) SessionNoProject() string {
-	return Catalog.Format(msgs.locale, "sessionNoProject", nil)
-}
-
 // SetSessionName says "Name sessions after"
 // in the language the app shows.
 func SetSessionName() string { return In(i18n.Locale()).SetSessionName() }
@@ -2340,6 +2310,56 @@ func (msgs Messages) SetTabsHorizontal() string {
 	return Catalog.Format(msgs.locale, "setTabsHorizontal", nil)
 }
 
+// SetLooseSessions says "Loose sessions"
+// in the language the app shows.
+func SetLooseSessions() string { return In(i18n.Locale()).SetLooseSessions() }
+
+// SetLooseSessions says "Loose sessions"
+// in the language of msgs.
+func (msgs Messages) SetLooseSessions() string {
+	return Catalog.Format(msgs.locale, "setLooseSessions", nil)
+}
+
+// SetLooseSessionsDetail says "Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or with N…"
+// in the language the app shows.
+func SetLooseSessionsDetail() string { return In(i18n.Locale()).SetLooseSessionsDetail() }
+
+// SetLooseSessionsDetail says "Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or with N…"
+// in the language of msgs.
+func (msgs Messages) SetLooseSessionsDetail() string {
+	return Catalog.Format(msgs.locale, "setLooseSessionsDetail", nil)
+}
+
+// SessionNoProject says "No Project"
+// in the language the app shows.
+func SessionNoProject() string { return In(i18n.Locale()).SessionNoProject() }
+
+// SessionNoProject says "No Project"
+// in the language of msgs.
+func (msgs Messages) SessionNoProject() string {
+	return Catalog.Format(msgs.locale, "sessionNoProject", nil)
+}
+
+// SetHorizontalTabs says "Horizontal tabs"
+// in the language the app shows.
+func SetHorizontalTabs() string { return In(i18n.Locale()).SetHorizontalTabs() }
+
+// SetHorizontalTabs says "Horizontal tabs"
+// in the language of msgs.
+func (msgs Messages) SetHorizontalTabs() string {
+	return Catalog.Format(msgs.locale, "setHorizontalTabs", nil)
+}
+
+// SetHorizontalTabsDetail says "Offer tabs across the top of the window as a choice in Appearance, with ⇧⌘B to switch. Enabling it changes nothin…"
+// in the language the app shows.
+func SetHorizontalTabsDetail() string { return In(i18n.Locale()).SetHorizontalTabsDetail() }
+
+// SetHorizontalTabsDetail says "Offer tabs across the top of the window as a choice in Appearance, with ⇧⌘B to switch. Enabling it changes nothin…"
+// in the language of msgs.
+func (msgs Messages) SetHorizontalTabsDetail() string {
+	return Catalog.Format(msgs.locale, "setHorizontalTabsDetail", nil)
+}
+
 // ProjectColor says "Color"
 // in the language the app shows.
 func ProjectColor() string { return In(i18n.Locale()).ProjectColor() }
@@ -2438,6 +2458,86 @@ func ColorOrange() string { return In(i18n.Locale()).ColorOrange() }
 // in the language of msgs.
 func (msgs Messages) ColorOrange() string {
 	return Catalog.Format(msgs.locale, "colorOrange", nil)
+}
+
+// SetCustomSpacing says "Custom panel spacing"
+// in the language the app shows.
+func SetCustomSpacing() string { return In(i18n.Locale()).SetCustomSpacing() }
+
+// SetCustomSpacing says "Custom panel spacing"
+// in the language of msgs.
+func (msgs Messages) SetCustomSpacing() string {
+	return Catalog.Format(msgs.locale, "setCustomSpacing", nil)
+}
+
+// SetCustomSpacingDetail says "Set the space around the panels and between panes in Appearance, with the header and window controls following. Made …"
+// in the language the app shows.
+func SetCustomSpacingDetail() string { return In(i18n.Locale()).SetCustomSpacingDetail() }
+
+// SetCustomSpacingDetail says "Set the space around the panels and between panes in Appearance, with the header and window controls following. Made …"
+// in the language of msgs.
+func (msgs Messages) SetCustomSpacingDetail() string {
+	return Catalog.Format(msgs.locale, "setCustomSpacingDetail", nil)
+}
+
+// SetFlags says "Experimental flags"
+// in the language the app shows.
+func SetFlags() string { return In(i18n.Locale()).SetFlags() }
+
+// SetFlags says "Experimental flags"
+// in the language of msgs.
+func (msgs Messages) SetFlags() string {
+	return Catalog.Format(msgs.locale, "setFlags", nil)
+}
+
+// SetFlagsDetail says "Features still being tried. Default follows the platform; a flag you set stays as you set it."
+// in the language the app shows.
+func SetFlagsDetail() string { return In(i18n.Locale()).SetFlagsDetail() }
+
+// SetFlagsDetail says "Features still being tried. Default follows the platform; a flag you set stays as you set it."
+// in the language of msgs.
+func (msgs Messages) SetFlagsDetail() string {
+	return Catalog.Format(msgs.locale, "setFlagsDetail", nil)
+}
+
+// SetFlagDefaultOn says "Default (enabled)"
+// in the language the app shows.
+func SetFlagDefaultOn() string { return In(i18n.Locale()).SetFlagDefaultOn() }
+
+// SetFlagDefaultOn says "Default (enabled)"
+// in the language of msgs.
+func (msgs Messages) SetFlagDefaultOn() string {
+	return Catalog.Format(msgs.locale, "setFlagDefaultOn", nil)
+}
+
+// SetFlagDefaultOff says "Default (disabled)"
+// in the language the app shows.
+func SetFlagDefaultOff() string { return In(i18n.Locale()).SetFlagDefaultOff() }
+
+// SetFlagDefaultOff says "Default (disabled)"
+// in the language of msgs.
+func (msgs Messages) SetFlagDefaultOff() string {
+	return Catalog.Format(msgs.locale, "setFlagDefaultOff", nil)
+}
+
+// SetFlagOn says "Enabled"
+// in the language the app shows.
+func SetFlagOn() string { return In(i18n.Locale()).SetFlagOn() }
+
+// SetFlagOn says "Enabled"
+// in the language of msgs.
+func (msgs Messages) SetFlagOn() string {
+	return Catalog.Format(msgs.locale, "setFlagOn", nil)
+}
+
+// SetFlagOff says "Disabled"
+// in the language the app shows.
+func SetFlagOff() string { return In(i18n.Locale()).SetFlagOff() }
+
+// SetFlagOff says "Disabled"
+// in the language of msgs.
+func (msgs Messages) SetFlagOff() string {
+	return Catalog.Format(msgs.locale, "setFlagOff", nil)
 }
 
 // SetCardGap says "Panel gap"

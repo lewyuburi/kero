@@ -14,6 +14,7 @@ import (
 
 	"kero/internal/git"
 	"kero/internal/proto"
+	"kero/internal/settings"
 )
 
 // A session in a worktree of its own shows its branch by its name, and
@@ -170,8 +171,8 @@ func TestReplaceText(t *testing.T) {
 func TestChangesShortcutSearch(t *testing.T) {
 	testApp(t)
 	for _, q := range []string{"git", "diff", "changes"} {
-		if !slices.Contains(searchResults(q, nil)["keyboard"], "Toggle Changes") {
-			t.Errorf("%q doesn't find Toggle Changes: %v", q, searchResults(q, nil))
+		if !slices.Contains(searchResults(q, settings.Default())["keyboard"], "Toggle Changes") {
+			t.Errorf("%q doesn't find Toggle Changes: %v", q, searchResults(q, settings.Default()))
 		}
 	}
 }

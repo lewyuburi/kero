@@ -304,7 +304,7 @@ func (a *App) settingsView(c *ui.Context) {
 // finds, when the page shown has none, and sets what the pages highlight.
 // It returns what searchResults does.
 func (a *App) searchSettings() map[string][]string {
-	found := searchResults(a.ss.query, a.set.Shortcuts)
+	found := searchResults(a.ss.query, a.set)
 	searchHits, searchReveal = nil, ""
 	if found == nil {
 		a.ss.revealed = ""
@@ -486,9 +486,6 @@ func (a *App) generalPage(c *ui.Context, pal *palette) {
 		settingRow(c, pal, locales.SetFocusFollowsMouse(), locales.SetFocusFollowsMouseDetail(), func() {
 			toggle(c.Key("focusmouse"), &s.FocusFollowsMouse, pal)
 		})
-		settingRow(c, pal, locales.SetLooseSessions(), locales.SetLooseSessionsDetail(), func() {
-			toggle(c.Key("loose"), &s.LooseSessions, pal)
-		})
 		settingRow(c, pal, locales.SetAskBeforeClosing(), locales.SetAskBeforeClosingDetail(), func() {
 			toggle(c.Key("confirm"), &s.ConfirmClose, pal)
 		})
@@ -622,34 +619,38 @@ func (a *App) appearancePage(c *ui.Context, pal *palette) {
 		settingRow(c, pal, locales.SetAppearance(), "", func() {
 			segmented(c, "appearance", &s.Appearance, []string{"system", "light", "dark"}, []string{locales.SetThemeSystem(), locales.SetThemeLight(), locales.SetThemeDark()})
 		})
-		settingRow(c, pal, locales.SetTabLayout(), locales.SetTabLayoutDetail(), func() {
-			segmented(c, "tab-layout", &s.TabLayout, []string{settings.TabsVertical, settings.TabsHorizontal}, []string{locales.SetTabsVertical(), locales.SetTabsHorizontal()})
-		})
+		if s.Flag(settings.FlagHorizontalTabs) {
+			settingRow(c, pal, locales.SetTabLayout(), locales.SetTabLayoutDetail(), func() {
+				segmented(c, "tab-layout", &s.TabLayout, []string{settings.TabsVertical, settings.TabsHorizontal}, []string{locales.SetTabsVertical(), locales.SetTabsHorizontal()})
+			})
+		}
 		settingRow(c, pal, locales.SetLanguage(), "", func() {
 			popup(c, "language", &s.Language, append([]string{"system"}, settings.Languages...), languageName, 180, pal)
 		})
 		settingRow(c, pal, locales.SetTranslucent(), locales.SetTranslucentDetail(), func() {
 			toggle(c.Key("vibrancy"), &s.Vibrancy, pal)
 		})
-		settingRow(c, pal, locales.SetCardGap(), locales.SetCardGapDetail(), func() {
-			v := float64(s.CardGap)
-			slider(c, "card-gap", &v, 0, settings.MaxCardGap, 160, pal).OnChange(func() { a.set.CardGap = int(v + 0.5) })
-			ui.Textf(c, "%d pt", s.CardGap).FontSize(12.5).TextColor(pal.textMuted).Width(40).FontFeatures("tnum")
-		})
-		settingRow(c, pal, locales.SetPaneGapSame(), locales.SetPaneGapSameDetail(), func() {
-			// Turned off, the pane gap starts from the panel gap it followed.
-			toggle(c.Key("pane-gap-same"), &s.PaneGapSame, pal).OnChange(func() {
-				if !a.set.PaneGapSame {
-					a.set.PaneGap = a.set.CardGap
-				}
+		if s.Flag(settings.FlagCustomSpacing) {
+			settingRow(c, pal, locales.SetCardGap(), locales.SetCardGapDetail(), func() {
+				v := float64(s.CardGap)
+				slider(c, "card-gap", &v, 0, settings.MaxCardGap, 160, pal).OnChange(func() { a.set.CardGap = int(v + 0.5) })
+				ui.Textf(c, "%d pt", s.CardGap).FontSize(12.5).TextColor(pal.textMuted).Width(40).FontFeatures("tnum")
 			})
-		})
-		if !s.PaneGapSame {
-			settingRow(c, pal, locales.SetPaneGap(), locales.SetPaneGapDetail(), func() {
-				v := float64(s.PaneGap)
-				slider(c, "pane-gap", &v, 0, settings.MaxPaneGap, 160, pal).OnChange(func() { a.set.PaneGap = int(v + 0.5) })
-				ui.Textf(c, "%d pt", s.PaneGap).FontSize(12.5).TextColor(pal.textMuted).Width(40).FontFeatures("tnum")
+			settingRow(c, pal, locales.SetPaneGapSame(), locales.SetPaneGapSameDetail(), func() {
+				// Turned off, the pane gap starts from the panel gap it followed.
+				toggle(c.Key("pane-gap-same"), &s.PaneGapSame, pal).OnChange(func() {
+					if !a.set.PaneGapSame {
+						a.set.PaneGap = a.set.CardGap
+					}
+				})
 			})
+			if !s.PaneGapSame {
+				settingRow(c, pal, locales.SetPaneGap(), locales.SetPaneGapDetail(), func() {
+					v := float64(s.PaneGap)
+					slider(c, "pane-gap", &v, 0, settings.MaxPaneGap, 160, pal).OnChange(func() { a.set.PaneGap = int(v + 0.5) })
+					ui.Textf(c, "%d pt", s.PaneGap).FontSize(12.5).TextColor(pal.textMuted).Width(40).FontFeatures("tnum")
+				})
+			}
 		}
 	})
 	ui.Column(c).Gap(8).Children(func() {
@@ -1038,6 +1039,18 @@ func (a *App) advancedPage(c *ui.Context, pal *palette) {
 			})
 		}
 	})
+	settingsGroup(c, pal, locales.SetFlags(), locales.SetFlagsDetail(), func() {
+		for _, f := range settings.Flags {
+			name, detail := flagText(f.ID)
+			settingRow(c, pal, name, detail, func() {
+				v := a.set.FlagState(f.ID)
+				popup(c, "flag-"+f.ID, &v, []string{settings.StateDefault, settings.StateEnabled, settings.StateDisabled}, flagStateName(f.ID), 150, pal)
+				if v != a.set.FlagState(f.ID) {
+					a.set.SetFlag(f.ID, v)
+				}
+			})
+		}
+	})
 	settingsGroup(c, pal, locales.SetBackgroundService(), locales.SetBackgroundServiceDetail(), func() {
 		settingRow(c, pal, "kerod", a.ss.service, func() {
 			if button(c, "svc-restart", locales.CommonRestart(), "", false, pal) {
@@ -1300,3 +1313,33 @@ var keyNames = func() map[ui.Key]string {
 	}
 	return m
 }()
+
+// flagText names a flag and says what it does, in the app's language.
+func flagText(id string) (name, detail string) {
+	switch id {
+	case settings.FlagCustomSpacing:
+		return locales.SetCustomSpacing(), locales.SetCustomSpacingDetail()
+	case settings.FlagHorizontalTabs:
+		return locales.SetHorizontalTabs(), locales.SetHorizontalTabsDetail()
+	case settings.FlagLooseSessions:
+		return locales.SetLooseSessions(), locales.SetLooseSessionsDetail()
+	}
+	return id, ""
+}
+
+// flagStateName labels the states of a flag: the default's with what the
+// default is on this platform, as Chrome's flags do.
+func flagStateName(id string) func(string) string {
+	return func(state string) string {
+		switch state {
+		case settings.StateEnabled:
+			return locales.SetFlagOn()
+		case settings.StateDisabled:
+			return locales.SetFlagOff()
+		}
+		if settings.FlagDefault(id) {
+			return locales.SetFlagDefaultOn()
+		}
+		return locales.SetFlagDefaultOff()
+	}
+}

@@ -525,6 +525,7 @@ func TestCardGapLayout(t *testing.T) {
 // they meet are as round as their gap: square with none.
 func TestPaneGap(t *testing.T) {
 	s := settings.Default()
+	s.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
 	s.CardGap = 0
 	if got := paneGapOf(s); got != 0 {
 		t.Errorf("panes follow a panel gap of 0 and have %v", got)
@@ -767,62 +768,11 @@ func TestStatusRingsPaintAtTheirOwnPace(t *testing.T) {
 	}
 }
 
-// With loose-sessions on, the sessions of no project come first with no
-// header; off, they are in the Other group, last, as they were.
-func TestLooseSessionsView(t *testing.T) {
-	loose := proto.Session{ID: "s9", Name: "mo", Panes: []proto.Pane{{ID: "z", Shell: "zsh", Dir: "/tmp", Status: proto.Idle, Progress: -1}}, Focus: "z"}
-	frame := func(a *App, name string) *ui.Tester {
-		tt := ui.NewTester(a.view, 1100, 500)
-		tt.Frame()
-		tt.Advance(time.Second)
-		tt.Frame()
-		shot(t, tt, name)
-		return tt
-	}
-	a := testApp(t)
-	a.st.Sessions = append(a.st.Sessions, loose)
-	if gs := a.groups(); gs[len(gs)-1].project.ID != "" {
-		t.Errorf("off: the sessions of no project are not last: %+v", gs)
-	}
-	if !frame(a, "loose-off").HasText("Other") {
-		t.Error("off: no Other group for a session of no project")
-	}
-
-	a = testApp(t)
-	a.st.Sessions = append(a.st.Sessions, loose)
-	a.set.LooseSessions = true
-	if gs := a.groups(); gs[0].project.ID != "" || len(gs[0].sessions) != 1 {
-		t.Errorf("on: the sessions of no project are not first: %+v", gs)
-	}
-	tt := frame(a, "loose-sidebar")
-	if tt.HasText("Other") || !tt.HasText("mo") {
-		t.Errorf("on, sidebar: texts %q", tt.Texts())
-	}
-	if order := a.visibleOrder(); order[0] != "s9" {
-		t.Errorf("⌘1 is %q, not the loose session", order[0])
-	}
-}
-
-// The setting is in General, and the search finds it.
-func TestLooseSessionsSetting(t *testing.T) {
-	a := testApp(t)
-	a.ss.page = "general"
-	tt := ui.NewTester(a.settingsView, 820, 800)
-	tt.Frame()
-	tt.Advance(time.Second)
-	tt.Frame()
-	if got := searchResults("loose", a.set.Shortcuts)["general"]; len(got) != 1 {
-		t.Errorf("the search finds %q for loose", got)
-	}
-	if !tt.HasText("Sessions without a project") {
-		t.Errorf("no row in General; texts %q", tt.Texts())
-	}
-}
-
 // With no gap between panes, the corners that touch are square and the
 // window's stay the card's.
 func TestPaneCorners(t *testing.T) {
 	a := testApp(t)
+	a.set.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
 	a.set.PaneGapSame, a.set.PaneGap = false, 0
 	a.chrome.gap = 8
 	// the left of two panes side by side: a window corner at the top left
@@ -838,6 +788,24 @@ func TestPaneCorners(t *testing.T) {
 	}
 }
 
+// With the flag off, custom spacing leaves the layout its fixed 8 points, whatever the
+// gaps say, and the traffic lights where the bar's line has always been.
+func TestCustomSpacingOff(t *testing.T) {
+	s := settings.Default()
+	s.SetFlag(settings.FlagCustomSpacing, settings.StateDisabled)
+	s.CardGap, s.PaneGapSame, s.PaneGap = 0, false, 0
+	if g, p := gapOf(s), paneGapOf(s); g != settings.DefaultCardGap || p != settings.DefaultPaneGap {
+		t.Errorf("gaps of %v and %v with the flag off, want 8 and 8", g, p)
+	}
+	if y := lightsY(barMid(gapOf(s))); y != 23 {
+		t.Errorf("traffic lights at %d with the flag off, want 23", y)
+	}
+	s.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
+	if y := lightsY(barMid(gapOf(s))); y != 15 {
+		t.Errorf("traffic lights at %d with no gap, want 15", y)
+	}
+}
+
 // The tabs across the top put the traffic lights on the tab bar's line, and
 // the cards' headers no longer carry the sidebar's buttons or the window's
 // controls, which the bar holds.
@@ -849,6 +817,7 @@ func TestHorizontalTabsLayout(t *testing.T) {
 	if barLine(s) != 30 {
 		t.Errorf("the bar's line with vertical tabs is %v, want 30", barLine(s))
 	}
+	s.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
 	if tabsHorizontal(s) {
 		t.Error("the flag alone put the tabs across the top")
 	}
@@ -862,6 +831,7 @@ func TestHorizontalTabsLayout(t *testing.T) {
 // its session, and the sidebar is not there to hide.
 func TestHorizontalTabs(t *testing.T) {
 	a := testApp(t)
+	a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
 	a.set.TabLayout = settings.TabsHorizontal
 	a.st.Projects = append(a.st.Projects, proto.Project{ID: "p2", Name: "other", Dir: "/tmp"})
 	a.st.Sessions = append(a.st.Sessions, proto.Session{
@@ -901,6 +871,7 @@ func TestHorizontalTabs(t *testing.T) {
 func TestHorizontalTabsShots(t *testing.T) {
 	for _, dark := range []bool{false, true} {
 		a := testApp(t)
+		a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
 		a.set.TabLayout = settings.TabsHorizontal
 		a.st.Projects = append(a.st.Projects, proto.Project{ID: "p2", Name: "website", Dir: "/tmp"}, proto.Project{ID: "p3", Name: "api", Dir: "/tmp"})
 		for _, id := range []string{"s2", "s3", "s4"} {
@@ -955,10 +926,33 @@ func TestProjectColor(t *testing.T) {
 	}
 }
 
+// The flags start disabled, so the tabs are down the side whatever the
+// setting says, and the settings a flag offers are not found by the search
+// until it is enabled.
+func TestTabFlags(t *testing.T) {
+	s := settings.Default()
+	for _, id := range []string{settings.FlagHorizontalTabs, settings.FlagCustomSpacing} {
+		if s.Flag(id) {
+			t.Errorf("%s is enabled by default", id)
+		}
+	}
+	if got := searchResults("card-gap", s)["appearance"]; len(got) != 0 {
+		t.Errorf("the search finds card-gap with its flag disabled: %q", got)
+	}
+	s.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
+	if got := searchResults("card-gap", s)["appearance"]; len(got) != 1 {
+		t.Errorf("card-gap is not found with its flag enabled: %q", got)
+	}
+	if got := searchResults("horizontal-tabs", settings.Default())["advanced"]; len(got) != 1 {
+		t.Errorf("the flag itself is not found in Advanced: %q", got)
+	}
+}
+
 // A tab is as wide as the window leaves it, between its least and its most,
 // and a session at rest shows no status on it.
 func TestTabWidth(t *testing.T) {
 	a := testApp(t)
+	a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
 	a.set.TabLayout = settings.TabsHorizontal
 	for _, win := range []float32{400, 1100, 3000} {
 		tt := ui.NewTester(func(c *ui.Context) {
@@ -971,7 +965,33 @@ func TestTabWidth(t *testing.T) {
 	}
 }
 
-// ⇧⌘B puts the tabs across the top and back, saving the choice.
+// With a flag disabled, the settings it offers leave no trace on the page:
+// no row, no hint of one.
+func TestFlagRowsAbsentWhileDisabled(t *testing.T) {
+	a := testApp(t)
+	a.ss.page = "appearance"
+	tt := ui.NewTester(a.settingsView, 820, 640)
+	tt.Frame()
+	for _, text := range []string{"Tabs", "Panel gap", "Pane gap", "Custom panel spacing", "Horizontal tabs", "Open flags"} {
+		if tt.HasText(text) {
+			t.Errorf("%q on Appearance with the flags disabled", text)
+		}
+	}
+	a.set.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
+	a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	for _, text := range []string{"Panel gap", "Tabs"} {
+		if !tt.HasText(text) {
+			t.Errorf("no %q on Appearance with its flag enabled; texts %q", text, tt.Texts())
+		}
+	}
+}
+
+// ⌘⇧B puts the tabs across the top and back, which is the tab-layout choice:
+// it never touches the flag, which only offers it, and with the flag disabled
+// there is nothing to switch. Enabling the flag changes no choice.
 func TestToggleTabs(t *testing.T) {
 	act, ok := actions.Find("tabs.toggle")
 	if !ok || act.Title == "" || act.Menu != "View" {
@@ -984,26 +1004,114 @@ func TestToggleTabs(t *testing.T) {
 		t.Errorf("tabs.toggle and sidebar.toggle share %q", act.Keys)
 	}
 	a := testApp(t)
+	a.run("tabs.toggle", nil)
+	if a.set.TabLayout != settings.TabsVertical || a.set.Flags != nil {
+		t.Errorf("with the flag disabled the toggle changed %q, flags %v", a.set.TabLayout, a.set.Flags)
+	}
+	// The user turns the flag on: the tabs do not move.
+	s := a.set.Clone()
+	s.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+	a.applySettings(s)
 	if tabsHorizontal(a.set) {
-		t.Fatal("tabs are horizontal by default")
+		t.Fatal("enabling the flag put the tabs across the top")
 	}
 	for i, want := range []string{settings.TabsHorizontal, settings.TabsVertical, settings.TabsHorizontal} {
 		a.run("tabs.toggle", nil)
 		if a.set.TabLayout != want || tabsHorizontal(a.set) != (want == settings.TabsHorizontal) {
 			t.Errorf("toggle %d: layout %q, horizontal %v", i+1, a.set.TabLayout, tabsHorizontal(a.set))
 		}
-		if saved := settings.Load(); saved.TabLayout != want {
-			t.Errorf("toggle %d saved layout %q", i+1, saved.TabLayout)
+		if st := a.set.FlagState(settings.FlagHorizontalTabs); st != settings.StateEnabled {
+			t.Errorf("toggle %d left the flag %q", i+1, st)
 		}
+		// What the toggle did is in the file, flag and choice.
+		if saved := settings.Load(); saved.TabLayout != want || !saved.Flag(settings.FlagHorizontalTabs) {
+			t.Errorf("toggle %d saved layout %q, flag %v", i+1, saved.TabLayout, saved.Flag(settings.FlagHorizontalTabs))
+		}
+	}
+	// The flag turned off hides the choice and keeps it.
+	s = a.set.Clone()
+	s.SetFlag(settings.FlagHorizontalTabs, settings.StateDefault)
+	a.applySettings(s)
+	if tabsHorizontal(a.set) || a.set.TabLayout != settings.TabsHorizontal {
+		t.Errorf("flag off: horizontal %v, choice %q kept?", tabsHorizontal(a.set), a.set.TabLayout)
+	}
+}
+
+// With loose-sessions enabled, the sessions of no project come first with no
+// header, in the sidebar and across the top, where they are in no capsule;
+// disabled, they are in the Other group, last, as they were.
+func TestLooseSessionsView(t *testing.T) {
+	loose := proto.Session{ID: "s9", Name: "mo", Panes: []proto.Pane{{ID: "z", Shell: "zsh", Dir: "/tmp", Status: proto.Idle, Progress: -1}}, Focus: "z"}
+	frame := func(a *App, name string) *ui.Tester {
+		tt := ui.NewTester(a.view, 1100, 500)
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+		shot(t, tt, name)
+		return tt
+	}
+	a := testApp(t)
+	a.st.Sessions = append(a.st.Sessions, loose)
+	if gs := a.groups(); gs[len(gs)-1].project.ID != "" {
+		t.Errorf("disabled: the sessions of no project are not last: %+v", gs)
+	}
+	if !frame(a, "loose-off").HasText("Other") {
+		t.Error("disabled: no Other group for a session of no project")
+	}
+
+	a = testApp(t)
+	a.st.Sessions = append(a.st.Sessions, loose)
+	a.set.SetFlag(settings.FlagLooseSessions, settings.StateEnabled)
+	if gs := a.groups(); gs[0].project.ID != "" || len(gs[0].sessions) != 1 {
+		t.Errorf("enabled: the sessions of no project are not first: %+v", gs)
+	}
+	tt := frame(a, "loose-sidebar")
+	if tt.HasText("Other") || !tt.HasText("mo") {
+		t.Errorf("enabled, sidebar: texts %q", tt.Texts())
+	}
+	if order := a.visibleOrder(); order[0] != "s9" {
+		t.Errorf("⌘1 is %q, not the loose session", order[0])
+	}
+
+	a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+	a.set.TabLayout = settings.TabsHorizontal
+	tt = frame(a, "loose-tabs")
+	if tt.HasText("Other") || !tt.HasText("mo") || !tt.HasText("demo") {
+		t.Errorf("enabled, tabs: texts %q", tt.Texts())
 	}
 }
 
 // What is chosen in Settings is in the file, and stays when the app reads it
-// again.
-func TestTabLayoutPersists(t *testing.T) {
+// again: the flag in Advanced, then the tabs in Appearance.
+func TestFlagAndTabsPersist(t *testing.T) {
 	a := testApp(t)
+	a.ss.page = "advanced"
+	tt := ui.NewTester(a.settingsView, 820, 900)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	// A pop-up per flag, each at Default (disabled): the one on the row of
+	// Horizontal tabs is at that row's height, in the first one's column.
+	pop, ok := tt.Find("Default (disabled)")
+	row, ok2 := tt.Find("Horizontal tabs")
+	if !ok || !ok2 {
+		t.Fatalf("no pop-up or row; texts %q", tt.Texts())
+	}
+	tt.ClickAt(pop.X+pop.W/2, row.Y+row.H/2+22)
+	tt.Frame()
+	if err := tt.Click("Enabled"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if !settings.Load().Flag(settings.FlagHorizontalTabs) {
+		t.Fatalf("the flag was chosen in Advanced and is not in the file; flags %v", a.set.Flags)
+	}
+	if settings.Load().TabLayout != settings.TabsVertical {
+		t.Errorf("enabling the flag changed the layout to %q", settings.Load().TabLayout)
+	}
 	a.ss.page = "appearance"
-	tt := ui.NewTester(a.settingsView, 820, 700)
 	tt.Frame()
 	tt.Advance(time.Second)
 	tt.Frame()
@@ -1013,11 +1121,12 @@ func TestTabLayoutPersists(t *testing.T) {
 	tt.Frame()
 	tt.Advance(time.Second)
 	tt.Frame()
-	if saved := settings.Load(); saved.TabLayout != settings.TabsHorizontal {
-		t.Errorf("in the file: layout %q", saved.TabLayout)
+	saved := settings.Load()
+	if saved.TabLayout != settings.TabsHorizontal || !saved.Flag(settings.FlagHorizontalTabs) {
+		t.Errorf("in the file: layout %q, flag %v", saved.TabLayout, saved.Flag(settings.FlagHorizontalTabs))
 	}
 	b, _ := os.ReadFile(settings.Path())
-	if !strings.Contains(string(b), "tab-layout = horizontal") {
+	if !strings.Contains(string(b), "flag = horizontal-tabs=enabled") || !strings.Contains(string(b), "tab-layout = horizontal") {
 		t.Errorf("the file:\n%s", b)
 	}
 }
@@ -1028,6 +1137,7 @@ func TestTabLayoutPersists(t *testing.T) {
 func panesTester(t *testing.T, direction string) (*App, *ui.Tester, map[string]ui.Rect) {
 	t.Helper()
 	a := testApp(t)
+	a.set.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
 	a.set.CardGap, a.set.PaneGapSame, a.set.PaneGap = 0, false, 0
 	a.prefs.SidebarHidden = true
 	var l *proto.Layout
@@ -1121,6 +1231,10 @@ func TestTouchingPanesCorners(t *testing.T) {
 func TestCardsUnderTheTabs(t *testing.T) {
 	for _, gap := range []int{0, 2, 8, settings.MaxCardGap} {
 		a := testApp(t)
+		a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+		a.set.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
+		a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+		a.set.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
 		a.set.TabLayout = settings.TabsHorizontal
 		a.set.CardGap = gap
 		var card ui.Rect
@@ -1141,5 +1255,29 @@ func TestCardsUnderTheTabs(t *testing.T) {
 		if gap > 0 && got[0] != got[3] {
 			t.Errorf("gap %d: top left %v and bottom left %v differ", gap, got[0], got[3])
 		}
+	}
+}
+
+// With loose-sessions on and the tabs across the top, the sessions of no
+// project are tabs outside any capsule, before the projects'.
+func TestLooseSessionsInTabs(t *testing.T) {
+	a := testApp(t)
+	a.st.Sessions = append(a.st.Sessions, proto.Session{ID: "s9", Name: "mo",
+		Panes: []proto.Pane{{ID: "z", Shell: "zsh", Dir: "/tmp", Status: proto.Idle, Progress: -1}}, Focus: "z"})
+	a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+	a.set.TabLayout = settings.TabsHorizontal
+	a.set.SetFlag(settings.FlagLooseSessions, settings.StateEnabled)
+	tt := ui.NewTester(a.view, 1100, 500)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	shot(t, tt, "loose-tabs")
+	if tt.HasText("Other") || !tt.HasText("mo") || !tt.HasText("demo") {
+		t.Errorf("tabs: texts %q", tt.Texts())
+	}
+	mo, _ := tt.Find("mo")
+	demo, _ := tt.Find("demo")
+	if mo.X >= demo.X {
+		t.Errorf("the session of no project is at %v, after the project's name at %v", mo.X, demo.X)
 	}
 }

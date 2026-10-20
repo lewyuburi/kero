@@ -1323,8 +1323,13 @@ func (a *App) jumpToAttention() {
 	a.toast(locales.ToastNothingNeedsYou())
 }
 
-// toggleTabs puts the tabs across the top, or back down the sidebar.
+// toggleTabs puts the tabs across the top, or back down the sidebar, which is
+// the tab-layout choice: it changes that and never the flag, which only
+// offers it. With the flag disabled there is no choice, and it does nothing.
 func (a *App) toggleTabs() {
+	if !a.set.Flag(settings.FlagHorizontalTabs) {
+		return
+	}
 	s := a.set.Clone()
 	s.TabLayout = settings.TabsHorizontal
 	if a.set.TabLayout == settings.TabsHorizontal {

@@ -29,11 +29,10 @@ type Settings struct {
 	RestoreSessions   bool   `json:"restoreSessions"`   // after kerod restarts, as after a reboot
 	ResumeAgents      bool   `json:"resumeAgents"`      // as it restores sessions: the agents' own
 	QuitConfirm       bool   `json:"quitConfirm"`       // tell, the first time, that quitting keeps sessions
-	LooseSessions     bool   `json:"looseSessions"`     // a session may be in no project
 
 	// Appearance
 	Appearance  string `json:"appearance"`  // "system", "light" or "dark"
-	TabLayout   string `json:"tabLayout"`   // where the sessions' tabs are: TabsVertical or TabsHorizontal
+	TabLayout   string `json:"tabLayout"`   // where the sessions' tabs are, once horizontal-tabs offers it: TabsVertical or TabsHorizontal
 	Language    string `json:"language"`    // "system", or one of Languages
 	Background  string `json:"background"`  // a wash, see Backgrounds
 	Vibrancy    bool   `json:"vibrancy"`    // the window's material under the wash
@@ -83,6 +82,8 @@ type Settings struct {
 	// Browser
 	BlockAds bool     `json:"blockAds"` // in browser panes, with AdLists
 	AdLists  []string `json:"adLists"`  // the filter lists: adblock.Catalog's IDs, or URLs
+	// Flags: experiments the user turned on or off over their defaults, by id.
+	Flags map[string]bool `json:"flags,omitempty"`
 
 	// Keyboard: accelerators by action, over the defaults; "" unbinds.
 	Shortcuts map[string]string `json:"shortcuts,omitempty"`
@@ -173,7 +174,8 @@ func Default() Settings {
 }
 
 // Where the sessions' tabs are: down the side, in the sidebar, or across the
-// top of the window.
+// top of the window. Only with the horizontal-tabs flag enabled is the choice
+// the user's; the flag offers it and changes nothing by itself.
 const (
 	TabsVertical   = "vertical"
 	TabsHorizontal = "horizontal"
@@ -309,6 +311,13 @@ func clone(s Settings) Settings {
 	s.Listen = slices.Clone(s.Listen)
 	s.ListenAllow = slices.Clone(s.ListenAllow)
 	s.OnStatus = append([]string(nil), s.OnStatus...)
+	if s.Flags != nil {
+		m := make(map[string]bool, len(s.Flags))
+		for k, v := range s.Flags {
+			m[k] = v
+		}
+		s.Flags = m
+	}
 	if s.Shortcuts != nil {
 		m := make(map[string]string, len(s.Shortcuts))
 		for k, v := range s.Shortcuts {
@@ -352,6 +361,11 @@ func (s *Settings) normalize() {
 	}
 	if !known {
 		s.Background = d.Background
+	}
+	for id := range s.Flags {
+		if FlagByID(id) == nil {
+			delete(s.Flags, id)
+		}
 	}
 	if s.CardGap < 0 || s.CardGap > MaxCardGap {
 		s.CardGap = d.CardGap

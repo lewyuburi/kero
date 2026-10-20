@@ -50,12 +50,12 @@ kero new -p my-app       # start a session in a project by name
 
 ### Sessions with no project
 
-With `loose-sessions` on (Settings › General, **Sessions without a project**), a session needs no project. That suits a terminal for a tool such as `mo`, which belongs to no folder you work on:
+With the `loose-sessions` flag enabled (Settings › Advanced), a session needs no project. That suits a terminal for a tool such as `mo`, which belongs to no folder you work on:
 
 - A session in a folder that is neither a project's nor a git repository's is in none; one in a repository still makes a project for it.
 - <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>T</kbd> (New Session in Home) starts one on purpose, and so does <kbd>⌘</kbd> <kbd>T</kbd> from one.
 - A session's menu moves it into a project, or out of it: **Move to Project › No Project**.
-- They come first in the sidebar with no header.
+- They come first in the sidebar with no header, and across the top, with [horizontal tabs](./configuration.md#flags), outside any group.
 
 ## kerod
 

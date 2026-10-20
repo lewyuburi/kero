@@ -14,7 +14,7 @@ import (
 )
 
 // tabBar is the sessions' tabs across the top of the window, where the
-// sidebar's list is with the tabs down the side (settings.TabsHorizontal): each project a
+// sidebar's list is without settings.FlagHorizontalTabs: each project a
 // capsule tinted in its color, as Dia's tab groups are, with its name and its
 // sessions' tabs in it, and at the right what the sidebar's footer holds. It
 // sits on the title bar's line, after the traffic lights on macOS.
