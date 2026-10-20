@@ -34,7 +34,8 @@ func TestSettingsPages(t *testing.T) {
 		if !tt.HasText(want[p.id]) {
 			t.Errorf("page %s: no %q; texts %q", p.id, want[p.id], tt.Texts())
 		}
-		if p.id != "hosts" && tt.HasText("Experimental") {
+		// Advanced's row of the flags is named for what they are.
+		if p.id != "hosts" && p.id != "advanced" && tt.HasText("Experimental") {
 			t.Errorf("page %s is tagged experimental", p.id)
 		}
 		shot(t, tt, "settings-"+p.id)

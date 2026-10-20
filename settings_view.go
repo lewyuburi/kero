@@ -55,11 +55,13 @@ type settingsState struct {
 	page         string
 	recording    string // the action whose shortcut is being typed
 	recordRef    ui.Handle
-	filter       string // the keyboard page's search
-	flagsOpen    bool   // Advanced shows the flags' page
-	flagFilter   string // its search
-	flagsChanged bool   // and whether it lists only the flags the user chose
-	query        string // the sidebar's search, of every page
+	filter       string             // the keyboard page's search
+	flagsOpen    bool               // Advanced shows the flags' page
+	flagVals     map[string]*string // each flag's pop-up's choice, as flagChoice keeps it
+	flagSeen     map[string]string  // and what the settings said of it then
+	flagFilter   string             // its search
+	flagsChanged bool               // and whether it lists only the flags the user chose
+	query        string             // the sidebar's search, of every page
 	searchRef    ui.Handle
 	revealed     string // the query and page the search last scrolled to
 	draft        map[string]string

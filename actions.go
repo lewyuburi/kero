@@ -10,6 +10,7 @@ import (
 
 	"kero/internal/actions"
 	"kero/internal/proto"
+	"kero/internal/settings"
 
 	"kero/locales"
 )
@@ -205,6 +206,16 @@ func (a *App) items(menu string, groups ...[]string) []*mygo.MenuItem {
 	return out
 }
 
+// viewGroups are the actions of the View menu, in its groups: the one for
+// the tabs across the top is there only while its flag is enabled.
+func (a *App) viewGroups() [][]string {
+	toggles := []string{"sidebar.toggle", "changes.toggle"}
+	if a.set.Flag(settings.FlagHorizontalTabs) {
+		toggles = append(toggles, "tabs.toggle")
+	}
+	return [][]string{toggles, {"text.bigger", "text.smaller", "text.reset"}}
+}
+
 func (a *App) menu() *mygo.Menu {
 	appMenu := []*mygo.MenuItem{{Role: mygo.RoleAbout}, updater.MenuItem(), mygo.Separator(), a.item("settings.open"), a.item("cli.install"),
 		mygo.Separator(), {Role: mygo.RoleHide}, {Role: mygo.RoleHideOthers}, {Role: mygo.RoleUnhide}, mygo.Separator(),
@@ -218,7 +229,7 @@ func (a *App) menu() *mygo.Menu {
 			{Label: locales.MenuQuit(), Accelerator: quitKeys, ToolTip: locales.MenuQuitTip(), Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
 			a.item("app.quitAll")}}
 	}
-	view := append(a.items("View", []string{"sidebar.toggle", "changes.toggle"}, []string{"text.bigger", "text.smaller", "text.reset"}),
+	view := append(a.items("View", a.viewGroups()...),
 		mygo.Separator(), &mygo.MenuItem{Role: mygo.RoleToggleFullScreen}, &mygo.MenuItem{Role: mygo.RoleToggleDevTools})
 	return mygo.NewMenu([]*mygo.MenuItem{
 		kero,

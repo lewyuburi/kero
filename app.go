@@ -872,7 +872,7 @@ func (a *App) apply(s settings.Settings, save bool) {
 	if gapOf(old) != gapOf(s) {
 		moveLights(a.setWin, barMid(gapOf(s)))
 	}
-	if !maps.Equal(old.Shortcuts, s.Shortcuts) && a.win != nil {
+	if (!maps.Equal(old.Shortcuts, s.Shortcuts) || old.Flag(settings.FlagHorizontalTabs) != s.Flag(settings.FlagHorizontalTabs)) && a.win != nil {
 		mygo.App.SetMenu(a.menu())
 	}
 	if old.DockBadge != s.DockBadge {

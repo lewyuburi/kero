@@ -91,6 +91,27 @@ func (a *App) flagsPage(c *ui.Context, pal *palette) {
 	})
 }
 
+// flagChoice is where a flag's pop-up keeps its choice: a field that lasts from
+// one build to the next, as a bound value must (MyGo updates it after the
+// pass that builds the pop-up, so a value made fresh in each pass loses the
+// edit before it is read), which the settings follow, and follow in turn: when
+// they say another thing, as a file edited does, it takes that.
+func (a *App) flagChoice(id string) *string {
+	if a.ss.flagVals == nil {
+		a.ss.flagVals, a.ss.flagSeen = map[string]*string{}, map[string]string{}
+	}
+	v, seen := a.ss.flagVals[id]
+	cur := a.set.FlagState(id)
+	if !seen || a.ss.flagSeen[id] != cur {
+		if !seen {
+			v = new(string)
+			a.ss.flagVals[id] = v
+		}
+		*v, a.ss.flagSeen[id] = cur, cur
+	}
+	return v
+}
+
 // flagRow is a flag: its id as the configuration names it, then its name and
 // what it does, and at the right how it stands and the pop-up that sets it.
 // A flag the user chose over the default has a dot of the accent's before
@@ -111,10 +132,16 @@ func (a *App) flagRow(c *ui.Context, pal *palette, f settings.Flag, name, detail
 			})
 			ui.Text(c, detail).FontSize(12).TextColor(pal.textMuted).LineHeight(1.35)
 		})
-		v := a.set.FlagState(f.ID)
-		popup(c, "flag-"+f.ID, &v, []string{settings.StateDefault, settings.StateEnabled, settings.StateDisabled}, flagStateName(f.ID), 150, pal)
-		if v != a.set.FlagState(f.ID) {
-			a.set.SetFlag(f.ID, v)
+		v := a.flagChoice(f.ID)
+		popup(c, "flag-"+f.ID, v, []string{settings.StateDefault, settings.StateEnabled, settings.StateDisabled}, flagStateName(f.ID), 150, pal)
+		if cur := a.set.FlagState(f.ID); *v != cur {
+			wasOn := a.set.Flag(f.ID)
+			a.set.SetFlag(f.ID, *v)
+			if f.ID == settings.FlagHorizontalTabs && !wasOn && a.set.Flag(f.ID) {
+				// Enabling it only offers the choice: the tabs stay where they
+				// are, down the side, whatever an earlier choice left in the file.
+				a.set.TabLayout = settings.TabsVertical
+			}
 		}
 	})
 }

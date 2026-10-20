@@ -1364,3 +1364,101 @@ func TestFlagsPage(t *testing.T) {
 		t.Error("Advanced in the sidebar left the flags open")
 	}
 }
+
+// The View menu offers the tabs across the top only while the flag that
+// offers them is enabled, and the menu is rebuilt as it changes.
+func TestViewMenuFollowsFlag(t *testing.T) {
+	a := testApp(t)
+	has := func() bool {
+		for _, g := range a.viewGroups() {
+			for _, id := range g {
+				if id == "tabs.toggle" {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	if has() {
+		t.Error("tabs.toggle in the View menu with the flag disabled")
+	}
+	s := a.set.Clone()
+	s.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+	a.applySettings(s)
+	if !has() {
+		t.Error("no tabs.toggle in the View menu with the flag enabled")
+	}
+}
+
+// A flag's pop-up keeps what it chose from one build to the next: a choice
+// that reaches it after the pass that built it, as MyGo updates bound values,
+// is read in the next and sets the flag; and what the settings say, from a
+// file or another place, is what it then shows.
+func TestFlagChoiceLasts(t *testing.T) {
+	a := testApp(t)
+	a.ss.page = "advanced"
+	a.ss.flagsOpen = true
+	tt := ui.NewTester(a.settingsView, 820, 760)
+	frame := func() {
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+	}
+	frame()
+	*a.flagChoice(settings.FlagHorizontalTabs) = settings.StateEnabled // as the pop-up's late update
+	frame()
+	if a.set.FlagState(settings.FlagHorizontalTabs) != settings.StateEnabled {
+		t.Fatalf("the choice was lost: %q", a.set.FlagState(settings.FlagHorizontalTabs))
+	}
+	if saved := settings.Load(); !saved.Flag(settings.FlagHorizontalTabs) {
+		t.Error("the choice is not in the file")
+	}
+	frame()
+	if *a.flagChoice(settings.FlagHorizontalTabs) != settings.StateEnabled {
+		t.Error("the pop-up forgot its choice in the next build")
+	}
+	// The settings change under it: it follows.
+	s := a.set.Clone()
+	s.SetFlag(settings.FlagHorizontalTabs, settings.StateDefault)
+	a.applySettings(s)
+	frame()
+	if *a.flagChoice(settings.FlagHorizontalTabs) != settings.StateDefault || a.set.FlagState(settings.FlagHorizontalTabs) != settings.StateDefault {
+		t.Errorf("the pop-up did not follow the settings: %q", *a.flagChoice(settings.FlagHorizontalTabs))
+	}
+}
+
+// Enabling the horizontal-tabs flag changes nothing by itself: the tabs stay
+// down the side, even with a horizontal choice left in the file from before,
+// until the user chooses.
+func TestEnablingHorizontalTabsMovesNothing(t *testing.T) {
+	a := testApp(t)
+	a.set.TabLayout = settings.TabsHorizontal // an earlier choice
+	if tabsHorizontal(a.set) {
+		t.Fatal("horizontal with the flag disabled")
+	}
+	a.ss.page = "advanced"
+	a.ss.flagsOpen = true
+	tt := ui.NewTester(a.settingsView, 820, 760)
+	frame := func() {
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+	}
+	frame()
+	*a.flagChoice(settings.FlagHorizontalTabs) = settings.StateEnabled
+	frame()
+	if !a.set.Flag(settings.FlagHorizontalTabs) {
+		t.Fatal("the flag was not enabled")
+	}
+	if tabsHorizontal(a.set) || a.set.TabLayout != settings.TabsVertical {
+		t.Errorf("enabling the flag left the tabs horizontal: layout %q", a.set.TabLayout)
+	}
+	if saved := settings.Load(); saved.TabLayout != settings.TabsVertical || !saved.Flag(settings.FlagHorizontalTabs) {
+		t.Errorf("in the file: layout %q, flag %v", saved.TabLayout, saved.Flag(settings.FlagHorizontalTabs))
+	}
+	// And the choice is the user's from then on.
+	a.toggleTabs()
+	if !tabsHorizontal(a.set) {
+		t.Error("the user's choice did not take")
+	}
+}
