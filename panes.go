@@ -190,17 +190,23 @@ func (a *App) dragDivider(c *ui.Context, pal *palette, s *proto.Session, l *prot
 
 // paneCorners rounds a pane's corners, top left first, going round: one the
 // window's edges meet on both sides takes the card's radius, and one that
-// touches another pane the pane gap's (paneRadius), square with none.
+// touches another pane the pane gap's (paneRadius), square with none. Under
+// the bar of tabs there is no window corner to follow: with no gap the top
+// ones are square, as the bar meets the cards.
 func (a *App) paneCorners(top, left, right, bottom bool) [4]float32 {
 	outer := cardRadius(a.chrome.gap)
 	inner := paneRadius(paneGapOf(a.set), outer)
-	pick := func(edge bool) float32 {
+	outerTop := outer
+	if tabsHorizontal(a.set) && a.chrome.gap == 0 {
+		outerTop = 0
+	}
+	pick := func(edge bool, outer float32) float32 {
 		if edge {
 			return outer
 		}
 		return inner
 	}
-	return [4]float32{pick(top && left), pick(top && right), pick(bottom && right), pick(bottom && left)}
+	return [4]float32{pick(top && left, outerTop), pick(top && right, outerTop), pick(bottom && right, outer), pick(bottom && left, outer)}
 }
 
 // paneCard is a pane: a card with a header and the terminal. top, left,

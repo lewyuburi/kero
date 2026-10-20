@@ -830,3 +830,32 @@ func TestTouchingPanesCorners(t *testing.T) {
 		}
 	}
 }
+
+// Under the bar of tabs the cards keep their gap from it as at their sides,
+// less the room the bar has itself, and with none the top corners, which
+// meet the bar and not the window's, are square.
+func TestCardsUnderTheTabs(t *testing.T) {
+	for _, gap := range []int{0, 2, 8, settings.MaxCardGap} {
+		a := testApp(t)
+		a.set.TabLayout = settings.TabsHorizontal
+		a.set.CardGap = gap
+		var card ui.Rect
+		tt := ui.NewTester(func(c *ui.Context) {
+			a.view(c)
+			card = a.paneRef("card-a").Bounds(c)
+		}, 900, 600)
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+		if want := tabBarH + cardTop(float32(gap)); card.Y != want || card.X != float32(gap) {
+			t.Errorf("gap %d: card at %v,%v, want %v,%d", gap, card.X, card.Y, want, gap)
+		}
+		got := a.paneCorners(true, true, false, true)
+		if gap == 0 && (got[0] != 0 || got[3] == 0) {
+			t.Errorf("no gap: corners %v, want the top left square and the bottom left not", got)
+		}
+		if gap > 0 && got[0] != got[3] {
+			t.Errorf("gap %d: top left %v and bottom left %v differ", gap, got[0], got[3])
+		}
+	}
+}

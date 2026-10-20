@@ -25,9 +25,12 @@ const (
 	// tabMaxW the widths a tab in it has between. leadGap is the room after the
 	// traffic lights.
 	tabBarH = 40
-	tabMinW = 120
-	tabMaxW = 200
-	leadGap = 8
+	// tabBarRoom is what the bar leaves under its tabs, which are tabBarH-6
+	// high and centered in it.
+	tabBarRoom = 3
+	tabMinW    = 120
+	tabMaxW    = 200
+	leadGap    = 8
 
 	// defaultRadius is a card's corner at the default gap, and minRadius
 	// the least one gets.
@@ -51,6 +54,10 @@ func topBar(gap float32) float32 { return 2 * barMid(gap) }
 // tabsHorizontal tells that the sessions' tabs run across the top of the
 // window instead of down the sidebar.
 func tabsHorizontal(s settings.Settings) bool { return s.TabLayout == settings.TabsHorizontal }
+
+// cardTop is the space between the bar of tabs and the cards: the gap
+// there is at the cards' sides, less the room the bar leaves under its tabs.
+func cardTop(gap float32) float32 { return max(gap-tabBarRoom, 0) }
 
 // barLine is the line the main window's title bar contents center on: the
 // tab bar's, or else the line of the cards' headers and the sidebar's bar.
@@ -171,7 +178,7 @@ func (a *App) view(c *ui.Context) {
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				a.tabBar(c, pal, bar)
 				g := a.chrome.gap
-				ui.Column(c).Grow(1).MinWidth(0).Padding(0, g, g, g).DragWindow().Children(func() {
+				ui.Column(c).Grow(1).MinWidth(0).Padding(cardTop(g), g, g, g).DragWindow().Children(func() {
 					a.card(c, pal, bar, shown)
 				})
 			})
