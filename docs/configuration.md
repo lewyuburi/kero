@@ -52,6 +52,7 @@ kero config check             # report unknown keys and bad values
 | Key                  | Default  | Description                                                     |
 | -------------------- | -------- | --------------------------------------------------------------- |
 | `window-theme`       | `system` | The app's appearance: `system`, `light` or `dark`               |
+| `tab-layout`         | `vertical` | The sessions' tabs: `vertical`, down the sidebar, or `horizontal`, across the top of the window, grouped by project in tinted colors, as Dia's are: a project's name folds it with a click, and its menu renames it or changes its color. The sidebar toggle does nothing while they are across the top, and on macOS the traffic lights move to the bar when Kero next opens. <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>B</kbd> switches |
 | `language`           | `system` | The app's language: `system`, `en` or `zh-Hans`                 |
 | `background`         | `petal`  | The window's wash: `petal`, `mist`, `meadow`, `dusk` or `plain` |
 | `window-translucent` | `true`   | Let the desktop show through the window                         |

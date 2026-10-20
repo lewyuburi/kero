@@ -468,7 +468,7 @@ func (a *App) paneHeader(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 				iconButton(c, "close", closeIcon, a.tip(locales.PaneClose(), "pane.close"), pal, func() { a.defer_(func() { a.closePane(a.session(sid), pid, true) }) })
 			}
 		})
-		if top && right {
+		if top && right && !tabsHorizontal(a.set) {
 			windowControls(c, pal, a.win)
 		}
 	})

@@ -519,6 +519,9 @@ func (a *App) appearancePage(c *ui.Context, pal *palette) {
 		settingRow(c, pal, locales.SetAppearance(), "", func() {
 			segmented(c, "appearance", &s.Appearance, []string{"system", "light", "dark"}, []string{locales.SetThemeSystem(), locales.SetThemeLight(), locales.SetThemeDark()})
 		})
+		settingRow(c, pal, locales.SetTabLayout(), locales.SetTabLayoutDetail(), func() {
+			segmented(c, "tab-layout", &s.TabLayout, []string{settings.TabsVertical, settings.TabsHorizontal}, []string{locales.SetTabsVertical(), locales.SetTabsHorizontal()})
+		})
 		settingRow(c, pal, locales.SetLanguage(), "", func() {
 			popup(c, "language", &s.Language, append([]string{"system"}, settings.Languages...), languageName, 180, pal)
 		})

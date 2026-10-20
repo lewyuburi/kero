@@ -27,6 +27,7 @@ type Settings struct {
 
 	// Appearance
 	Appearance  string `json:"appearance"`  // "system", "light" or "dark"
+	TabLayout   string `json:"tabLayout"`   // where the sessions' tabs are: TabsVertical or TabsHorizontal
 	Language    string `json:"language"`    // "system", or one of Languages
 	Background  string `json:"background"`  // a wash, see Backgrounds
 	Vibrancy    bool   `json:"vibrancy"`    // the window's material under the wash
@@ -81,6 +82,7 @@ func Default() Settings {
 		ResumeAgents:    true,
 		QuitConfirm:     true,
 		Appearance:      "system",
+		TabLayout:       TabsVertical,
 		Language:        "system",
 		Background:      "rex",
 		Vibrancy:        true,
@@ -106,6 +108,13 @@ func Default() Settings {
 		RemoteControl:   true,
 	}
 }
+
+// Where the sessions' tabs are: down the side, in the sidebar, or across the
+// top of the window.
+const (
+	TabsVertical   = "vertical"
+	TabsHorizontal = "horizontal"
+)
 
 // The gap around the panels, in points: what a new install has, and the
 // most that leaves a header room for its buttons.
@@ -255,6 +264,7 @@ func (s *Settings) normalize() {
 	}
 	oneOf(&s.NewSessionDir, d.NewSessionDir, "current", "project", "home")
 	oneOf(&s.Appearance, d.Appearance, "system", "light", "dark")
+	oneOf(&s.TabLayout, d.TabLayout, TabsVertical, TabsHorizontal)
 	oneOf(&s.Language, d.Language, append([]string{"system"}, Languages...)...)
 	oneOf(&s.Cursor, d.Cursor, "block", "bar", "underline")
 	oneOf(&s.Clipboard, d.Clipboard, "ask", "allow", "deny")

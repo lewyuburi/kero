@@ -33,6 +33,7 @@ func settingsIndex() []searchEntry {
 		{"general", locales.SetAutoInstall(), "updates automatic install download"},
 
 		{"appearance", locales.SetAppearance(), "window-theme dark light mode system"},
+		{"appearance", locales.SetTabLayout(), "tab-layout tabs vertical horizontal sidebar top sessions"},
 		{"appearance", locales.SetLanguage(), "language locale translation chinese english 语言 中文"},
 		{"appearance", locales.SetTranslucent(), "window-translucent vibrancy blur material transparency"},
 		{"appearance", locales.SetCardGap(), "card-gap padding margin spacing border edge flush panel radius corner"},
