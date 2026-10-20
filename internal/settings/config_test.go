@@ -136,3 +136,18 @@ func TestMigratesSettingsJSON(t *testing.T) {
 		t.Error("settings.json stayed")
 	}
 }
+
+// loose-sessions is off until the file says on, and comes back as written.
+func TestLooseSessions(t *testing.T) {
+	if Default().LooseSessions {
+		t.Error("loose-sessions is on by default")
+	}
+	if s, probs := parse("loose-sessions = true"); !s.LooseSessions || len(probs) != 0 {
+		t.Errorf("on: %v, problems %q", s.LooseSessions, probs)
+	}
+	s := Default()
+	s.LooseSessions = true
+	if out := format(s, ""); !strings.Contains(out, "loose-sessions = true") {
+		t.Errorf("not written:\n%s", out)
+	}
+}

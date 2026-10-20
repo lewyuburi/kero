@@ -27,12 +27,12 @@ func (a *App) run(id string, args map[string]string) {
 		a.quitAndEnd()
 	case "session.new":
 		if dir := args["dir"]; dir != "" {
-			a.newSessionIn(dir)
+			a.newSessionIn(dir, false)
 		} else {
 			a.newSession(args["project"])
 		}
 	case "session.newHome":
-		a.newSessionIn(proto.Home())
+		a.newSessionIn(proto.Home(), true)
 	case "project.open":
 		a.openProject()
 	case "palette.open":

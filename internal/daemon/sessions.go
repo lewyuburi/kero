@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"kero/internal/proto"
+	"kero/internal/settings"
 )
 
 // session is a row of the sidebar: a task's panes, in a layout. d.mu
@@ -253,12 +254,18 @@ func (d *Daemon) create(p proto.CreateParams) (proto.Session, error) {
 		return proto.Session{}, err
 	}
 	d.mu.Lock()
-	project := d.projectFor(p.Project, dir)
+	project := ""
+	if !(p.Loose && settings.Load().LooseSessions) {
+		project = d.projectFor(p.Project, dir)
+	}
 	if dir == "" {
 		for _, pr := range d.projects {
 			if pr.ID == project {
 				dir = pr.Dir
 			}
+		}
+		if project == "" {
+			dir = proto.Home() // a loose session starts at home, unasked
 		}
 	}
 	d.mu.Unlock()
@@ -417,7 +424,9 @@ func (d *Daemon) move(p proto.MoveParams) error {
 	if s == nil {
 		return fmt.Errorf("no session %s", p.ID)
 	}
-	if p.Project != "" {
+	if p.Loose && settings.Load().LooseSessions {
+		s.project = ""
+	} else if p.Project != "" {
 		s.project = d.projectFor(p.Project, "")
 	}
 	i := slices.Index(d.sessions, s)

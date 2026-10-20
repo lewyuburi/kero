@@ -43,6 +43,7 @@ kero config check             # report unknown keys and bad values
 | ----------------------- | --------- | ------------------------------------------------------------- |
 | `new-session-directory` | `current` | Where a new session starts: `current`, `project` or `home`    |
 | `session-name`          | `focused` | What names a session you haven't: `focused`, `lead` or `folder` ([more](./sessions.md#how-an-unnamed-session-is-named)) |
+| `loose-sessions` | `false` | Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, one started on purpose with New Session in Home, or one moved out of its project from its menu. See [Sessions](./sessions.md#sessions-with-no-project) |
 | `confirm-close`         | `true`    | Ask before closing a pane that a program is running in        |
 | `restore-sessions`      | `true`    | Start sessions again after kerod restarts, as after a reboot  |
 | `resume-agents`         | `true`    | As sessions start again, resume the conversation of the agent each pane ran |

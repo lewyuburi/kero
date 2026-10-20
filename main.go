@@ -136,15 +136,16 @@ func runApp() {
 	}
 }
 
-// newSessionIn starts a session in a directory, in its project.
-func (a *App) newSessionIn(dir string) {
+// newSessionIn starts a session in a directory, in its project, or, with
+// loose, in none.
+func (a *App) newSessionIn(dir string, loose bool) {
 	if a.cl == nil {
 		return
 	}
 	cl := a.cl
 	go func() {
 		var s proto.Session
-		err := cl.Call("create", proto.CreateParams{Dir: dir}, &s)
+		err := cl.Call("create", proto.CreateParams{Dir: dir, Loose: loose && looseOn(a.set)}, &s)
 		a.update(func() {
 			if err != nil {
 				a.toast(err.Error())

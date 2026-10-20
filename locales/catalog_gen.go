@@ -1818,6 +1818,36 @@ func (msgs Messages) SetDirHome() string {
 	return Catalog.Format(msgs.locale, "setDirHome", nil)
 }
 
+// SetLooseSessions says "Sessions without a project"
+// in the language the app shows.
+func SetLooseSessions() string { return In(i18n.Locale()).SetLooseSessions() }
+
+// SetLooseSessions says "Sessions without a project"
+// in the language of msgs.
+func (msgs Messages) SetLooseSessions() string {
+	return Catalog.Format(msgs.locale, "setLooseSessions", nil)
+}
+
+// SetLooseSessionsDetail says "Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or on pur…"
+// in the language the app shows.
+func SetLooseSessionsDetail() string { return In(i18n.Locale()).SetLooseSessionsDetail() }
+
+// SetLooseSessionsDetail says "Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or on pur…"
+// in the language of msgs.
+func (msgs Messages) SetLooseSessionsDetail() string {
+	return Catalog.Format(msgs.locale, "setLooseSessionsDetail", nil)
+}
+
+// SessionNoProject says "No Project"
+// in the language the app shows.
+func SessionNoProject() string { return In(i18n.Locale()).SessionNoProject() }
+
+// SessionNoProject says "No Project"
+// in the language of msgs.
+func (msgs Messages) SessionNoProject() string {
+	return Catalog.Format(msgs.locale, "sessionNoProject", nil)
+}
+
 // SetSessionName says "Name sessions after"
 // in the language the app shows.
 func SetSessionName() string { return In(i18n.Locale()).SetSessionName() }
