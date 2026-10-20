@@ -27,6 +27,12 @@ const (
 	// rowInset is where a sidebar row's text starts: a session's name and
 	// its group's.
 	rowInset = 12
+
+	// ringStep is how often a status ring is painted again as it moves: a
+	// turn or a pulse reads as smooth at 30 frames a second, where painting
+	// at every refresh of the display keeps the whole window drawing for as
+	// long as an agent works.
+	ringStep = 33 * time.Millisecond
 )
 
 // chrome is where the sidebar's animation puts things, in whole pixels so
@@ -672,7 +678,7 @@ func statusIconP(c *ui.Context, pal *palette, st proto.Status, unread bool, prog
 			var track ui.Path
 			track.Circle(cx, cy, rad)
 			p.StrokePath(&track, 1.7, pal.text.Alpha(0.13))
-			p.AnimationFrame()
+			p.After(ringStep)
 			deg := float32(p.Now().UnixMilli()%1000) / 1000 * 360
 			p.Transform(ui.Rotation(deg), cx, cy, func() {
 				var arc ui.Path
@@ -683,7 +689,7 @@ func statusIconP(c *ui.Context, pal *palette, st proto.Status, unread bool, prog
 			var ring ui.Path
 			ring.Circle(cx, cy, rad)
 			p.StrokePath(&ring, 1.7, pal.attention)
-			p.AnimationFrame()
+			p.After(ringStep)
 			pulse := float32(0.5 + 0.5*math.Sin(float64(p.Now().UnixMilli()%1600)/1600*2*math.Pi))
 			var dot ui.Path
 			dot.Circle(cx, cy, rad*0.42)

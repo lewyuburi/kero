@@ -688,6 +688,20 @@ func TestCommandBackspaceClearsLine(t *testing.T) {
 	}{{0, ui.KeyBackspace}, {ui.Super | ui.Shift, ui.KeyBackspace}, {ui.Super, ui.KeyDelete}} {
 		if o.OnKey(k.mods, k.key) {
 			t.Errorf("%v+%v taken", k.mods, k.key)
+// A status ring that moves is painted again every ringStep, not at every
+// refresh of the display: a frame waits on the timer instead of being
+// asked for as soon as the display can show it.
+func TestStatusRingsPaintAtTheirOwnPace(t *testing.T) {
+	for _, st := range []proto.Status{proto.Working, proto.Waiting} {
+		a := testApp(t)
+		a.conn = connReady
+		a.st.Sessions[0].Status = st
+		tt := ui.NewTester(a.view, 1100, 700)
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+		if tt.FramePending() {
+			t.Errorf("a %s ring asks for a frame at every refresh of the display", st)
 		}
 	}
 }
