@@ -2140,6 +2140,66 @@ func (msgs Messages) SetTranslucentDetail() string {
 	return Catalog.Format(msgs.locale, "setTranslucentDetail", nil)
 }
 
+// SetCardGap says "Panel gap"
+// in the language the app shows.
+func SetCardGap() string { return In(i18n.Locale()).SetCardGap() }
+
+// SetCardGap says "Panel gap"
+// in the language of msgs.
+func (msgs Messages) SetCardGap() string {
+	return Catalog.Format(msgs.locale, "setCardGap", nil)
+}
+
+// SetPaneGapSame says "Panes follow panel gap"
+// in the language the app shows.
+func SetPaneGapSame() string { return In(i18n.Locale()).SetPaneGapSame() }
+
+// SetPaneGapSame says "Panes follow panel gap"
+// in the language of msgs.
+func (msgs Messages) SetPaneGapSame() string {
+	return Catalog.Format(msgs.locale, "setPaneGapSame", nil)
+}
+
+// SetPaneGapSameDetail says "Leave as much space between split panes as around them. Turn off to set it apart."
+// in the language the app shows.
+func SetPaneGapSameDetail() string { return In(i18n.Locale()).SetPaneGapSameDetail() }
+
+// SetPaneGapSameDetail says "Leave as much space between split panes as around them. Turn off to set it apart."
+// in the language of msgs.
+func (msgs Messages) SetPaneGapSameDetail() string {
+	return Catalog.Format(msgs.locale, "setPaneGapSameDetail", nil)
+}
+
+// SetPaneGap says "Pane gap"
+// in the language the app shows.
+func SetPaneGap() string { return In(i18n.Locale()).SetPaneGap() }
+
+// SetPaneGap says "Pane gap"
+// in the language of msgs.
+func (msgs Messages) SetPaneGap() string {
+	return Catalog.Format(msgs.locale, "setPaneGap", nil)
+}
+
+// SetPaneGapDetail says "Space between split panes. At 0 they touch and the corners that meet are square."
+// in the language the app shows.
+func SetPaneGapDetail() string { return In(i18n.Locale()).SetPaneGapDetail() }
+
+// SetPaneGapDetail says "Space between split panes. At 0 they touch and the corners that meet are square."
+// in the language of msgs.
+func (msgs Messages) SetPaneGapDetail() string {
+	return Catalog.Format(msgs.locale, "setPaneGapDetail", nil)
+}
+
+// SetCardGapDetail says "Space between the window’s edge and the panels. At 0 they fill the window and take its corners."
+// in the language the app shows.
+func SetCardGapDetail() string { return In(i18n.Locale()).SetCardGapDetail() }
+
+// SetCardGapDetail says "Space between the window’s edge and the panels. At 0 they fill the window and take its corners."
+// in the language of msgs.
+func (msgs Messages) SetCardGapDetail() string {
+	return Catalog.Format(msgs.locale, "setCardGapDetail", nil)
+}
+
 // SetBackground says "Background"
 // in the language the app shows.
 func SetBackground() string { return In(i18n.Locale()).SetBackground() }

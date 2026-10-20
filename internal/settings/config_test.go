@@ -136,3 +136,55 @@ func TestMigratesSettingsJSON(t *testing.T) {
 		t.Error("settings.json stayed")
 	}
 }
+
+// A gap of 0 is a choice, not a missing value: it stays 0, while one out of
+// range goes back to the default.
+func TestCardGap(t *testing.T) {
+	for file, want := range map[string]int{"": DefaultCardGap, "card-gap = 0": 0, "card-gap = 3": 3, "card-gap = 99": DefaultCardGap, "card-gap = -2": DefaultCardGap} {
+		s, _ := parse(file)
+		s.normalize()
+		if s.CardGap != want {
+			t.Errorf("%q: card-gap %d, want %d", file, s.CardGap, want)
+		}
+	}
+	// Only whole numbers in range are taken: anything else is a problem and
+	// the default stays, NaN, infinity and fractions included.
+	for _, bad := range []string{"99", "-2", "nan", "NaN", "inf", "3.5", "1e3", "wide"} {
+		s, probs := parse("card-gap = " + bad)
+		if len(probs) != 1 || s.CardGap != DefaultCardGap {
+			t.Errorf("card-gap = %s: %d, problems %q", bad, s.CardGap, probs)
+		}
+	}
+	s := Default()
+	s.CardGap = 0
+	if out := format(s, ""); !strings.Contains(out, "card-gap = 0") {
+		t.Errorf("a gap of 0 is not written:\n%s", out)
+	}
+}
+
+// pane-gap is "same", or its own points.
+func TestPaneGap(t *testing.T) {
+	for file, want := range map[string][2]any{
+		"":                {true, DefaultPaneGap},
+		"pane-gap = same": {true, DefaultPaneGap},
+		"pane-gap = 0":    {false, 0},
+		"pane-gap = 5":    {false, 5},
+		"pane-gap = 16":   {false, 16},
+	} {
+		s, probs := parse(file)
+		s.normalize()
+		if s.PaneGapSame != want[0] || s.PaneGap != want[1] {
+			t.Errorf("%q: same %v, gap %d, want %v, %v (%q)", file, s.PaneGapSame, s.PaneGap, want[0], want[1], probs)
+		}
+	}
+	for _, bad := range []string{"wide", "nan", "inf", "2.5", "17", "-1"} {
+		if s, probs := parse("pane-gap = " + bad); len(probs) != 1 || !s.PaneGapSame {
+			t.Errorf("pane-gap = %s: same %v, problems %q", bad, s.PaneGapSame, probs)
+		}
+	}
+	s := Default()
+	s.PaneGapSame, s.PaneGap = false, 0
+	if out := format(s, ""); !strings.Contains(out, "pane-gap = 0") {
+		t.Errorf("an own gap of 0 is not written:\n%s", out)
+	}
+}

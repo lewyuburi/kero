@@ -94,7 +94,7 @@ func (a *App) openSettings(page string) {
 	a.ss.draft = map[string]string{}
 	a.refreshAgents()
 	a.refreshService()
-	a.setWin = mygo.NewWindow(framed(mygo.WindowOptions{
+	a.setWin = mygo.NewWindow(framed(barMid(gapOf(a.set)), mygo.WindowOptions{
 		Title: locales.SettingsTitle(), Width: 820, Height: 620, MinWidth: 700, MinHeight: 480,
 		StateKey: "settings",
 		Vibrancy: vibrancyFor(a.set),
@@ -184,9 +184,9 @@ func (a *App) settingsView(c *ui.Context) {
 		// Under the traffic lights on macOS; elsewhere the search starts
 		// the sidebar, centered on barMid as the page's title and the
 		// window controls are.
-		top := float32(topBar)
+		top := topBar(gapOf(a.set))
 		if ownControls {
-			top = barMid - (controlH+2)/2
+			top = barMid(gapOf(a.set)) - (controlH+2)/2
 		}
 		ui.Column(c).Width(212).Shrink(0).Padding(top, 10, 12, 10).Gap(2).DragWindow().Children(func() {
 			a.settingsSearch(c, pal)
@@ -213,8 +213,9 @@ func (a *App) settingsView(c *ui.Context) {
 				a.openConfig()
 			}
 		})
-		ui.Column(c).Grow(1).MinWidth(0).Padding(cardGap, cardGap, cardGap, 0).Children(func() {
-			card := raised(ui.Column(c).Grow(1).MinHeight(0).Radius(14).Background(pal.card), pal).Clip()
+		gap := gapOf(a.set)
+		ui.Column(c).Grow(1).MinWidth(0).Padding(gap, gap, gap, 0).Children(func() {
+			card := raised(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(gap)).Background(pal.card), pal).Clip()
 			card.Children(func() {
 				page := settingsPages[0]
 				for _, p := range settingsPages {
@@ -524,6 +525,26 @@ func (a *App) appearancePage(c *ui.Context, pal *palette) {
 		settingRow(c, pal, locales.SetTranslucent(), locales.SetTranslucentDetail(), func() {
 			toggle(c.Key("vibrancy"), &s.Vibrancy, pal)
 		})
+		settingRow(c, pal, locales.SetCardGap(), locales.SetCardGapDetail(), func() {
+			v := float64(s.CardGap)
+			slider(c, "card-gap", &v, 0, settings.MaxCardGap, 160, pal).OnChange(func() { a.set.CardGap = int(v + 0.5) })
+			ui.Textf(c, "%d pt", s.CardGap).FontSize(12.5).TextColor(pal.textMuted).Width(40).FontFeatures("tnum")
+		})
+		settingRow(c, pal, locales.SetPaneGapSame(), locales.SetPaneGapSameDetail(), func() {
+			// Turned off, the pane gap starts from the panel gap it followed.
+			toggle(c.Key("pane-gap-same"), &s.PaneGapSame, pal).OnChange(func() {
+				if !a.set.PaneGapSame {
+					a.set.PaneGap = a.set.CardGap
+				}
+			})
+		})
+		if !s.PaneGapSame {
+			settingRow(c, pal, locales.SetPaneGap(), locales.SetPaneGapDetail(), func() {
+				v := float64(s.PaneGap)
+				slider(c, "pane-gap", &v, 0, settings.MaxPaneGap, 160, pal).OnChange(func() { a.set.PaneGap = int(v + 0.5) })
+				ui.Textf(c, "%d pt", s.PaneGap).FontSize(12.5).TextColor(pal.textMuted).Width(40).FontFeatures("tnum")
+			})
+		}
 	})
 	ui.Column(c).Gap(8).Children(func() {
 		groupTitle(c, pal, locales.SetBackground())

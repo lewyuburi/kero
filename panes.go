@@ -12,8 +12,6 @@ import (
 	"kero/locales"
 )
 
-const paneGap = 8 // between panes, where the divider is
-
 // paneRef returns the handle a pane's terminal binds, which its focus
 // follows.
 func (a *App) paneRef(id string) *ui.Handle {
@@ -75,17 +73,17 @@ func (a *App) panes(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32,
 			p = s.FocusPane()
 		}
 		if p != nil {
-			a.paneCard(c, pal, bar, shown, s, p, true, true, true, multi)
+			a.paneCard(c, pal, bar, shown, s, p, true, true, true, true, multi)
 		}
 		return
 	}
-	a.layoutNode(c, pal, bar, shown, s, s.Layout, "", true, true, true)
+	a.layoutNode(c, pal, bar, shown, s, s.Layout, "", true, true, true, true)
 }
 
-func (a *App) layoutNode(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, l *proto.Layout, path string, top, left, right bool) {
+func (a *App) layoutNode(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, l *proto.Layout, path string, top, left, right, bottom bool) {
 	if l.Leaf() {
 		if p := s.PaneByID(l.Pane); p != nil {
-			a.paneCard(c, pal, bar, shown, s, p, top, left, right, true)
+			a.paneCard(c, pal, bar, shown, s, p, top, left, right, bottom, true)
 		}
 		return
 	}
@@ -103,22 +101,58 @@ func (a *App) layoutNode(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 	box.Grow(1).Basis(0).MinWidth(0).MinHeight(0).AlignItems(ui.Stretch).Bind(a.paneRef(key))
 	box.Children(func() {
 		ui.Column(c.Key("a")).Grow(ratio).Basis(0).MinWidth(0).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
-			a.layoutNode(c, pal, bar, shown, s, l.A, path+"a", top, left, right && !l.Row)
+			a.layoutNode(c, pal, bar, shown, s, l.A, path+"a", top, left, right && !l.Row, bottom && l.Row)
 		})
 		a.divider(c, pal, s, l, key)
 		ui.Column(c.Key("b")).Grow(1 - ratio).Basis(0).MinWidth(0).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
-			a.layoutNode(c, pal, bar, shown, s, l.B, path+"b", top && l.Row, left && !l.Row, right)
+			a.layoutNode(c, pal, bar, shown, s, l.B, path+"b", top && l.Row, left && !l.Row, right, bottom)
 		})
+		if paneGapOf(a.set) == 0 {
+			a.dividerGrab(c, pal, s, l, key)
+		}
 	})
 }
 
-// divider is the gap between two panes, which a drag moves.
+// divider is the gap between two panes, which a drag moves. With no gap
+// there is nothing to hold: dividerGrab does.
 func (a *App) divider(c *ui.Context, pal *palette, s *proto.Session, l *proto.Layout, key string) {
+	gap := paneGapOf(a.set)
 	d := ui.Box(c.Key("div")).Shrink(0)
 	if l.Row {
-		d.Width(paneGap).Cursor(ui.CursorResizeColumn)
+		d.Width(gap)
 	} else {
-		d.Height(paneGap).Cursor(ui.CursorResizeRow)
+		d.Height(gap)
+	}
+	if gap > 0 {
+		a.dragDivider(c, pal, s, l, key, d)
+	}
+}
+
+// dividerGrab is the divider of panes that touch: a strip over their edge,
+// above both, as wide as a finger needs, which draws and drags as a gap's.
+func (a *App) dividerGrab(c *ui.Context, pal *palette, s *proto.Session, l *proto.Layout, key string) {
+	const width = 6
+	ratio := float32(l.Ratio)
+	if ratio <= 0 || ratio >= 1 {
+		ratio = 0.5
+	}
+	b := a.paneRef(key).Bounds(c)
+	g := ui.Box(c.Key("grab")).Absolute()
+	if l.Row {
+		g.Left(b.W*ratio - width/2).Top(0).Bottom(0).Width(width)
+	} else {
+		g.Top(b.H*ratio - width/2).Left(0).Right(0).Height(width)
+	}
+	a.dragDivider(c, pal, s, l, key, g)
+}
+
+// dragDivider gives d, a divider or its grab, its cursor, its grip and its
+// drag.
+func (a *App) dragDivider(c *ui.Context, pal *palette, s *proto.Session, l *proto.Layout, key string, d ui.Element) {
+	if l.Row {
+		d.Cursor(ui.CursorResizeColumn)
+	} else {
+		d.Cursor(ui.CursorResizeRow)
 	}
 	if d.Hovered() || d.Pressed() {
 		// A short grip, so the gap shows it moves.
@@ -154,17 +188,34 @@ func (a *App) divider(c *ui.Context, pal *palette, s *proto.Session, l *proto.La
 	}
 }
 
-// paneCard is a pane: a card with a header and the terminal. top, left and
-// right tell that it touches the window's edges, where the header drags
+// paneCorners rounds a pane's corners, top left first, going round: one the
+// window's edges meet on both sides takes the card's radius, and one that
+// touches another pane the pane gap's (paneRadius), square with none.
+func (a *App) paneCorners(top, left, right, bottom bool) [4]float32 {
+	outer := cardRadius(a.chrome.gap)
+	inner := paneRadius(paneGapOf(a.set), outer)
+	pick := func(edge bool) float32 {
+		if edge {
+			return outer
+		}
+		return inner
+	}
+	return [4]float32{pick(top && left), pick(top && right), pick(bottom && right), pick(bottom && left)}
+}
+
+// paneCard is a pane: a card with a header and the terminal. top, left,
+// right and bottom tell that it touches the window's edges (not another
+// pane), where the header drags
 // the window, keeps clear of the traffic lights on macOS, and holds the
 // window controls elsewhere (windowControls).
-func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, p *proto.Pane, top, left, right, multi bool) {
+func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, p *proto.Pane, top, left, right, bottom, multi bool) {
 	focused := p.ID == a.focusOf(s)
 	bg := pal.card
 	if multi && !focused {
 		bg = pal.cardDim
 	}
-	card := ui.Column(c.Key("pane-" + p.ID)).Grow(1).Basis(0).MinWidth(0).MinHeight(0).Radius(14).Clip().Bind(a.paneRef("card-" + p.ID))
+	corners := a.paneCorners(top, left, right, bottom)
+	card := ui.Column(c.Key("pane-"+p.ID)).Grow(1).Basis(0).MinWidth(0).MinHeight(0).Radius(corners[0], corners[1], corners[2], corners[3]).Clip().Bind(a.paneRef("card-" + p.ID))
 	raised(card.Background(card.AnimateColor("bg", bg, ui.Animation{Duration: 140 * time.Millisecond})), pal)
 	hovered := card.Hovered()
 	// The card takes presses: one on its padding, beside the terminal,

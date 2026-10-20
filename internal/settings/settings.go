@@ -26,10 +26,13 @@ type Settings struct {
 	QuitConfirm     bool   `json:"quitConfirm"`     // tell, the first time, that quitting keeps sessions
 
 	// Appearance
-	Appearance string `json:"appearance"` // "system", "light" or "dark"
-	Language   string `json:"language"`   // "system", or one of Languages
-	Background string `json:"background"` // a wash, see Backgrounds
-	Vibrancy   bool   `json:"vibrancy"`   // the window's material under the wash
+	Appearance  string `json:"appearance"`  // "system", "light" or "dark"
+	Language    string `json:"language"`    // "system", or one of Languages
+	Background  string `json:"background"`  // a wash, see Backgrounds
+	Vibrancy    bool   `json:"vibrancy"`    // the window's material under the wash
+	CardGap     int    `json:"cardGap"`     // between the window's edge and the panels, in points; 0 is flush
+	PaneGapSame bool   `json:"paneGapSame"` // the gap between panes is the panels'
+	PaneGap     int    `json:"paneGap"`     // between panes, in points, when it is not
 
 	// Terminal
 	FontFamily   string  `json:"fontFamily"` // "" the font kero carries; "monospace" the system's
@@ -81,6 +84,9 @@ func Default() Settings {
 		Language:        "system",
 		Background:      "rex",
 		Vibrancy:        true,
+		CardGap:         DefaultCardGap,
+		PaneGapSame:     true,
+		PaneGap:         DefaultPaneGap,
 		FontSize:        13,
 		LineHeight:      1.22,
 		FontWeight:      400,
@@ -100,6 +106,15 @@ func Default() Settings {
 		RemoteControl:   true,
 	}
 }
+
+// The gap around the panels, in points: what a new install has, and the
+// most that leaves a header room for its buttons.
+const (
+	DefaultCardGap = 8
+	MaxCardGap     = 12
+	DefaultPaneGap = 8
+	MaxPaneGap     = 16
+)
 
 // Languages are the languages the app is written in, as the catalogs of
 // kero/locales name them.
@@ -250,6 +265,12 @@ func (s *Settings) normalize() {
 	}
 	if !known {
 		s.Background = d.Background
+	}
+	if s.CardGap < 0 || s.CardGap > MaxCardGap {
+		s.CardGap = d.CardGap
+	}
+	if s.PaneGap < 0 || s.PaneGap > MaxPaneGap {
+		s.PaneGap = d.PaneGap
 	}
 	if s.FontSize < 8 || s.FontSize > 36 {
 		s.FontSize = d.FontSize
