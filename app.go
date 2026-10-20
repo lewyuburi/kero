@@ -478,6 +478,10 @@ func (a *App) hostGroups(h *host) []group {
 		}
 	}
 	if len(other.sessions) > 0 {
+		if looseOn(a.set) {
+			// The sessions of no project come first, with no header.
+			return append([]group{other}, gs...)
+		}
 		gs = append(gs, other)
 	}
 	return gs
@@ -1060,6 +1064,9 @@ func (a *App) newSessionOn(h *host, projectID string) {
 	if cur := a.session(a.selected); cur != nil && a.hostOf(cur.ID) == h {
 		if projectID == "" || cur.Project == projectID {
 			p.Project, p.After = cur.Project, cur.ID
+			// From a loose session, a new one is loose: where its folder
+			// is does not put it in a project.
+			p.Loose = looseOn(a.set) && cur.Project == ""
 			if a.set.NewSessionDir == "current" {
 				p.Dir = cur.FocusPane().WorkDir()
 			}
@@ -1254,11 +1261,12 @@ func (a *App) commitProjectRename() {
 	a.focusTerminal()
 }
 
-func (a *App) moveSession(id, project string) {
+// moveSession puts a session in a project, or, with loose, in none.
+func (a *App) moveSession(id, project string, loose bool) {
 	if s := a.session(id); s != nil {
 		s.Project = project
 	}
-	a.call(id, "move", proto.MoveParams{ID: id, Project: project, Index: -1}, nil)
+	a.call(id, "move", proto.MoveParams{ID: id, Project: project, Loose: loose, Index: -1}, nil)
 }
 
 func (a *App) selectOffset(d int) {

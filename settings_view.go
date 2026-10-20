@@ -485,6 +485,9 @@ func (a *App) generalPage(c *ui.Context, pal *palette) {
 		settingRow(c, pal, locales.SetFocusFollowsMouse(), locales.SetFocusFollowsMouseDetail(), func() {
 			toggle(c.Key("focusmouse"), &s.FocusFollowsMouse, pal)
 		})
+		settingRow(c, pal, locales.SetLooseSessions(), locales.SetLooseSessionsDetail(), func() {
+			toggle(c.Key("loose"), &s.LooseSessions, pal)
+		})
 		settingRow(c, pal, locales.SetAskBeforeClosing(), locales.SetAskBeforeClosingDetail(), func() {
 			toggle(c.Key("confirm"), &s.ConfirmClose, pal)
 		})

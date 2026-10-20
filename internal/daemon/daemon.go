@@ -369,9 +369,11 @@ func newID() string {
 }
 
 // projectFor returns the project a new session goes in: the one named, or
-// the one whose directory holds dir, or a new one for dir's repository.
-// d.mu is held.
+// the one whose directory holds dir, or a new one for dir's repository. With
+// the loose-sessions setting on, a dir in no project and no repository, or
+// none, is in no project: "". d.mu is held.
 func (d *Daemon) projectFor(ref, dir string) string {
+	loose := settings.Load().LooseSessions
 	if ref != "" {
 		for _, p := range d.projects {
 			if p.ID == ref || strings.EqualFold(p.Name, ref) {
@@ -383,6 +385,9 @@ func (d *Daemon) projectFor(ref, dir string) string {
 		return p.ID
 	}
 	if dir == "" {
+		if loose {
+			return ""
+		}
 		if len(d.projects) > 0 {
 			return d.projects[0].ID
 		}
@@ -397,7 +402,10 @@ func (d *Daemon) projectFor(ref, dir string) string {
 	if best != "" {
 		return best
 	}
-	root := repoRoot(dir)
+	root, isRepo := findRepo(dir)
+	if loose && !isRepo {
+		return ""
+	}
 	name := filepath.Base(root)
 	if root == proto.Home() {
 		name = "Home"
@@ -407,21 +415,28 @@ func (d *Daemon) projectFor(ref, dir string) string {
 	return p.ID
 }
 
-// repoRoot returns the root of the git repository holding dir, or dir. A
-// linked worktree's is its repository's main checkout, wherever it lies.
+// repoRoot returns the root of the git repository holding dir, or dir.
 func repoRoot(dir string) string {
+	root, _ := findRepo(dir)
+	return root
+}
+
+// findRepo returns the root of the git repository holding dir, and whether
+// there is one: else dir itself. A linked worktree's is its repository's main
+// checkout, wherever it lies.
+func findRepo(dir string) (string, bool) {
 	for d := dir; ; {
 		if fi, err := os.Stat(filepath.Join(d, ".git")); err == nil {
 			if !fi.IsDir() {
 				if main := worktreeMain(d); main != "" {
-					return main
+					return main, true
 				}
 			}
-			return d
+			return d, true
 		}
 		parent := filepath.Dir(d)
 		if parent == d || d == proto.Home() {
-			return dir
+			return dir, false
 		}
 		d = parent
 	}

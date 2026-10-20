@@ -138,7 +138,10 @@ func runApp() {
 	}
 }
 
-// newSessionIn starts a session in a directory of a host, in its project.
-func (a *App) newSessionIn(h *host, dir string) { a.create(h, proto.CreateParams{Dir: dir}, "") }
+// newSessionIn starts a session in a directory of a host, in its project, or,
+// with loose, in none.
+func (a *App) newSessionIn(h *host, dir string, loose bool) {
+	a.create(h, proto.CreateParams{Dir: dir, Loose: loose && looseOn(a.set)}, "")
+}
 
 func stopDaemon() error { return cli.StopDaemon() }

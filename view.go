@@ -10,6 +10,7 @@ import (
 
 	"kero/internal/actions"
 	"kero/internal/proto"
+	"kero/internal/settings"
 
 	"kero/locales"
 )
@@ -34,6 +35,10 @@ const (
 	// long as an agent works.
 	ringStep = 33 * time.Millisecond
 )
+
+// looseOn tells that a session may be in no project: with the loose-sessions
+// setting on.
+func looseOn(s settings.Settings) bool { return s.LooseSessions }
 
 // chrome is where the sidebar's animation puts things, in whole pixels so
 // that edges stay crisp. Each is rounded once, from one progress quantized
@@ -285,6 +290,13 @@ func (a *App) sidebar(c *ui.Context, pal *palette, bar ui.TitleBar) {
 
 func (a *App) groupView(c *ui.Context, pal *palette, g group, gi int, n *int) {
 	id, key := g.project.ID, g.key()
+	if id == "" && looseOn(a.set) {
+		// The sessions of no project are rows with no header above them.
+		for _, s := range g.sessions {
+			a.sessionRow(c, pal, s, n)
+		}
+		return
+	}
 	collapsed := a.prefs.Collapsed[key]
 	needs := 0
 	for _, s := range g.sessions {
@@ -502,11 +514,17 @@ func (a *App) sessionMenu(m *ui.Menu, s *proto.Session) {
 	}
 	h := a.hostOf(id)
 	m.Submenu(locales.SessionMoveToProject(), func(m *ui.Menu) {
+		if looseOn(a.set) {
+			if m.Item(locales.SessionNoProject()).Checked(s.Project == "").Disabled(s.Project == "").Chosen() {
+				a.defer_(func() { a.moveSession(id, "", true) })
+			}
+			m.Separator()
+		}
 		// A session moves among its host's projects alone.
 		for _, p := range a.projectsOf(h) {
 			if m.Item(p.Name).Checked(p.ID == s.Project).Disabled(p.ID == s.Project).Chosen() {
 				pid := p.ID
-				a.defer_(func() { a.moveSession(id, pid) })
+				a.defer_(func() { a.moveSession(id, pid, false) })
 			}
 		}
 	})

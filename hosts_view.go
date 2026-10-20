@@ -478,7 +478,7 @@ func (a *App) openRemotePath(h *host, id, link string) {
 			case !st.Exists:
 				a.toast(locales.HostNoSuchFile(h.name, path))
 			case st.Dir:
-				a.newSessionIn(h, st.Path)
+				a.newSessionIn(h, st.Path, false)
 			default:
 				s := a.session(id)
 				if s == nil {

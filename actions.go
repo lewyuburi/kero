@@ -32,7 +32,7 @@ func (a *App) run(id string, args map[string]string) {
 		// A directory kero do names is of the host it runs on.
 		switch dir := args["dir"]; {
 		case dir != "":
-			a.newSessionIn(a.actionHost(), dir)
+			a.newSessionIn(a.actionHost(), dir, false)
 		case a.from != nil:
 			a.newSessionOn(a.from, args["project"])
 		default:
@@ -40,9 +40,9 @@ func (a *App) run(id string, args map[string]string) {
 		}
 	case "session.newHome":
 		if h := a.actionHost(); h.remote() {
-			a.newSessionIn(h, "~")
+			a.newSessionIn(h, "~", true)
 		} else {
-			a.newSessionIn(h, proto.Home())
+			a.newSessionIn(h, proto.Home(), true)
 		}
 	case "project.open":
 		a.openProject()

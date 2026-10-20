@@ -709,3 +709,55 @@ func TestStatusRingsPaintAtTheirOwnPace(t *testing.T) {
 		}
 	}
 }
+
+// With loose-sessions on, the sessions of no project come first with no
+// header; off, they are in the Other group, last, as they were.
+func TestLooseSessionsView(t *testing.T) {
+	loose := proto.Session{ID: "s9", Name: "mo", Panes: []proto.Pane{{ID: "z", Shell: "zsh", Dir: "/tmp", Status: proto.Idle, Progress: -1}}, Focus: "z"}
+	frame := func(a *App, name string) *ui.Tester {
+		tt := ui.NewTester(a.view, 1100, 500)
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+		shot(t, tt, name)
+		return tt
+	}
+	a := testApp(t)
+	a.st.Sessions = append(a.st.Sessions, loose)
+	if gs := a.groups(); gs[len(gs)-1].project.ID != "" {
+		t.Errorf("off: the sessions of no project are not last: %+v", gs)
+	}
+	if !frame(a, "loose-off").HasText("Other") {
+		t.Error("off: no Other group for a session of no project")
+	}
+
+	a = testApp(t)
+	a.st.Sessions = append(a.st.Sessions, loose)
+	a.set.LooseSessions = true
+	if gs := a.groups(); gs[0].project.ID != "" || len(gs[0].sessions) != 1 {
+		t.Errorf("on: the sessions of no project are not first: %+v", gs)
+	}
+	tt := frame(a, "loose-sidebar")
+	if tt.HasText("Other") || !tt.HasText("mo") {
+		t.Errorf("on, sidebar: texts %q", tt.Texts())
+	}
+	if order := a.visibleOrder(); order[0] != "s9" {
+		t.Errorf("⌘1 is %q, not the loose session", order[0])
+	}
+}
+
+// The setting is in General, and the search finds it.
+func TestLooseSessionsSetting(t *testing.T) {
+	a := testApp(t)
+	a.ss.page = "general"
+	tt := ui.NewTester(a.settingsView, 820, 800)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if got := searchResults("loose", a.set.Shortcuts)["general"]; len(got) != 1 {
+		t.Errorf("the search finds %q for loose", got)
+	}
+	if !tt.HasText("Sessions without a project") {
+		t.Errorf("no row in General; texts %q", tt.Texts())
+	}
+}

@@ -29,6 +29,7 @@ type Settings struct {
 	RestoreSessions   bool   `json:"restoreSessions"`   // after kerod restarts, as after a reboot
 	ResumeAgents      bool   `json:"resumeAgents"`      // as it restores sessions: the agents' own
 	QuitConfirm       bool   `json:"quitConfirm"`       // tell, the first time, that quitting keeps sessions
+	LooseSessions     bool   `json:"looseSessions"`     // a session may be in no project
 
 	// Appearance
 	Appearance string `json:"appearance"` // "system", "light" or "dark"
