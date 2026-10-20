@@ -89,6 +89,15 @@ const lightsX = 18
 // buttons are 16 tall, and MyGo puts them a DIP above the position.
 func lightsY(mid float32) int { return int(mid) - 7 }
 
+// moveLights puts a window's traffic lights on the bar's line, mid, as it
+// changes with the window open. A window of Windows or Linux has none to
+// move.
+func moveLights(w *mygo.Window, mid float32) {
+	if w != nil && !ownControls {
+		w.SetTrafficLightPosition(lightsX, lightsY(mid))
+	}
+}
+
 var (
 	minimizeIcon = icon(`<path d="M3.5 8h9"/>`)
 	maximizeIcon = icon(`<rect x="3.5" y="3.5" width="9" height="9" rx="1.5"/>`)

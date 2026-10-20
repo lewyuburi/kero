@@ -866,6 +866,12 @@ func (a *App) apply(s settings.Settings, save bool) {
 	if old.Vibrancy != s.Vibrancy && a.win != nil {
 		a.win.SetVibrancy(vibrancyFor(s))
 	}
+	if barLine(old) != barLine(s) {
+		moveLights(a.win, barLine(s))
+	}
+	if gapOf(old) != gapOf(s) {
+		moveLights(a.setWin, barMid(gapOf(s)))
+	}
 	if !maps.Equal(old.Shortcuts, s.Shortcuts) && a.win != nil {
 		mygo.App.SetMenu(a.menu())
 	}
