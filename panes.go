@@ -537,7 +537,7 @@ func (a *App) paneHeader(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 		}
 		a.paneChips(c, pal, p, !multi)
 		a.paneControls(c, pal, s, p, (hovered || focused && multi) && !dragging, multi)
-		if top && right {
+		if top && right && !tabsHorizontal(a.set) {
 			windowControls(c, pal, a.win)
 		}
 	})

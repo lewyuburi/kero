@@ -29,7 +29,12 @@ const (
 	// at every refresh of the display keeps the whole window drawing for as
 	// long as an agent works.
 	ringStep = 33 * time.Millisecond
-	// leadGap is the room after the traffic lights.
+	// tabBarH is the height of the bar of tabs across the top, tabMinW and
+	// tabMaxW the widths a tab in it has between. leadGap is the room after the
+	// traffic lights.
+	tabBarH = 40
+	tabMinW = 120
+	tabMaxW = 200
 	leadGap = 8
 
 	// defaultRadius is a card's corner at the default gap, and minRadius
@@ -54,6 +59,19 @@ func barMid(gap float32) float32 { return gap + headerH/2 }
 
 // topBar is the sidebar's title bar, centered on barMid.
 func topBar(gap float32) float32 { return 2 * barMid(gap) }
+
+// tabsHorizontal tells that the sessions' tabs run across the top of the
+// window instead of down the sidebar.
+func tabsHorizontal(s settings.Settings) bool { return s.TabLayout == settings.TabsHorizontal }
+
+// barLine is the line the main window's title bar contents center on: the
+// tab bar's, or else the line of the cards' headers and the sidebar's bar.
+func barLine(s settings.Settings) float32 {
+	if tabsHorizontal(s) {
+		return tabBarH / 2
+	}
+	return barMid(gapOf(s))
+}
 
 // paneGapOf is the space between split panes: the cards' gap or its own.
 func paneGapOf(s settings.Settings) float32 {
@@ -148,8 +166,29 @@ func (a *App) view(c *ui.Context) {
 	// settles. This one lands in about 13 frames, moving in every one.
 	progress := row.AnimateTo("sidebar", b2f(!a.prefs.SidebarHidden), sidebarMotion)
 	a.chrome = chromeFor(progress, a.prefs.SidebarWidth, gapOf(a.set), bar)
+	horizontal := tabsHorizontal(a.set)
+	if !horizontal {
+		a.revealedTab = ""
+	}
+	if horizontal {
+		// No sidebar to hide: the cards start under the bar of tabs, at
+		// their own gap from the window's edges, and the headers have the
+		// room they have beside a shown sidebar.
+		g := gapOf(a.set)
+		a.chrome = chrome{gap: g, shown: 1, mainPad: g, headerPad: 16}
+	}
 	shown := a.chrome.shown
 	row.Children(func() {
+		if horizontal {
+			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+				a.tabBar(c, pal, bar)
+				g := a.chrome.gap
+				ui.Column(c).Grow(1).MinWidth(0).Padding(0, g, g, g).DragWindow().Children(func() {
+					a.card(c, pal, bar, shown)
+				})
+			})
+			return
+		}
 		w := a.chrome.sideW
 		side := ui.Row(c).Width(w).Shrink(0).AlignItems(ui.Stretch).ClipX()
 		side.Children(func() {
@@ -360,37 +399,7 @@ func (a *App) groupView(c *ui.Context, pal *palette, g group, gi int, n *int) {
 		a.toggleProject(key)
 	}
 	pointerTooltip(c, hdr, "tip-project-"+key, g.host.shortDir(g.project.Dir))
-	hdr.ContextMenu(func(m *ui.Menu) {
-		if m.Item(locales.ActionNewSession()).Chosen() {
-			a.newSessionOn(g.host, id)
-		}
-		label := locales.SidebarCollapse()
-		if collapsed {
-			label = locales.SidebarExpand()
-		}
-		if m.Item(label).Chosen() {
-			a.toggleProject(key)
-		}
-		if m.Item(locales.SessionRename()).Disabled(id == "").Chosen() {
-			a.startProjectRename(id)
-		}
-		m.Separator()
-		// A remote group's menu has its host's, as the host has no header.
-		if g.host.remote() {
-			m.Submenu(g.host.name, func(m *ui.Menu) { a.hostMenu(m, g.host) })
-		}
-		if m.Item(locales.SidebarCloseProjectMenu()).Disabled(id == "").Chosen() {
-			name, count := g.project.Name, len(g.sessions)
-			a.confirm = &confirmation{
-				open:    true,
-				title:   locales.ConfirmCloseTitle(name),
-				detail:  locales.ConfirmCloseProjectDetail(count),
-				action:  locales.SidebarCloseProject(),
-				destroy: true,
-				run:     func() { a.call(id, "project.close", proto.IDParams{ID: id}, nil) },
-			}
-		}
-	})
+	hdr.ContextMenu(func(m *ui.Menu) { a.projectMenu(m, g, collapsed, false) })
 	hdr.Children(func() {
 		if renaming {
 			in := ui.TextInputBase(c.Key("rename"), &a.renameBuf).Grow(1).MinWidth(0).FontSize(12.5).FontWeight(600).AutoFocus()
@@ -441,6 +450,52 @@ func (a *App) groupView(c *ui.Context, pal *palette, g group, gi int, n *int) {
 	}
 	for _, s := range g.sessions {
 		a.sessionRow(c, pal, s, n)
+	}
+}
+
+// projectMenu is the menu of a project, on its header in the sidebar or its
+// label in the tabs.
+func (a *App) projectMenu(m *ui.Menu, g group, collapsed, colors bool) {
+	id, key := g.project.ID, g.key()
+	if m.Item(locales.ActionNewSession()).Chosen() {
+		a.newSessionOn(g.host, id)
+	}
+	label := locales.SidebarCollapse()
+	if collapsed {
+		label = locales.SidebarExpand()
+	}
+	if m.Item(label).Chosen() {
+		a.toggleProject(key)
+	}
+	if m.Item(locales.SessionRename()).Disabled(id == "").Chosen() {
+		a.startProjectRename(id)
+	}
+	if colors {
+		// The tabs across the top show it: Chrome's, to choose as its groups'.
+		m.Submenu(locales.ProjectColor(), func(sm *ui.Menu) {
+			cur := a.projectColor(key).ID
+			for _, col := range projectColors {
+				if sm.Item(colorName(col.ID)).Checked(col.ID == cur).Chosen() {
+					a.setProjectColor(key, col.ID)
+				}
+			}
+		})
+	}
+	m.Separator()
+	// A remote group's menu has its host's, as the host has no header.
+	if g.host.remote() {
+		m.Submenu(g.host.name, func(m *ui.Menu) { a.hostMenu(m, g.host) })
+	}
+	if m.Item(locales.SidebarCloseProjectMenu()).Disabled(id == "").Chosen() {
+		name, count := g.project.Name, len(g.sessions)
+		a.confirm = &confirmation{
+			open:    true,
+			title:   locales.ConfirmCloseTitle(name),
+			detail:  locales.ConfirmCloseProjectDetail(count),
+			action:  locales.SidebarCloseProject(),
+			destroy: true,
+			run:     func() { a.call(id, "project.close", proto.IDParams{ID: id}, nil) },
+		}
 	}
 }
 
@@ -590,27 +645,37 @@ func (a *App) sessionMenu(m *ui.Menu, s *proto.Session) {
 // none.
 func (a *App) sidebarFooter(c *ui.Context, pal *palette) {
 	ui.Row(c).Height(36).Shrink(0).Padding(0, 12, 4, 12).Gap(2).AlignItems(ui.Center).DragWindow().Children(func() {
-		iconButton(c, "open-project", folderIcon, a.tip(locales.ActionOpenProject(), "project.open"), pal, a.openProject)
-		iconButton(c, "palette", searchIcon, a.tip(locales.ActionGoToSession(), "palette.open"), pal, a.openPalette)
-		iconButton(c, "settings", gearIcon, a.tip(locales.SettingsTitle(), "settings.open"), pal, func() { a.openSettings("") })
+		a.footerButtons(c, pal)
 		ui.Spacer(c)
-		switch a.local().conn {
-		case connReady:
-			if a.daemonStale() {
-				a.restartChip(c, pal)
-			}
-			waiting := func(s *proto.Session) bool { return s.Status == proto.Waiting }
-			working := func(s *proto.Session) bool { return s.Status == proto.Working }
-			done := func(s *proto.Session) bool { return s.Status == proto.Idle && s.Unread }
-			a.footerChip(c, pal, proto.Waiting, false, waiting, pal.attention, locales.FooterNeedsYou, a.tip(locales.FooterGoToIt(), "session.attention"), a.jumpToAttention)
-			a.footerChip(c, pal, proto.Working, false, working, pal.textMuted, locales.FooterWorking, locales.FooterGoToIt(), nil)
-			a.footerChip(c, pal, proto.Idle, true, done, pal.textMuted, locales.FooterDone, locales.FooterGoToIt(), nil)
-		case connConnecting:
-			a.footerNote(c, pal, pal.textFaint, locales.StatusConnecting())
-		default:
-			a.footerNote(c, pal, pal.danger, locales.StatusDisconnected())
-		}
+		a.footerStatus(c, pal)
 	})
+}
+
+// footerButtons are the sidebar footer's, and the tab bar's at its right.
+func (a *App) footerButtons(c *ui.Context, pal *palette) {
+	iconButton(c, "open-project", folderIcon, a.tip(locales.ActionOpenProject(), "project.open"), pal, a.openProject)
+	iconButton(c, "palette", searchIcon, a.tip(locales.ActionGoToSession(), "palette.open"), pal, a.openPalette)
+	iconButton(c, "settings", gearIcon, a.tip(locales.SettingsTitle(), "settings.open"), pal, func() { a.openSettings("") })
+}
+
+// footerStatus tells how the sessions and the connection stand.
+func (a *App) footerStatus(c *ui.Context, pal *palette) {
+	switch a.local().conn {
+	case connReady:
+		if a.daemonStale() {
+			a.restartChip(c, pal)
+		}
+		waiting := func(s *proto.Session) bool { return s.Status == proto.Waiting }
+		working := func(s *proto.Session) bool { return s.Status == proto.Working }
+		done := func(s *proto.Session) bool { return s.Status == proto.Idle && s.Unread }
+		a.footerChip(c, pal, proto.Waiting, false, waiting, pal.attention, locales.FooterNeedsYou, a.tip(locales.FooterGoToIt(), "session.attention"), a.jumpToAttention)
+		a.footerChip(c, pal, proto.Working, false, working, pal.textMuted, locales.FooterWorking, locales.FooterGoToIt(), nil)
+		a.footerChip(c, pal, proto.Idle, true, done, pal.textMuted, locales.FooterDone, locales.FooterGoToIt(), nil)
+	case connConnecting:
+		a.footerNote(c, pal, pal.textFaint, locales.StatusConnecting())
+	default:
+		a.footerNote(c, pal, pal.danger, locales.StatusDisconnected())
+	}
 }
 
 // footerChip counts the sessions that are, by is, as their rows' status
@@ -828,7 +893,9 @@ func (a *App) card(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32) 
 			}
 			ui.Text(c, "Kero").FontSize(14).FontWeight(600).TextColor(pal.text)
 			ui.Spacer(c)
-			windowControls(c, pal, a.win)
+			if !tabsHorizontal(a.set) {
+				windowControls(c, pal, a.win)
+			}
 		})
 		ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 			switch {

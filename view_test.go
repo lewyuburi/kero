@@ -18,6 +18,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
+	"kero/internal/actions"
 	"kero/internal/proto"
 	"kero/internal/settings"
 
@@ -834,6 +835,190 @@ func TestPaneCorners(t *testing.T) {
 	got = a.paneCorners(true, true, true, true)
 	if want := [4]float32{14, 14, 14, 14}; got != want {
 		t.Errorf("a lone pane's corners %v, want %v", got, want)
+	}
+}
+
+// The tabs across the top put the traffic lights on the tab bar's line, and
+// the cards' headers no longer carry the sidebar's buttons or the window's
+// controls, which the bar holds.
+func TestHorizontalTabsLayout(t *testing.T) {
+	s := settings.Default()
+	if tabsHorizontal(s) {
+		t.Fatal("tabs are horizontal by default")
+	}
+	if barLine(s) != 30 {
+		t.Errorf("the bar's line with vertical tabs is %v, want 30", barLine(s))
+	}
+	if tabsHorizontal(s) {
+		t.Error("the flag alone put the tabs across the top")
+	}
+	s.TabLayout = settings.TabsHorizontal
+	if barLine(s) != tabBarH/2 || lightsY(barLine(s)) != 13 {
+		t.Errorf("with horizontal tabs the line is %v and the lights at %d, want %v and 13", barLine(s), lightsY(barLine(s)), float32(tabBarH/2))
+	}
+}
+
+// With tabs across the top there is one tab a session, a click on one shows
+// its session, and the sidebar is not there to hide.
+func TestHorizontalTabs(t *testing.T) {
+	a := testApp(t)
+	a.set.TabLayout = settings.TabsHorizontal
+	a.st.Projects = append(a.st.Projects, proto.Project{ID: "p2", Name: "other", Dir: "/tmp"})
+	a.st.Sessions = append(a.st.Sessions, proto.Session{
+		ID: "s2", Project: "p2", Name: "second",
+		Panes: []proto.Pane{{ID: "c", Shell: "zsh", Dir: "/tmp", Status: proto.Idle, Progress: -1}},
+		Focus: "c",
+	})
+	tt := ui.NewTester(a.view, 1100, 640)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	for _, want := range []string{"demo", "other", "second"} {
+		if !tt.HasText(want) {
+			t.Errorf("no %q on the tab bar; texts %q", want, tt.Texts())
+		}
+	}
+	if a.chrome.sideW != 0 || a.chrome.headerPad != 16 || a.chrome.shown != 1 {
+		t.Errorf("horizontal tabs leave chrome %+v", a.chrome)
+	}
+	if err := tt.Click("second"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.selected != "s2" {
+		t.Errorf("selected %q after a click on the tab", a.selected)
+	}
+	hidden := a.prefs.SidebarHidden
+	a.toggleSidebar()
+	if a.prefs.SidebarHidden != hidden {
+		t.Error("the sidebar toggle hid something with tabs across the top")
+	}
+	shot(t, tt, "horizontal-tabs")
+}
+
+// The tab bar in both themes, with a project folded and a color picked
+// ($KERO_SHOTS).
+func TestHorizontalTabsShots(t *testing.T) {
+	for _, dark := range []bool{false, true} {
+		a := testApp(t)
+		a.set.TabLayout = settings.TabsHorizontal
+		a.st.Projects = append(a.st.Projects, proto.Project{ID: "p2", Name: "website", Dir: "/tmp"}, proto.Project{ID: "p3", Name: "api", Dir: "/tmp"})
+		for _, id := range []string{"s2", "s3", "s4"} {
+			proj := map[string]string{"s2": "p2", "s3": "p2", "s4": "p3"}[id]
+			a.st.Sessions = append(a.st.Sessions, proto.Session{ID: id, Project: proj, Name: "session " + id,
+				Panes: []proto.Pane{{ID: "x" + id, Shell: "zsh", Dir: "/tmp", Status: proto.Idle, Progress: -1}}, Focus: "x" + id})
+		}
+		a.st.Sessions[0].Status = proto.Idle
+		a.st.Sessions[1].Status, a.st.Sessions[2].Status = proto.Waiting, proto.Working
+		a.setProjectColor("p3", "yellow")
+		a.prefs.Collapsed["p3"] = true
+		a.selected = "s2"
+		tt := ui.NewTester(a.view, 1000, 220)
+		tt.SetDark(dark)
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+		name := "tabs-light"
+		if dark {
+			name = "tabs-dark"
+		}
+		shot(t, tt, name)
+	}
+}
+
+// A project's color in the tabs is its own until the user picks one, which
+// the app keeps; the sessions of no project are grey.
+func TestProjectColor(t *testing.T) {
+	a := testApp(t)
+	first := a.projectColor("p1")
+	if first.ID == "grey" || first.ID != a.projectColor("p1").ID {
+		t.Errorf("p1's own color is %q, which is grey or changes", first.ID)
+	}
+	if a.projectColor("").ID != "grey" {
+		t.Errorf("no project is %q, want grey", a.projectColor("").ID)
+	}
+	pick := "yellow"
+	if first.ID == pick {
+		pick = "green"
+	}
+	a.setProjectColor("p1", pick)
+	if got := a.projectColor("p1").ID; got != pick {
+		t.Errorf("after picking %s p1 is %q", pick, got)
+	}
+	if got := a.projectColor("p2").ID; got == pick && a.projectColor("p2").ID != a.projectColor("p2").ID {
+		t.Errorf("a pick for p1 changed p2 to %q", got)
+	}
+	for _, col := range projectColors {
+		if colorName(col.ID) == "" {
+			t.Errorf("color %q has no name", col.ID)
+		}
+	}
+}
+
+// A tab is as wide as the window leaves it, between its least and its most,
+// and a session at rest shows no status on it.
+func TestTabWidth(t *testing.T) {
+	a := testApp(t)
+	a.set.TabLayout = settings.TabsHorizontal
+	for _, win := range []float32{400, 1100, 3000} {
+		tt := ui.NewTester(func(c *ui.Context) {
+			if w := a.tabWidth(c, ui.TitleBar{}); w < tabMinW || w > tabMaxW {
+				t.Errorf("a tab %v wide in a window %v wide, outside %d to %d", w, win, tabMinW, tabMaxW)
+			}
+			a.view(c)
+		}, int(win), 400)
+		tt.Frame()
+	}
+}
+
+// ⇧⌘B puts the tabs across the top and back, saving the choice.
+func TestToggleTabs(t *testing.T) {
+	act, ok := actions.Find("tabs.toggle")
+	if !ok || act.Title == "" || act.Menu != "View" {
+		t.Fatalf("no tabs.toggle action in the View menu: %+v", act)
+	}
+	if runtime.GOOS == "darwin" && act.Keys != "CmdOrCtrl+Shift+B" {
+		t.Errorf("tabs.toggle is bound to %q, want CmdOrCtrl+Shift+B", act.Keys)
+	}
+	if side, _ := actions.Find("sidebar.toggle"); side.Keys == act.Keys {
+		t.Errorf("tabs.toggle and sidebar.toggle share %q", act.Keys)
+	}
+	a := testApp(t)
+	if tabsHorizontal(a.set) {
+		t.Fatal("tabs are horizontal by default")
+	}
+	for i, want := range []string{settings.TabsHorizontal, settings.TabsVertical, settings.TabsHorizontal} {
+		a.run("tabs.toggle", nil)
+		if a.set.TabLayout != want || tabsHorizontal(a.set) != (want == settings.TabsHorizontal) {
+			t.Errorf("toggle %d: layout %q, horizontal %v", i+1, a.set.TabLayout, tabsHorizontal(a.set))
+		}
+		if saved := settings.Load(); saved.TabLayout != want {
+			t.Errorf("toggle %d saved layout %q", i+1, saved.TabLayout)
+		}
+	}
+}
+
+// What is chosen in Settings is in the file, and stays when the app reads it
+// again.
+func TestTabLayoutPersists(t *testing.T) {
+	a := testApp(t)
+	a.ss.page = "appearance"
+	tt := ui.NewTester(a.settingsView, 820, 700)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if err := tt.Click("Horizontal"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if saved := settings.Load(); saved.TabLayout != settings.TabsHorizontal {
+		t.Errorf("in the file: layout %q", saved.TabLayout)
+	}
+	b, _ := os.ReadFile(settings.Path())
+	if !strings.Contains(string(b), "tab-layout = horizontal") {
+		t.Errorf("the file:\n%s", b)
 	}
 }
 

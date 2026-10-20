@@ -97,6 +97,8 @@ func (a *App) run(id string, args map[string]string) {
 		a.toggleSidebar()
 	case "changes.toggle":
 		a.toggleSide(sideChanges)
+	case "tabs.toggle":
+		a.toggleTabs()
 	case "text.bigger":
 		a.zoom(1, false)
 	case "text.smaller":
@@ -163,6 +165,7 @@ var actionTitles = map[string]func() string{
 	"pane.resize.down":  locales.ActionPaneResizeDown,
 	"sidebar.toggle":    locales.ActionToggleSidebar,
 	"changes.toggle":    locales.ActionToggleChanges,
+	"tabs.toggle":       locales.ActionToggleTabs,
 	"text.bigger":       locales.ActionBigger,
 	"text.smaller":      locales.ActionSmaller,
 	"text.reset":        locales.ActionActualSize,

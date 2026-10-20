@@ -360,3 +360,26 @@ func TestPaneGap(t *testing.T) {
 		t.Errorf("an own gap of 0 is not written:\n%s", out)
 	}
 }
+
+// tab-layout is vertical until the user chooses horizontal; anything else is
+// a problem and keeps the default.
+func TestTabLayout(t *testing.T) {
+	if got := Default().TabLayout; got != TabsVertical {
+		t.Errorf("default tab layout %q", got)
+	}
+	if s, probs := parse("tab-layout = horizontal"); s.TabLayout != TabsHorizontal || len(probs) != 0 {
+		t.Errorf("horizontal: %q, problems %q", s.TabLayout, probs)
+	}
+	if s, probs := parse("tab-layout = diagonal"); s.TabLayout != TabsVertical || len(probs) != 1 {
+		t.Errorf("diagonal: %q, problems %q", s.TabLayout, probs)
+	}
+	s := Default()
+	s.TabLayout = TabsHorizontal
+	out := format(s, "")
+	if back, _ := parse(out); back.TabLayout != TabsHorizontal {
+		t.Errorf("the choice does not come back from:\n%s", out)
+	}
+	if out := format(Default(), ""); strings.Contains(out, "\ntab-layout =") {
+		t.Errorf("the default is written:\n%s", out)
+	}
+}

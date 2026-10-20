@@ -41,11 +41,12 @@ const (
 // prefs are what the app remembers between runs; the sessions themselves
 // are kerod's.
 type prefs struct {
-	Selected      string          `json:"selected,omitempty"`
-	SidebarWidth  float32         `json:"sidebarWidth,omitempty"`
-	SidebarHidden bool            `json:"sidebarHidden,omitempty"`
-	Collapsed     map[string]bool `json:"collapsed,omitempty"`
-	FontSize      float32         `json:"fontSize,omitempty"`
+	Selected      string            `json:"selected,omitempty"`
+	SidebarWidth  float32           `json:"sidebarWidth,omitempty"`
+	SidebarHidden bool              `json:"sidebarHidden,omitempty"`
+	Collapsed     map[string]bool   `json:"collapsed,omitempty"`
+	ProjectColors map[string]string `json:"projectColors,omitempty"` // by the group's key (its project id), as the tabs across the top show them
+	FontSize      float32           `json:"fontSize,omitempty"`
 	// Side is the view the side panel shows, "" while it is hidden, and
 	// SideWidth its width.
 	Side      string  `json:"side,omitempty"`
@@ -89,20 +90,21 @@ type App struct {
 	st     proto.State
 	loaded bool // a state came
 
-	prefs      prefs
-	set        settings.Settings // the user's settings: Settings' controls edit it
-	applied    settings.Settings // set, as last applied and saved
-	setWin     *mygo.Window      // the Settings window, while open
-	ss         settingsState
-	selected   string
-	terms      map[string]*termEntry
-	webs       map[string]*webEntry // browser panes' pages, by pane
-	ads        adBlock              // what their pages block
-	icons      favicons             // and the icons they show
-	lru        []string
-	refs       map[string]*ui.Handle // panes' terminals, and splits, by id
-	focus      map[string]string     // the pane the user is in, by session
-	layoutDrag struct {              // the split whose divider is dragged
+	prefs       prefs
+	revealedTab string            // the tab last scrolled into view, so that it is once, as it is chosen
+	set         settings.Settings // the user's settings: Settings' controls edit it
+	applied     settings.Settings // set, as last applied and saved
+	setWin      *mygo.Window      // the Settings window, while open
+	ss          settingsState
+	selected    string
+	terms       map[string]*termEntry
+	webs        map[string]*webEntry // browser panes' pages, by pane
+	ads         adBlock              // what their pages block
+	icons       favicons             // and the icons they show
+	lru         []string
+	refs        map[string]*ui.Handle // panes' terminals, and splits, by id
+	focus       map[string]string     // the pane the user is in, by session
+	layoutDrag  struct {              // the split whose divider is dragged
 		session, split string
 		ratio          float64 // where the pointer puts it, past its bounds
 	}
@@ -1315,7 +1317,20 @@ func (a *App) jumpToAttention() {
 	a.toast(locales.ToastNothingNeedsYou())
 }
 
+// toggleTabs puts the tabs across the top, or back down the sidebar.
+func (a *App) toggleTabs() {
+	s := a.set.Clone()
+	s.TabLayout = settings.TabsHorizontal
+	if a.set.TabLayout == settings.TabsHorizontal {
+		s.TabLayout = settings.TabsVertical
+	}
+	a.applySettings(s)
+}
+
 func (a *App) toggleSidebar() {
+	if tabsHorizontal(a.set) {
+		return // the tabs stay across the top
+	}
 	a.prefs.SidebarHidden = !a.prefs.SidebarHidden
 	a.savePrefs()
 }

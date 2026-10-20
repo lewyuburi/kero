@@ -364,6 +364,16 @@ func (msgs Messages) ActionToggleSidebar() string {
 	return Catalog.Format(msgs.locale, "actionToggleSidebar", nil)
 }
 
+// ActionToggleTabs says "Toggle Horizontal Tabs"
+// in the language the app shows.
+func ActionToggleTabs() string { return In(i18n.Locale()).ActionToggleTabs() }
+
+// ActionToggleTabs says "Toggle Horizontal Tabs"
+// in the language of msgs.
+func (msgs Messages) ActionToggleTabs() string {
+	return Catalog.Format(msgs.locale, "actionToggleTabs", nil)
+}
+
 // ActionBigger says "Bigger"
 // in the language the app shows.
 func ActionBigger() string { return In(i18n.Locale()).ActionBigger() }
@@ -2290,6 +2300,146 @@ func (msgs Messages) SetDimUnfocusedDetail() string {
 	return Catalog.Format(msgs.locale, "setDimUnfocusedDetail", nil)
 }
 
+// SetTabLayout says "Tabs"
+// in the language the app shows.
+func SetTabLayout() string { return In(i18n.Locale()).SetTabLayout() }
+
+// SetTabLayout says "Tabs"
+// in the language of msgs.
+func (msgs Messages) SetTabLayout() string {
+	return Catalog.Format(msgs.locale, "setTabLayout", nil)
+}
+
+// SetTabLayoutDetail says "Show the sessions as tabs down the side, in the sidebar, or across the top of the window, grouped by project in tinte…"
+// in the language the app shows.
+func SetTabLayoutDetail() string { return In(i18n.Locale()).SetTabLayoutDetail() }
+
+// SetTabLayoutDetail says "Show the sessions as tabs down the side, in the sidebar, or across the top of the window, grouped by project in tinte…"
+// in the language of msgs.
+func (msgs Messages) SetTabLayoutDetail() string {
+	return Catalog.Format(msgs.locale, "setTabLayoutDetail", nil)
+}
+
+// SetTabsVertical says "Vertical"
+// in the language the app shows.
+func SetTabsVertical() string { return In(i18n.Locale()).SetTabsVertical() }
+
+// SetTabsVertical says "Vertical"
+// in the language of msgs.
+func (msgs Messages) SetTabsVertical() string {
+	return Catalog.Format(msgs.locale, "setTabsVertical", nil)
+}
+
+// SetTabsHorizontal says "Horizontal"
+// in the language the app shows.
+func SetTabsHorizontal() string { return In(i18n.Locale()).SetTabsHorizontal() }
+
+// SetTabsHorizontal says "Horizontal"
+// in the language of msgs.
+func (msgs Messages) SetTabsHorizontal() string {
+	return Catalog.Format(msgs.locale, "setTabsHorizontal", nil)
+}
+
+// ProjectColor says "Color"
+// in the language the app shows.
+func ProjectColor() string { return In(i18n.Locale()).ProjectColor() }
+
+// ProjectColor says "Color"
+// in the language of msgs.
+func (msgs Messages) ProjectColor() string {
+	return Catalog.Format(msgs.locale, "projectColor", nil)
+}
+
+// ColorGrey says "Grey"
+// in the language the app shows.
+func ColorGrey() string { return In(i18n.Locale()).ColorGrey() }
+
+// ColorGrey says "Grey"
+// in the language of msgs.
+func (msgs Messages) ColorGrey() string {
+	return Catalog.Format(msgs.locale, "colorGrey", nil)
+}
+
+// ColorBlue says "Blue"
+// in the language the app shows.
+func ColorBlue() string { return In(i18n.Locale()).ColorBlue() }
+
+// ColorBlue says "Blue"
+// in the language of msgs.
+func (msgs Messages) ColorBlue() string {
+	return Catalog.Format(msgs.locale, "colorBlue", nil)
+}
+
+// ColorRed says "Red"
+// in the language the app shows.
+func ColorRed() string { return In(i18n.Locale()).ColorRed() }
+
+// ColorRed says "Red"
+// in the language of msgs.
+func (msgs Messages) ColorRed() string {
+	return Catalog.Format(msgs.locale, "colorRed", nil)
+}
+
+// ColorYellow says "Yellow"
+// in the language the app shows.
+func ColorYellow() string { return In(i18n.Locale()).ColorYellow() }
+
+// ColorYellow says "Yellow"
+// in the language of msgs.
+func (msgs Messages) ColorYellow() string {
+	return Catalog.Format(msgs.locale, "colorYellow", nil)
+}
+
+// ColorGreen says "Green"
+// in the language the app shows.
+func ColorGreen() string { return In(i18n.Locale()).ColorGreen() }
+
+// ColorGreen says "Green"
+// in the language of msgs.
+func (msgs Messages) ColorGreen() string {
+	return Catalog.Format(msgs.locale, "colorGreen", nil)
+}
+
+// ColorPink says "Pink"
+// in the language the app shows.
+func ColorPink() string { return In(i18n.Locale()).ColorPink() }
+
+// ColorPink says "Pink"
+// in the language of msgs.
+func (msgs Messages) ColorPink() string {
+	return Catalog.Format(msgs.locale, "colorPink", nil)
+}
+
+// ColorPurple says "Purple"
+// in the language the app shows.
+func ColorPurple() string { return In(i18n.Locale()).ColorPurple() }
+
+// ColorPurple says "Purple"
+// in the language of msgs.
+func (msgs Messages) ColorPurple() string {
+	return Catalog.Format(msgs.locale, "colorPurple", nil)
+}
+
+// ColorCyan says "Cyan"
+// in the language the app shows.
+func ColorCyan() string { return In(i18n.Locale()).ColorCyan() }
+
+// ColorCyan says "Cyan"
+// in the language of msgs.
+func (msgs Messages) ColorCyan() string {
+	return Catalog.Format(msgs.locale, "colorCyan", nil)
+}
+
+// ColorOrange says "Orange"
+// in the language the app shows.
+func ColorOrange() string { return In(i18n.Locale()).ColorOrange() }
+
+// ColorOrange says "Orange"
+// in the language of msgs.
+func (msgs Messages) ColorOrange() string {
+	return Catalog.Format(msgs.locale, "colorOrange", nil)
+}
+
 // SetCardGap says "Panel gap"
 // in the language the app shows.
 func SetCardGap() string { return In(i18n.Locale()).SetCardGap() }
@@ -4156,26 +4306,6 @@ func (msgs Messages) HostColorAuto() string {
 	return Catalog.Format(msgs.locale, "hostColorAuto", nil)
 }
 
-// ColorRed says "Red"
-// in the language the app shows.
-func ColorRed() string { return In(i18n.Locale()).ColorRed() }
-
-// ColorRed says "Red"
-// in the language of msgs.
-func (msgs Messages) ColorRed() string {
-	return Catalog.Format(msgs.locale, "colorRed", nil)
-}
-
-// ColorOrange says "Orange"
-// in the language the app shows.
-func ColorOrange() string { return In(i18n.Locale()).ColorOrange() }
-
-// ColorOrange says "Orange"
-// in the language of msgs.
-func (msgs Messages) ColorOrange() string {
-	return Catalog.Format(msgs.locale, "colorOrange", nil)
-}
-
 // ColorAmber says "Amber"
 // in the language the app shows.
 func ColorAmber() string { return In(i18n.Locale()).ColorAmber() }
@@ -4186,16 +4316,6 @@ func (msgs Messages) ColorAmber() string {
 	return Catalog.Format(msgs.locale, "colorAmber", nil)
 }
 
-// ColorGreen says "Green"
-// in the language the app shows.
-func ColorGreen() string { return In(i18n.Locale()).ColorGreen() }
-
-// ColorGreen says "Green"
-// in the language of msgs.
-func (msgs Messages) ColorGreen() string {
-	return Catalog.Format(msgs.locale, "colorGreen", nil)
-}
-
 // ColorTeal says "Teal"
 // in the language the app shows.
 func ColorTeal() string { return In(i18n.Locale()).ColorTeal() }
@@ -4204,36 +4324,6 @@ func ColorTeal() string { return In(i18n.Locale()).ColorTeal() }
 // in the language of msgs.
 func (msgs Messages) ColorTeal() string {
 	return Catalog.Format(msgs.locale, "colorTeal", nil)
-}
-
-// ColorBlue says "Blue"
-// in the language the app shows.
-func ColorBlue() string { return In(i18n.Locale()).ColorBlue() }
-
-// ColorBlue says "Blue"
-// in the language of msgs.
-func (msgs Messages) ColorBlue() string {
-	return Catalog.Format(msgs.locale, "colorBlue", nil)
-}
-
-// ColorPurple says "Purple"
-// in the language the app shows.
-func ColorPurple() string { return In(i18n.Locale()).ColorPurple() }
-
-// ColorPurple says "Purple"
-// in the language of msgs.
-func (msgs Messages) ColorPurple() string {
-	return Catalog.Format(msgs.locale, "colorPurple", nil)
-}
-
-// ColorPink says "Pink"
-// in the language the app shows.
-func ColorPink() string { return In(i18n.Locale()).ColorPink() }
-
-// ColorPink says "Pink"
-// in the language of msgs.
-func (msgs Messages) ColorPink() string {
-	return Catalog.Format(msgs.locale, "colorPink", nil)
 }
 
 // HostNotConnected says "Not connected to {host}"
