@@ -1281,3 +1281,80 @@ func TestLooseSessionsInTabs(t *testing.T) {
 		t.Errorf("the session of no project is at %v, after the project's name at %v", mo.X, demo.X)
 	}
 }
+
+// Advanced shows one row for the flags, which opens their page: a list with a
+// search and a switch for only the changed, and a way back.
+func TestFlagsPage(t *testing.T) {
+	a := testApp(t)
+	a.ss.page = "advanced"
+	tt := ui.NewTester(a.settingsView, 820, 760)
+	frame := func(name string) {
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+		shot(t, tt, name)
+	}
+	frame("flags-entry")
+	if !tt.HasText("All flags") || tt.HasText("custom-spacing") {
+		t.Fatalf("Advanced: texts %q", tt.Texts())
+	}
+	if err := tt.Click("Show flags"); err != nil {
+		t.Fatal(err)
+	}
+	frame("flags-list")
+	for _, f := range settings.Flags {
+		if !tt.HasText(f.ID) {
+			t.Errorf("no row for %s; texts %q", f.ID, tt.Texts())
+		}
+	}
+	if !tt.HasText("Back to Advanced") && !tt.HasText("Advanced") {
+		t.Errorf("no way back; texts %q", tt.Texts())
+	}
+
+	// The search narrows the list to what it names.
+	a.ss.flagFilter = "tabs"
+	frame("flags-search")
+	if !tt.HasText("horizontal-tabs") || tt.HasText("custom-spacing") {
+		t.Errorf("search tabs: texts %q", tt.Texts())
+	}
+	a.ss.flagFilter = "zzz"
+	frame("flags-none")
+	if !tt.HasText("No flag matches.") {
+		t.Errorf("search zzz: texts %q", tt.Texts())
+	}
+	a.ss.flagFilter = ""
+
+	// Only the changed: none, then the one the user chose.
+	a.ss.flagsChanged = true
+	frame("flags-changed-none")
+	if tt.HasText("custom-spacing") {
+		t.Error("only changed, with none changed, lists a flag")
+	}
+	s := a.set.Clone()
+	s.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
+	a.applySettings(s)
+	frame("flags-changed-one")
+	if !tt.HasText("custom-spacing") || tt.HasText("horizontal-tabs") {
+		t.Errorf("only changed, with one changed: texts %q", tt.Texts())
+	}
+	a.ss.flagsChanged = false
+
+	// Back to Advanced, by its button; and by clicking Advanced in the sidebar.
+	if err := tt.Click("Advanced"); err != nil {
+		t.Fatal(err)
+	}
+	frame("flags-back")
+	if a.ss.flagsOpen {
+		t.Error("the back button left the flags open")
+	}
+	a.ss.flagsOpen = true
+	frame("flags-reopen")
+	a.ss.flagsOpen = true
+	if err := tt.Click("Advanced"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.ss.flagsOpen {
+		t.Error("Advanced in the sidebar left the flags open")
+	}
+}

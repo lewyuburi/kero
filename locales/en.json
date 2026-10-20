@@ -386,6 +386,30 @@
   "setCustomSpacingDetail": "Set the space around the panels and between panes in Appearance, with the header and window controls following. Made on macOS; not yet looked at on other platforms.",
   "setFlags": "Experimental flags",
   "setFlagsDetail": "Features still being tried. Default follows the platform; a flag you set stays as you set it.",
+  "setFlagsRow": "All flags",
+  "setFlagsSummary": "{total} flags, {changed} changed",
+  "@setFlagsSummary": {
+    "placeholders": {
+      "changed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "setFlagsOpen": "Show flags",
+  "setFlagsBack": "Back to {page}",
+  "@setFlagsBack": {
+    "placeholders": {
+      "page": {
+        "type": "String"
+      }
+    }
+  },
+  "setFlagsSearch": "Search flags",
+  "setFlagsChangedOnly": "Show only changed flags",
+  "setFlagsNone": "No flag matches.",
   "setFlagDefaultOn": "Default (enabled)",
   "setFlagDefaultOff": "Default (disabled)",
   "setFlagOn": "Enabled",

@@ -56,6 +56,9 @@ type settingsState struct {
 	recording    string // the action whose shortcut is being typed
 	recordRef    ui.Handle
 	filter       string // the keyboard page's search
+	flagsOpen    bool   // Advanced shows the flags' page
+	flagFilter   string // its search
+	flagsChanged bool   // and whether it lists only the flags the user chose
 	query        string // the sidebar's search, of every page
 	searchRef    ui.Handle
 	revealed     string // the query and page the search last scrolled to
@@ -374,9 +377,13 @@ func (a *App) settingsNav(c *ui.Context, pal *palette, p settingsPage) {
 		bg = pal.rowHover
 	}
 	item.Background(item.AnimateColor("bg", bg, ui.Animation{Duration: 110 * time.Millisecond}))
-	if item.Pressed() && !sel {
-		a.ss.page = p.id
-		a.setRecording("")
+	if item.Pressed() {
+		// A page's own sub-page goes with the click: the page itself again.
+		a.ss.flagsOpen = false
+		if !sel {
+			a.ss.page = p.id
+			a.setRecording("")
+		}
 	}
 	item.Children(func() {
 		ic := ui.Icon(c, p.icon).Size(15, 15).TextColor(pal.textMuted)
@@ -1022,6 +1029,10 @@ func codeBlock(c *ui.Context, pal *palette, code string) {
 }
 
 func (a *App) advancedPage(c *ui.Context, pal *palette) {
+	if a.ss.flagsOpen {
+		a.flagsPage(c, pal)
+		return
+	}
 	settingsGroup(c, pal, locales.SetConfiguration(), locales.SetConfigurationDetail(), func() {
 		settingRow(c, pal, locales.SetConfigFile(), proto.ShortDir(settings.Path()), func() {
 			if button(c, "reveal-config", locales.CommonShowIn(fileManager()), "", false, pal) {
@@ -1039,18 +1050,7 @@ func (a *App) advancedPage(c *ui.Context, pal *palette) {
 			})
 		}
 	})
-	settingsGroup(c, pal, locales.SetFlags(), locales.SetFlagsDetail(), func() {
-		for _, f := range settings.Flags {
-			name, detail := flagText(f.ID)
-			settingRow(c, pal, name, detail, func() {
-				v := a.set.FlagState(f.ID)
-				popup(c, "flag-"+f.ID, &v, []string{settings.StateDefault, settings.StateEnabled, settings.StateDisabled}, flagStateName(f.ID), 150, pal)
-				if v != a.set.FlagState(f.ID) {
-					a.set.SetFlag(f.ID, v)
-				}
-			})
-		}
-	})
+	a.flagsEntry(c, pal)
 	settingsGroup(c, pal, locales.SetBackgroundService(), locales.SetBackgroundServiceDetail(), func() {
 		settingRow(c, pal, "kerod", a.ss.service, func() {
 			if button(c, "svc-restart", locales.CommonRestart(), "", false, pal) {

@@ -2500,6 +2500,78 @@ func (msgs Messages) SetFlagsDetail() string {
 	return Catalog.Format(msgs.locale, "setFlagsDetail", nil)
 }
 
+// SetFlagsRow says "All flags"
+// in the language the app shows.
+func SetFlagsRow() string { return In(i18n.Locale()).SetFlagsRow() }
+
+// SetFlagsRow says "All flags"
+// in the language of msgs.
+func (msgs Messages) SetFlagsRow() string {
+	return Catalog.Format(msgs.locale, "setFlagsRow", nil)
+}
+
+// SetFlagsSummary says "{total} flags, {changed} changed"
+// in the language the app shows.
+func SetFlagsSummary(changed int, total int) string {
+	return In(i18n.Locale()).SetFlagsSummary(changed, total)
+}
+
+// SetFlagsSummary says "{total} flags, {changed} changed"
+// in the language of msgs.
+func (msgs Messages) SetFlagsSummary(changed int, total int) string {
+	return Catalog.Format(msgs.locale, "setFlagsSummary", map[string]any{"changed": changed, "total": total})
+}
+
+// SetFlagsOpen says "Show flags"
+// in the language the app shows.
+func SetFlagsOpen() string { return In(i18n.Locale()).SetFlagsOpen() }
+
+// SetFlagsOpen says "Show flags"
+// in the language of msgs.
+func (msgs Messages) SetFlagsOpen() string {
+	return Catalog.Format(msgs.locale, "setFlagsOpen", nil)
+}
+
+// SetFlagsBack says "Back to {page}"
+// in the language the app shows.
+func SetFlagsBack(page string) string { return In(i18n.Locale()).SetFlagsBack(page) }
+
+// SetFlagsBack says "Back to {page}"
+// in the language of msgs.
+func (msgs Messages) SetFlagsBack(page string) string {
+	return Catalog.Format(msgs.locale, "setFlagsBack", map[string]any{"page": page})
+}
+
+// SetFlagsSearch says "Search flags"
+// in the language the app shows.
+func SetFlagsSearch() string { return In(i18n.Locale()).SetFlagsSearch() }
+
+// SetFlagsSearch says "Search flags"
+// in the language of msgs.
+func (msgs Messages) SetFlagsSearch() string {
+	return Catalog.Format(msgs.locale, "setFlagsSearch", nil)
+}
+
+// SetFlagsChangedOnly says "Show only changed flags"
+// in the language the app shows.
+func SetFlagsChangedOnly() string { return In(i18n.Locale()).SetFlagsChangedOnly() }
+
+// SetFlagsChangedOnly says "Show only changed flags"
+// in the language of msgs.
+func (msgs Messages) SetFlagsChangedOnly() string {
+	return Catalog.Format(msgs.locale, "setFlagsChangedOnly", nil)
+}
+
+// SetFlagsNone says "No flag matches."
+// in the language the app shows.
+func SetFlagsNone() string { return In(i18n.Locale()).SetFlagsNone() }
+
+// SetFlagsNone says "No flag matches."
+// in the language of msgs.
+func (msgs Messages) SetFlagsNone() string {
+	return Catalog.Format(msgs.locale, "setFlagsNone", nil)
+}
+
 // SetFlagDefaultOn says "Default (enabled)"
 // in the language the app shows.
 func SetFlagDefaultOn() string { return In(i18n.Locale()).SetFlagDefaultOn() }
