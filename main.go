@@ -115,7 +115,7 @@ func runApp() {
 		a.savePrefs()
 	})
 	mygo.App.WhenReady(func() {
-		a.win = mygo.NewWindow(framed(mygo.WindowOptions{
+		a.win = mygo.NewWindow(framed(barMid(gapOf(a.set)), mygo.WindowOptions{
 			Title:     "Kero",
 			Width:     1180,
 			Height:    760,

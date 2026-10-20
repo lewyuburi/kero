@@ -50,7 +50,7 @@ var ownControls = runtime.GOOS != "darwin"
 // framed sets a window's frame: the title bar hidden, under the traffic
 // lights on macOS and without its buttons elsewhere (ownControls), which
 // keeps the edges that resize the window.
-func framed(o mygo.WindowOptions) mygo.WindowOptions {
+func framed(mid float32, o mygo.WindowOptions) mygo.WindowOptions {
 	if ownControls {
 		o.TitleBarStyle = mygo.TitleBarHidden
 		o.HideWindowButtons = true
@@ -60,13 +60,34 @@ func framed(o mygo.WindowOptions) mygo.WindowOptions {
 		return o
 	}
 	o.TitleBarStyle = mygo.TitleBarHiddenInset
-	o.TitleBarHeight = topBar
+	o.TitleBarHeight = int(2 * mid)
 	// The lights' buttons are 16 tall, and MyGo puts them a DIP above the
 	// position: centered on barMid, as the sidebar's buttons and the
 	// panes' headers are.
-	o.TrafficLightPosition = &mygo.Point{X: 18, Y: barMid - 7}
+	o.TrafficLightPosition = &mygo.Point{X: lightsX, Y: lightsY(mid)}
 	return o
 }
+
+// windowRadius is the corner of the window the cards sit in, as the system
+// rounds it. On macOS it is 16, measured on a window like Kero's (hidden
+// inset title bar); Windows 11 and GNOME draw 8 and 12 by their documentation,
+// and neither was measured here.
+var windowRadius = func() float32 {
+	switch runtime.GOOS {
+	case "darwin":
+		return 16
+	case "windows":
+		return 8
+	}
+	return 12
+}()
+
+// lightsX is where the traffic lights start, from the window's left.
+const lightsX = 18
+
+// lightsY is where they start from its top, for a bar whose line is mid: the
+// buttons are 16 tall, and MyGo puts them a DIP above the position.
+func lightsY(mid float32) int { return int(mid) - 7 }
 
 var (
 	minimizeIcon = icon(`<path d="M3.5 8h9"/>`)

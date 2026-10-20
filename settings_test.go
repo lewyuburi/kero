@@ -252,14 +252,16 @@ func TestScrollEdgeShots(t *testing.T) {
 		tt.Frame()
 		tt.Advance(time.Second)
 		tt.Frame()
+		gap := gapOf(settings.Default())
+		barEdge := int(gap + headerH)
 		// The bar's bottom edge, over the card: no hairline at the top of
 		// the page, one once scrolled.
 		edgeRow := func() [3]uint8 {
-			c := tt.Image().RGBAAt(600, cardGap+headerH-1)
+			c := tt.Image().RGBAAt(600, barEdge-1)
 			return [3]uint8{c.R, c.G, c.B}
 		}
 		top := edgeRow()
-		card := tt.Image().RGBAAt(600, cardGap+headerH+2)
+		card := tt.Image().RGBAAt(600, barEdge+2)
 		if top != [3]uint8{card.R, card.G, card.B} {
 			t.Errorf("dark %v: a hairline at the top of the page: %v over a card of %v", dark, top, card)
 		}

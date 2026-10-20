@@ -76,6 +76,24 @@ func stringKey(name, doc string, f func(*Settings) *string) key {
 		set: func(s *Settings, v []string) error { *f(s) = v[len(v)-1]; return nil }}
 }
 
+// intKey is a whole number from lo to hi: a word, a fraction, NaN or a number
+// out of range is a problem, and the setting keeps its default.
+func intKey(name, doc string, lo, hi int, get func(*Settings) int, set func(*Settings, int)) key {
+	return key{name: name, doc: doc,
+		get: func(s *Settings) []string { return []string{strconv.Itoa(get(s))} },
+		set: func(s *Settings, v []string) error {
+			n, err := strconv.Atoi(v[len(v)-1])
+			if err != nil {
+				return fmt.Errorf("%q is not a whole number", v[len(v)-1])
+			}
+			if n < lo || n > hi {
+				return fmt.Errorf("%d is not %d to %d", n, lo, hi)
+			}
+			set(s, n)
+			return nil
+		}}
+}
+
 func numberKey(name, doc string, get func(*Settings) float64, set func(*Settings, float64)) key {
 	return key{name: name, doc: doc,
 		get: func(s *Settings) []string { return []string{strconv.FormatFloat(get(s), 'f', -1, 64)} },
@@ -121,6 +139,30 @@ var keys = []key{
 	mapChoice("background", "the window's wash", func(s *Settings) *string { return &s.Background },
 		[]string{"petal", "mist", "meadow", "dusk", "plain"}, []string{"rex", "mist", "meadow", "dusk", "plain"}),
 	boolKey("window-translucent", "let the desktop show through the window", func(s *Settings) *bool { return &s.Vibrancy }),
+	intKey("card-gap", "points between the window's edge and the panels, 0 to 12; at 0 the panels are flush with the window and take its corners", 0, MaxCardGap, func(s *Settings) int { return s.CardGap }, func(s *Settings, n int) { s.CardGap = n }),
+	{name: "pane-gap", doc: "points between split panes, 0 to 16, or same to follow card-gap; at 0 the corners that touch are square",
+		get: func(s *Settings) []string {
+			if s.PaneGapSame {
+				return []string{"same"}
+			}
+			return []string{strconv.Itoa(s.PaneGap)}
+		},
+		set: func(s *Settings, v []string) error {
+			val := v[len(v)-1]
+			if val == "same" {
+				s.PaneGapSame = true
+				return nil
+			}
+			n, err := strconv.Atoi(val)
+			if err != nil {
+				return fmt.Errorf("%q is neither same nor a whole number", val)
+			}
+			if n < 0 || n > MaxPaneGap {
+				return fmt.Errorf("%d is not 0 to %d", n, MaxPaneGap)
+			}
+			s.PaneGapSame, s.PaneGap = false, n
+			return nil
+		}},
 
 	stringKey("font-family", "the terminals' font: empty for JetBrains Mono Nerd Font, which Kero carries; monospace for the system's", func(s *Settings) *string { return &s.FontFamily }),
 	numberKey("font-size", "in points", func(s *Settings) float64 { return float64(s.FontSize) }, func(s *Settings, n float64) { s.FontSize = float32(n) }),

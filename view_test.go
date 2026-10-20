@@ -19,6 +19,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"kero/internal/proto"
+	"kero/internal/settings"
 
 	"kero/locales"
 )
@@ -120,7 +121,7 @@ func TestSidebarAnimationMonotonic(t *testing.T) {
 		prevX := float32(-1)
 		prevEdge := float32(-1)
 		for i := 0; i <= 20000; i++ {
-			ch := chromeFor(float32(i)/20000, width, bar)
+			ch := chromeFor(float32(i)/20000, width, 8, bar)
 			x := ch.sideW + ch.mainPad + ch.headerPad // the title's left, in the window
 			edge := ch.sideW + ch.mainPad             // the card's left edge
 			for _, v := range []float32{ch.sideW, ch.mainPad, ch.headerPad} {
@@ -136,10 +137,10 @@ func TestSidebarAnimationMonotonic(t *testing.T) {
 			}
 			prevX, prevEdge = x, edge
 		}
-		if ch := chromeFor(1, width, bar); ch.headerPad != 16 || ch.mainPad != 0 || ch.sideW != width {
+		if ch := chromeFor(1, width, 8, bar); ch.headerPad != 16 || ch.mainPad != 0 || ch.sideW != width {
 			t.Errorf("width %v shown: %+v", width, ch)
 		}
-		if ch := chromeFor(0, width, bar); ch.sideW != 0 || ch.mainPad != cardGap {
+		if ch := chromeFor(0, width, 8, bar); ch.sideW != 0 || ch.mainPad != 8 {
 			t.Errorf("width %v hidden: %+v", width, ch)
 		}
 	}
@@ -152,7 +153,7 @@ func TestSidebarAnimationNoHolds(t *testing.T) {
 	frames := int(sidebarMotion.Duration / (time.Second / 60))
 	prev := float32(-1)
 	for i := 0; i <= frames; i++ {
-		w := chromeFor(ease(float32(i)/float32(frames)), 268, ui.TitleBar{}).sideW
+		w := chromeFor(ease(float32(i)/float32(frames)), 268, 8, ui.TitleBar{}).sideW
 		if w == prev && w != 268 {
 			t.Errorf("frame %d: the sidebar held at %v before landing", i, w)
 		}
@@ -486,6 +487,61 @@ find:
 	}
 }
 
+// The cards' corners: the default gap keeps the 14 they always had, none
+// takes the window's own, and a wide gap does not square them.
+func TestCardRadius(t *testing.T) {
+	for gap, want := range map[float32]float32{0: windowRadius, 8: defaultRadius, 4: (windowRadius + defaultRadius) / 2} {
+		if got := cardRadius(gap); got != want {
+			t.Errorf("cardRadius(%v) = %v, want %v", gap, got, want)
+		}
+	}
+	if got := cardRadius(100); got != minRadius {
+		t.Errorf("cardRadius(100) = %v, want %v", got, float32(minRadius))
+	}
+}
+
+// A header keeps its height whatever the gap, and its middle is the bar's
+// line, which the sidebar's bar centers on too: at the default gap, the 30
+// the bar always had. With no gap the cards touch the window's edge,
+// sidebar shown or not.
+func TestCardGapLayout(t *testing.T) {
+	for _, gap := range []float32{0, 4, 8, settings.MaxCardGap} {
+		if mid := gap + headerH/2; mid != barMid(gap) || topBar(gap) != 2*mid {
+			t.Errorf("gap %v: header centered on %v, bar on %v, top bar %v", gap, mid, barMid(gap), topBar(gap))
+		}
+	}
+	if barMid(settings.DefaultCardGap) != 30 {
+		t.Errorf("the bar's line at the default gap is %v, want 30", barMid(settings.DefaultCardGap))
+	}
+	for _, p := range []float32{0, 0.5, 1} {
+		if ch := chromeFor(p, 268, 0, ui.TitleBar{}); ch.mainPad != 0 {
+			t.Errorf("no gap, sidebar at %v: the cards' left padding is %v, want 0", p, ch.mainPad)
+		}
+	}
+}
+
+// Panes follow the panel gap unless told otherwise, and the corners where
+// they meet are as round as their gap: square with none.
+func TestPaneGap(t *testing.T) {
+	s := settings.Default()
+	s.CardGap = 0
+	if got := paneGapOf(s); got != 0 {
+		t.Errorf("panes follow a panel gap of 0 and have %v", got)
+	}
+	s.PaneGapSame, s.PaneGap = false, 6
+	if got := paneGapOf(s); got != 6 {
+		t.Errorf("an own pane gap of 6 is %v", got)
+	}
+	for gap, want := range map[float32]float32{0: 0, 4: 7, settings.DefaultPaneGap: defaultRadius} {
+		if got := paneRadius(gap, defaultRadius); got != want {
+			t.Errorf("paneRadius(%v) = %v, want %v", gap, got, want)
+		}
+	}
+	if got := paneRadius(8, 5); got != 5 {
+		t.Errorf("a pane's corner %v is rounder than the card's 5", got)
+	}
+}
+
 // A split top to bottom, with one side by side inside it, gives every
 // split element a key of its own: MyGo panics on two elements with one key
 // under one parent, as when a column split made a Row before its Column.
@@ -759,5 +815,117 @@ func TestLooseSessionsSetting(t *testing.T) {
 	}
 	if !tt.HasText("Sessions without a project") {
 		t.Errorf("no row in General; texts %q", tt.Texts())
+	}
+}
+
+// With no gap between panes, the corners that touch are square and the
+// window's stay the card's.
+func TestPaneCorners(t *testing.T) {
+	a := testApp(t)
+	a.set.PaneGapSame, a.set.PaneGap = false, 0
+	a.chrome.gap = 8
+	// the left of two panes side by side: a window corner at the top left
+	// and bottom left, a neighbor on the right
+	got := a.paneCorners(true, true, false, true)
+	want := [4]float32{14, 0, 0, 14}
+	if got != want {
+		t.Errorf("left pane's corners %v, want %v", got, want)
+	}
+	got = a.paneCorners(true, true, true, true)
+	if want := [4]float32{14, 14, 14, 14}; got != want {
+		t.Errorf("a lone pane's corners %v, want %v", got, want)
+	}
+}
+
+// panesTester shows a session's panes with the tabs and gaps for a test: no
+// gap between the cards and the window's edge or between the panes, the
+// sidebar hidden, and each pane's card bounds read after every frame.
+func panesTester(t *testing.T, direction string) (*App, *ui.Tester, map[string]ui.Rect) {
+	t.Helper()
+	a := testApp(t)
+	a.set.CardGap, a.set.PaneGapSame, a.set.PaneGap = 0, false, 0
+	a.prefs.SidebarHidden = true
+	var l *proto.Layout
+	a.st.Sessions[0].Layout = l.Split("a", "b", direction, 0)
+	rects := map[string]ui.Rect{}
+	tt := ui.NewTester(func(c *ui.Context) {
+		a.view(c)
+		for _, id := range []string{"a", "b"} {
+			rects[id] = a.paneRef("card-" + id).Bounds(c)
+		}
+	}, 900, 600)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	return a, tt, rects
+}
+
+// With the panes touching, a drag at their edge resizes them: the strip over
+// it takes the place of the gap.
+func TestTouchingPanesResize(t *testing.T) {
+	for _, direction := range []string{"right", "down"} {
+		a, tt, rects := panesTester(t, direction)
+		l := a.st.Sessions[0].Layout
+		before := l.Ratio
+		first := rects["a"]
+		x, y := first.X+first.W/2, first.Y+first.H/2
+		to := [2]float32{x, y}
+		if direction == "right" {
+			x, to = first.X+first.W, [2]float32{first.X + first.W + 90, y}
+			y, to[1] = first.Y+first.H/2, y
+		} else {
+			y, to = first.Y+first.H, [2]float32{x, first.Y + first.H + 70}
+		}
+		tt.Move(x, y)
+		tt.Frame()
+		tt.Press(x, y)
+		tt.Frame()
+		tt.Move(to[0], to[1])
+		tt.Frame()
+		tt.Release(to[0], to[1])
+		tt.Frame()
+		if l.Ratio <= before {
+			t.Errorf("%s: a drag at the edge left the ratio at %v, was %v", direction, l.Ratio, before)
+		}
+	}
+}
+
+// With the panes touching, the corners where they meet are square and the
+// others, at the window's edges, are rounded, in a column as in a row. The
+// pane in focus is opaque, so its corners show against its center.
+func TestTouchingPanesCorners(t *testing.T) {
+	corners := map[string]func(ui.Rect) (float32, float32){
+		"top left":     func(r ui.Rect) (float32, float32) { return r.X + 1, r.Y + 1 },
+		"top right":    func(r ui.Rect) (float32, float32) { return r.X + r.W - 2, r.Y + 1 },
+		"bottom left":  func(r ui.Rect) (float32, float32) { return r.X + 1, r.Y + r.H - 2 },
+		"bottom right": func(r ui.Rect) (float32, float32) { return r.X + r.W - 2, r.Y + r.H - 2 },
+	}
+	// The corners that meet the other pane, by direction and the pane in focus.
+	meets := map[[2]string][]string{
+		{"right", "a"}: {"top right", "bottom right"},
+		{"right", "b"}: {"top left", "bottom left"},
+		{"down", "a"}:  {"bottom left", "bottom right"},
+		{"down", "b"}:  {"top left", "top right"},
+	}
+	for _, direction := range []string{"right", "down"} {
+		for _, focus := range []string{"a", "b"} {
+			a, tt, rects := panesTester(t, direction)
+			a.st.Sessions[0].Focus = focus
+			tt.Frame()
+			tt.Advance(time.Second)
+			tt.Frame()
+			img, card := tt.Image(), rects[focus]
+			mid := img.RGBAAt(int(card.X+card.W/2), int(card.Y+card.H/2))
+			touching := map[string]bool{}
+			for _, name := range meets[[2]string{direction, focus}] {
+				touching[name] = true
+			}
+			for name, at := range corners {
+				x, y := at(card)
+				if square := img.RGBAAt(int(x), int(y)) == mid; square != touching[name] {
+					t.Errorf("%s, %s in focus, %s corner: square %v, want %v", direction, focus, name, square, touching[name])
+				}
+			}
+		}
 	}
 }

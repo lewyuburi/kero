@@ -16,14 +16,9 @@ import (
 )
 
 const (
-	// barMid is the line the title bar's contents center on: the traffic
-	// lights, the sidebar's buttons, the panes' headers. topBar is the
-	// sidebar's title bar, centered on it, and headerH a header of a card,
-	// which starts cardGap down, centered on it too.
-	barMid  = 30
-	topBar  = 2 * barMid
-	headerH = 2 * (barMid - cardGap)
-	cardGap = 8 // around the card
+	// headerH is the height of a card's header, whatever the gap around the
+	// card: a gap moves the card, not the header's own room.
+	headerH = 44
 	rowH    = 34
 	// rowInset is where a sidebar row's text starts: a session's name and
 	// its group's.
@@ -34,11 +29,54 @@ const (
 	// at every refresh of the display keeps the whole window drawing for as
 	// long as an agent works.
 	ringStep = 33 * time.Millisecond
+	// leadGap is the room after the traffic lights.
+	leadGap = 8
+
+	// defaultRadius is a card's corner at the default gap, and minRadius
+	// the least one gets.
+	defaultRadius = 14
+	minRadius     = 4
 )
 
 // looseOn tells that a session may be in no project: with the loose-sessions
 // setting on.
 func looseOn(s settings.Settings) bool { return s.LooseSessions }
+
+// gapOf is the space around the cards: the setting, in points.
+func gapOf(s settings.Settings) float32 {
+	return float32(min(max(s.CardGap, 0), settings.MaxCardGap))
+}
+
+// barMid is the line the title bar's contents center on: the traffic
+// lights, the sidebar's buttons, the panes' headers, which start a gap down
+// and are headerH tall. At the default gap it is 30, as it always was.
+func barMid(gap float32) float32 { return gap + headerH/2 }
+
+// topBar is the sidebar's title bar, centered on barMid.
+func topBar(gap float32) float32 { return 2 * barMid(gap) }
+
+// paneGapOf is the space between split panes: the cards' gap or its own.
+func paneGapOf(s settings.Settings) float32 {
+	if s.PaneGapSame {
+		return gapOf(s)
+	}
+	return float32(min(max(s.PaneGap, 0), settings.MaxPaneGap))
+}
+
+// paneRadius rounds a corner of a pane that touches another, which a gap
+// of the default size leaves as round as the card's, and none leaves square.
+func paneRadius(gap, outer float32) float32 {
+	return min(outer, defaultRadius*gap/settings.DefaultPaneGap)
+}
+
+// cardRadius rounds a card to the window's corner: with no gap, the window's
+// own, so that a card in the corner leaves nothing of the wash showing;
+// from there it moves to defaultRadius at the default gap, and on past it,
+// as a wider gap asks of a corner that is farther in.
+func cardRadius(gap float32) float32 {
+	t := gap / settings.DefaultCardGap
+	return max(windowRadius+(defaultRadius-windowRadius)*t, minRadius)
+}
 
 // chrome is where the sidebar's animation puts things, in whole pixels so
 // that edges stay crisp. Each is rounded once, from one progress quantized
@@ -46,6 +84,7 @@ func looseOn(s settings.Settings) bool { return s.LooseSessions }
 // they would step at different frames, and a title, their sum, would
 // shake by a pixel as the spring settles.
 type chrome struct {
+	gap       float32 // around the cards, from the setting
 	shown     float32 // the sidebar's progress, 0 hidden to 1 shown
 	sideW     float32 // the sidebar's width as shown
 	mainPad   float32 // the left padding of the cards' column
@@ -56,32 +95,32 @@ type chrome struct {
 // the sidebar hides, in the header's coordinates, so that they stay where
 // they are in the window, after the traffic lights, as the card slides.
 func (ch chrome) buttonsLeft(bar ui.TitleBar) float32 {
-	return lead(bar) - (ch.sideW + ch.mainPad)
+	return lead(bar, ch.gap) - (ch.sideW + ch.mainPad)
 }
 
 // lead is where the sidebar's buttons start in the window, with the sidebar
 // shown or not: after the traffic lights on macOS; elsewhere inside the
 // card's edge, which they come over as the sidebar hides.
-func lead(bar ui.TitleBar) float32 {
+func lead(bar ui.TitleBar, gap float32) float32 {
 	if ownControls {
-		return bar.Left + 2*cardGap
+		return bar.Left + gap + leadGap
 	}
-	return bar.Left + cardGap
+	return bar.Left + leadGap
 }
 
 var sidebarMotion = ui.Animation{Duration: 260 * time.Millisecond, Ease: ui.CubicBezier(0.25, 1, 0.5, 1)}
 
-func chromeFor(progress, width float32, bar ui.TitleBar) chrome {
+func chromeFor(progress, width, gap float32, bar ui.TitleBar) chrome {
 	round := func(v float32) float32 { return float32(math.Round(float64(v))) }
 	w := round(width * min(max(progress, 0), 1))
 	s := w / width
-	pad := round(cardGap * (1 - s))
+	pad := round(gap * (1 - s))
 	// Where the header's title starts in the window, rounded once: after
 	// the traffic lights and the sidebar's buttons with the sidebar
 	// hidden, 16 into the card with it shown.
-	hidden, shown := lead(bar)+16+60, width+16
+	hidden, shown := lead(bar, gap)+16+60, width+16
 	x := round(hidden + (shown-hidden)*s)
-	return chrome{shown: s, sideW: w, mainPad: pad, headerPad: x - w - pad}
+	return chrome{gap: gap, shown: s, sideW: w, mainPad: pad, headerPad: x - w - pad}
 }
 
 func b2f(b bool) float32 {
@@ -108,7 +147,7 @@ func (a *App) view(c *ui.Context) {
 	// frame, which whole pixels turn into hops and holds, a shake as it
 	// settles. This one lands in about 13 frames, moving in every one.
 	progress := row.AnimateTo("sidebar", b2f(!a.prefs.SidebarHidden), sidebarMotion)
-	a.chrome = chromeFor(progress, a.prefs.SidebarWidth, bar)
+	a.chrome = chromeFor(progress, a.prefs.SidebarWidth, gapOf(a.set), bar)
 	shown := a.chrome.shown
 	row.Children(func() {
 		w := a.chrome.sideW
@@ -118,7 +157,7 @@ func (a *App) view(c *ui.Context) {
 				Opacity(0.4 + 0.6*shown).Children(func() { a.sidebar(c, pal, bar) })
 		})
 		// The gaps around the cards move the window too.
-		main := ui.Column(c).Grow(1).MinWidth(0).Padding(cardGap, cardGap, cardGap, a.chrome.mainPad).DragWindow()
+		main := ui.Column(c).Grow(1).MinWidth(0).Padding(a.chrome.gap, a.chrome.gap, a.chrome.gap, a.chrome.mainPad).DragWindow()
 		main.Children(func() {
 			if shown > 0.01 {
 				a.resizeHandle(c, pal)
@@ -241,7 +280,7 @@ func kbd(c *ui.Context, pal *palette, keys string) {
 // --- the sidebar ---
 
 func (a *App) sidebar(c *ui.Context, pal *palette, bar ui.TitleBar) {
-	ui.Row(c).Height(topBar).Shrink(0).AlignItems(ui.Center).Padding(0, 12, 0, lead(bar)).Gap(2).DragWindow().Children(func() {
+	ui.Row(c).Height(topBar(a.chrome.gap)).Shrink(0).AlignItems(ui.Center).Padding(0, 12, 0, lead(bar, a.chrome.gap)).Gap(2).DragWindow().Children(func() {
 		// After the traffic lights on macOS, at the right; elsewhere the
 		// window controls are at the right, and the buttons at the left,
 		// where they stay as the sidebar hides (chrome.buttonsLeft).
@@ -777,7 +816,7 @@ func (a *App) card(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32) 
 		return
 	}
 	// No session: one card, for what the app has to say.
-	card := raised(ui.Column(c).Grow(1).MinHeight(0).Radius(14).Background(pal.card), pal).Clip()
+	card := raised(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(a.chrome.gap)).Background(pal.card), pal).Clip()
 	card.Children(func() {
 		left := a.chrome.headerPad
 		ui.Row(c).Height(headerH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, left).DragWindow().Children(func() {

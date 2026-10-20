@@ -115,9 +115,14 @@ func (a *App) sideWidth(w float32) float32 {
 	return max(sw, minSide)
 }
 
-// sideEdge is the gap between the panes and the panel, which a drag moves.
+// minSideEdge is the least room between the panes and the panel, so that a
+// drag can still hold it when the panes touch.
+const minSideEdge = 4
+
+// sideEdge is the gap between the panes and the panel, which a drag moves:
+// the panes' own, or the least that holds.
 func (a *App) sideEdge(c *ui.Context, pal *palette, row float32) {
-	d := ui.Box(c.Key("side-edge")).Width(paneGap).Shrink(0).Cursor(ui.CursorResizeColumn)
+	d := ui.Box(c.Key("side-edge")).Width(max(paneGapOf(a.set), minSideEdge)).Shrink(0).Cursor(ui.CursorResizeColumn)
 	if d.Hovered() || d.Pressed() {
 		d.Draw(func(p *ui.Painter, r ui.Rect) {
 			p.Fill(ui.Rect{X: r.X + r.W/2 - 1.5, Y: r.Y + r.H/2 - 18, W: 3, H: 36}, pal.textFaint.Alpha(0.7), 1.5)
