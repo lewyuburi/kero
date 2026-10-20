@@ -457,3 +457,22 @@ find:
 		t.Errorf("the preview stays once Command is let go of: %+v", a.peek)
 	}
 }
+
+// A pane split down is built, as one split right is: its box takes its key
+// once, as a Column, and the panes show one above the other.
+func TestSplitDown(t *testing.T) {
+	a := testApp(t)
+	var l *proto.Layout
+	a.st.Sessions[0].Layout = l.Split("a", "b", "down", 0)
+	var first, second ui.Rect
+	tt := ui.NewTester(func(c *ui.Context) {
+		a.view(c)
+		first, second = a.paneRef("card-a").Bounds(c), a.paneRef("card-b").Bounds(c)
+	}, 900, 600)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if first.W == 0 || second.W == 0 || first.Y+first.H > second.Y || first.X != second.X {
+		t.Errorf("panes split down: %+v over %+v", first, second)
+	}
+}
