@@ -1,9 +1,12 @@
 package main
 
 import (
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
 	"kero/internal/proto"
@@ -166,5 +169,68 @@ func TestAppChords(t *testing.T) {
 	}
 	if a.onKey(0, ui.KeyRight) {
 		t.Error("right outside the mode was taken")
+	}
+}
+
+// recordConn is a terminal's connection that keeps what the terminal sends.
+type recordConn struct {
+	idleConn
+	mu  sync.Mutex
+	buf []byte
+}
+
+func (c *recordConn) Write(b []byte) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.buf = append(c.buf, b...)
+	return len(b), nil
+}
+
+func (c *recordConn) written() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return string(c.buf)
+}
+
+// The keys a real terminal gets go through the chords first: the ones a
+// binding takes do not reach its program, and the others do.
+func TestChordsInATerminal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("downloads libghostty-vt")
+	}
+	if err := terminal.Load(); err != nil {
+		t.Fatal(err)
+	}
+	a := testApp(t)
+	a.set.Bindings = binds(t, "ctrl+a>r=mode:resize", "resize:right=pane.resize.right", "resize:escape=mode:off")
+	conn := &recordConn{idleConn: idleConn{make(chan struct{})}}
+	term, err := terminal.New(terminal.Options{Conn: conn, OnKey: a.onKey})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer term.Close()
+	a.terms["a"] = &termEntry{term: term}
+	var l *proto.Layout
+	a.st.Sessions[0].Layout = l.Split("a", "b", "right", 0.5)
+	tt := ui.NewTester(a.view, 1100, 640)
+	tt.Frame()
+	a.paneRef("a").Focus()
+	tt.Frame()
+
+	tt.Key(0, ui.KeyRight) // the program's: no binding yet
+	tt.Frame()
+	tt.Key(ui.Ctrl, ui.KeyA)
+	tt.Key(0, ui.KeyR)
+	tt.Key(0, ui.KeyRight) // the mode's
+	tt.Key(0, ui.KeyEscape)
+	tt.Frame()
+	if got := a.st.Sessions[0].Layout.Ratio; got != 0.55 {
+		t.Errorf("the divider is at %v, want 0.55", got)
+	}
+	tt.Key(0, ui.KeyLeft) // the program's again
+	tt.Frame()
+	sent := conn.written()
+	if strings.Count(sent, "\x1b[C") != 1 || strings.Count(sent, "\x1b[D") != 1 || strings.Contains(sent, "\x01") {
+		t.Errorf("the program got %q, want one right, one left and no ctrl+a", sent)
 	}
 }
