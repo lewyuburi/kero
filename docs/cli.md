@@ -62,6 +62,19 @@ kero prompt review "summarize the diff"   # send + Enter, wait, print the screen
 
 `kero wait` prints the pane's status when it returns. `kero prompt` sends text and Enter, waits until the pane stops working, then prints its screen. It's the quickest way to ask another agent something.
 
+### Watching
+
+`kero watch` prints what changes as it happens, until you stop it:
+
+```sh
+kero watch                                # every change
+kero watch api --for waiting,error        # only a session's, only to these statuses
+kero watch --json                         # one JSON object a line
+kero watch --once --for waiting           # stop at the first
+```
+
+A line is tab separated: the event (`status`, `session.new` or `session.closed`), the session, the pane, the status it came to and the one before, the session's name and the message the program reported. `--json` prints the same as objects, which `jq` reads.
+
 ### Waiting for a command
 
 A command such as `make test` doesn't show as *working*, so to wait for one to finish, start it with `--wait`. `kero` then exits with the command's own status:

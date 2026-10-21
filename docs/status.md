@@ -35,6 +35,30 @@ A program's own desktop notifications show as they would in any terminal, and le
 
 The Dock icon shows how many sessions need you (`dock-badge`) and can bounce once when one starts to (`dock-bounce`). See [Configuration](./configuration.md).
 
+## Running a command on a status
+
+`on-status` runs a command as a pane comes to a status, whether or not the app is open. It takes a status (`working`, `waiting`, `idle`, `error` or `exited`) and the command, and can be repeated:
+
+```ini
+on-status = waiting osascript -e 'display notification "needs you" with title "Kero"'
+on-status = idle ~/bin/agent-done
+```
+
+The command runs in a shell, in the pane's directory, with what happened in its environment:
+
+| Variable             | Value                                                     |
+| -------------------- | --------------------------------------------------------- |
+| `KERO_EVENT`         | `status`                                                  |
+| `KERO_STATUS`        | The status the pane came to                               |
+| `KERO_PREVIOUS`      | The status it had                                         |
+| `KERO_SESSION`, `KERO_PANE` | The session and the pane, so that `kero` in the command reaches them |
+| `KERO_SESSION_NAME`  | The session's name                                        |
+| `KERO_MESSAGE`       | What the program reported or notified                     |
+| `KERO_AGENT`         | The coding agent in the pane, if known                    |
+| `KERO_DIR`           | The pane's directory                                      |
+
+A hook that runs longer than a minute is ended, and no more than eight run at once. To act on a change from a script that is running anyway, use [`kero watch`](./cli.md#watching).
+
 ## Reporting status from a program
 
 Programs and agents can tell Kero what they're doing with `kero report`:

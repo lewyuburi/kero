@@ -82,6 +82,7 @@ kero config check             # report unknown keys and bad values
 | `command`          |         | The shell of new panes; empty for your login shell             |
 | `env`              |         | Added to every pane's environment as `NAME=value`; repeat it   |
 | `scrollback-limit` | `4`     | The output each pane keeps, in megabytes; `0` for none         |
+| `on-status`        |         | Run a command as a pane comes to a status, as `<status> <command>`; repeat it. See [Running a command on a status](./status.md#running-a-command-on-a-status) |
 
 ## Notifications
 

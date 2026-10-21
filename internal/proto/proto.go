@@ -64,7 +64,7 @@ type Message struct {
 	Result any    `json:"result,omitempty"`
 	Error  string `json:"error,omitempty"`
 
-	Event string `json:"event,omitempty"` // "state", "select", "action", "notice"
+	Event string `json:"event,omitempty"` // "state", "select", "action", "notice", "change"
 	State *State `json:"state,omitempty"`
 	// Select asks the app to show a session ("kero focus").
 	Select string `json:"select,omitempty"`
@@ -74,6 +74,9 @@ type Message struct {
 	Args   map[string]string `json:"args,omitempty"`
 	// Notice is a program's desktop notification, to show as it is.
 	Notice *Notice `json:"notice,omitempty"`
+	// Change is what happened (Event "change"), to a client that asked to
+	// watch (the watch method), which gets these and no other events.
+	Change *Change `json:"change,omitempty"`
 }
 
 // Notice is a desktop notification a program in a session sent.

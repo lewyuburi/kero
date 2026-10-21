@@ -172,6 +172,18 @@ var keys = []key{
 			}
 			return nil
 		}},
+	{name: "on-status", doc: "<status> <command>: run the command as a pane comes to the status (working, waiting, idle, error or exited), with KERO_* in its environment; repeat it", list: true,
+		get: func(s *Settings) []string { return slices.Clone(s.OnStatus) },
+		set: func(s *Settings, v []string) error {
+			s.OnStatus = nil
+			for _, line := range v {
+				if _, err := ParseStatusHook(line); err != nil {
+					return err
+				}
+				s.OnStatus = append(s.OnStatus, line)
+			}
+			return nil
+		}},
 	numberKey("scrollback-limit", "the output each pane keeps, in megabytes; 0 for none", func(s *Settings) float64 { return float64(s.Scrollback) }, func(s *Settings, n float64) { s.Scrollback = int(n) }),
 
 	boolKey("notify-on-waiting", "when a session needs you", func(s *Settings) *bool { return &s.NotifyWaiting }),

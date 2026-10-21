@@ -52,6 +52,11 @@ Usage:
                                 reaches one of the statuses), print it
       -x, --exit                  instead wait for the command it started
                                   with to end, exit with its status
+  kero watch [target] [--for statuses] [--json] [--once]
+                                print what changes as it happens: a status
+                                (event, session, pane, status, previous,
+                                name, message, tab separated), a session
+                                that came or went; --once stops at the first
   kero status [target] [--json]
   kero rename <session> <name>
   kero focus <target>           show a session (and pane) in the app
@@ -84,7 +89,7 @@ ambiguous one), 4 kerod unreachable.
 `
 
 // Commands lists the subcommands, which main sends here.
-var Commands = []string{"ls", "list", "new", "split", "send", "key", "prompt", "read", "capture", "wait", "status",
+var Commands = []string{"ls", "list", "new", "split", "send", "key", "prompt", "read", "capture", "wait", "watch", "status",
 	"rename", "focus", "close", "kill", "restart", "notify", "report", "projects", "skill", "hook", "daemon", "do", "actions", "config",
 	"help", "--help", "-h", "version", "--version"}
 
@@ -450,6 +455,9 @@ func run(args []string) error {
 			return exitStatus(info.ExitCode)
 		}
 		return err
+
+	case "watch":
+		return watch(c, st, args)
 
 	case "status":
 		f, err := parse(args, nil, map[string]string{"json": "json"})
