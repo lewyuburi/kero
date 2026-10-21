@@ -1115,8 +1115,8 @@ func TestTouchingPanesCorners(t *testing.T) {
 	}
 }
 
-// Under the bar of tabs the cards keep their gap from it as at their sides,
-// less the room the bar has itself, and with none the top corners, which
+// Under the bar of tabs the cards keep half their gap from it, less the
+// room the bar has itself, and with none the top corners, which
 // meet the bar and not the window's, are square.
 func TestCardsUnderTheTabs(t *testing.T) {
 	for _, gap := range []int{0, 2, 8, settings.MaxCardGap} {
