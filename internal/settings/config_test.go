@@ -136,3 +136,96 @@ func TestMigratesSettingsJSON(t *testing.T) {
 		t.Error("settings.json stayed")
 	}
 }
+
+// A keybind is one chord of the app, as it was; with > a sequence, with a
+// name: a chord of a key mode. They come back as written.
+func TestKeyBindings(t *testing.T) {
+	file := `keybind = cmd+shift+d=pane.split.down
+keybind = ctrl+a>c=session.new
+keybind = ctrl+a>r=mode:resize
+keybind = resize:left=pane.resize.left
+keybind = resize:shift+right=pane.resize.right
+keybind = resize:escape=mode:off
+keybind = alt+x>ctrl+>=palette.open
+`
+	s, probs := parse(file)
+	if len(probs) != 0 {
+		t.Fatalf("problems %q", probs)
+	}
+	if s.Shortcuts["pane.split.down"] != "CmdOrCtrl+Shift+D" {
+		t.Errorf("shortcuts %v", s.Shortcuts)
+	}
+	want := []Binding{
+		{Keys: []string{"Ctrl+A", "C"}, Action: "session.new"},
+		{Keys: []string{"Ctrl+A", "R"}, Action: "mode:resize"},
+		{Mode: "resize", Keys: []string{"Left"}, Action: "pane.resize.left"},
+		{Mode: "resize", Keys: []string{"Shift+Right"}, Action: "pane.resize.right"},
+		{Mode: "resize", Keys: []string{"Escape"}, Action: ModeOff},
+		{Keys: []string{"Alt+X", "Ctrl+>"}, Action: "palette.open"},
+	}
+	if !reflect.DeepEqual(s.Bindings, want) {
+		t.Errorf("bindings\n got %+v\nwant %+v", s.Bindings, want)
+	}
+	out := format(s, "")
+	for _, line := range []string{"keybind = ctrl+a>c=session.new", "keybind = resize:escape=mode:off", "keybind = alt+x>ctrl+>=palette.open"} {
+		if !strings.Contains(out, line+"\n") {
+			t.Errorf("no %q in:\n%s", line, out)
+		}
+	}
+	if back, probs := parse(out); len(probs) != 0 || !reflect.DeepEqual(back.Bindings, want) || !reflect.DeepEqual(back.Shortcuts, s.Shortcuts) {
+		t.Errorf("read back %+v, shortcuts %v, problems %q", back.Bindings, back.Shortcuts, probs)
+	}
+	clone := s.Clone()
+	clone.Bindings[0].Keys[0] = "Ctrl+Z"
+	if s.Bindings[0].Keys[0] != "Ctrl+A" {
+		t.Error("a clone shares the bindings' keys")
+	}
+}
+
+func TestKeyBindingProblems(t *testing.T) {
+	for line, why := range map[string]string{
+		"keybind = ctrl+a>c=nope":              "no action",
+		"keybind = a>c=session.new":            "needs ctrl, alt or cmd",
+		"keybind = shift+a>c=session.new":      "needs ctrl, alt or cmd",
+		"keybind = ctrl+a>c=unbind":            "unbind",
+		"keybind = ctrl+a>=session.new":        "",
+		"keybind = ctrl+a>c=mode:Bad Name":     "mode's name",
+		"keybind = off:left=pane.left":         "off is not a mode",
+		"keybind = hyper+a>c=session.new":      "not a modifier",
+		"keybind = ctrl+a>banana=session.new":  "no key",
+		"keybind = ctrl+d>x=session.new":       "", // cmd+d is the shortcut of split on macOS only
+		"keybind = cmd+d>x=session.new":        "begins a sequence and is also the shortcut",
+		"keybind = resize:left":                "not <keys>=<action>",
+		"keybind = resize:left=pane.resize.up": "-",
+	} {
+		s, probs := parse(line)
+		switch why {
+		case "-":
+			if len(probs) != 0 || len(s.Bindings) != 1 {
+				t.Errorf("%q: %+v, problems %q", line, s.Bindings, probs)
+			}
+		case "":
+			// valid, or a clash that depends on the platform: only no crash.
+		default:
+			if len(probs) != 1 || !strings.Contains(probs[0], why) {
+				t.Errorf("%q: problems %q, want one with %q", line, probs, why)
+			}
+		}
+	}
+}
+
+func TestSplitChords(t *testing.T) {
+	for keys, want := range map[string][]string{
+		"ctrl+a":        {"ctrl+a"},
+		"ctrl+a>c":      {"ctrl+a", "c"},
+		"ctrl+a>ctrl+>": {"ctrl+a", "ctrl+>"},
+		"ctrl+a>c>d":    {"ctrl+a", "c", "d"},
+		"ctrl+>":        {"ctrl+>"},
+		">":             {">"},
+		"alt+x>>":       {"alt+x", ">"},
+	} {
+		if got := splitChords(keys); !reflect.DeepEqual(got, want) {
+			t.Errorf("%q split as %q, want %q", keys, got, want)
+		}
+	}
+}

@@ -66,6 +66,8 @@ type Settings struct {
 
 	// Keyboard: accelerators by action, over the defaults; "" unbinds.
 	Shortcuts map[string]string `json:"shortcuts,omitempty"`
+	// Bindings are the sequences of chords and the key modes' (keybind).
+	Bindings []Binding `json:"bindings,omitempty"`
 }
 
 // Default returns the settings of a new install.
@@ -223,6 +225,14 @@ func clone(s Settings) Settings {
 			m[k] = v
 		}
 		s.Shortcuts = m
+	}
+	if s.Bindings != nil {
+		bs := make([]Binding, len(s.Bindings))
+		for i, b := range s.Bindings {
+			b.Keys = append([]string(nil), b.Keys...)
+			bs[i] = b
+		}
+		s.Bindings = bs
 	}
 	return s
 }

@@ -294,6 +294,46 @@ func (msgs Messages) ActionPaneBelow() string {
 	return Catalog.Format(msgs.locale, "actionPaneBelow", nil)
 }
 
+// ActionPaneResizeLeft says "Resize Pane Left"
+// in the language the app shows.
+func ActionPaneResizeLeft() string { return In(i18n.Locale()).ActionPaneResizeLeft() }
+
+// ActionPaneResizeLeft says "Resize Pane Left"
+// in the language of msgs.
+func (msgs Messages) ActionPaneResizeLeft() string {
+	return Catalog.Format(msgs.locale, "actionPaneResizeLeft", nil)
+}
+
+// ActionPaneResizeRight says "Resize Pane Right"
+// in the language the app shows.
+func ActionPaneResizeRight() string { return In(i18n.Locale()).ActionPaneResizeRight() }
+
+// ActionPaneResizeRight says "Resize Pane Right"
+// in the language of msgs.
+func (msgs Messages) ActionPaneResizeRight() string {
+	return Catalog.Format(msgs.locale, "actionPaneResizeRight", nil)
+}
+
+// ActionPaneResizeUp says "Resize Pane Up"
+// in the language the app shows.
+func ActionPaneResizeUp() string { return In(i18n.Locale()).ActionPaneResizeUp() }
+
+// ActionPaneResizeUp says "Resize Pane Up"
+// in the language of msgs.
+func (msgs Messages) ActionPaneResizeUp() string {
+	return Catalog.Format(msgs.locale, "actionPaneResizeUp", nil)
+}
+
+// ActionPaneResizeDown says "Resize Pane Down"
+// in the language the app shows.
+func ActionPaneResizeDown() string { return In(i18n.Locale()).ActionPaneResizeDown() }
+
+// ActionPaneResizeDown says "Resize Pane Down"
+// in the language of msgs.
+func (msgs Messages) ActionPaneResizeDown() string {
+	return Catalog.Format(msgs.locale, "actionPaneResizeDown", nil)
+}
+
 // ActionToggleSidebar says "Toggle Sidebar"
 // in the language the app shows.
 func ActionToggleSidebar() string { return In(i18n.Locale()).ActionToggleSidebar() }
@@ -3314,4 +3354,24 @@ func FindClose() string { return In(i18n.Locale()).FindClose() }
 // in the language of msgs.
 func (msgs Messages) FindClose() string {
 	return Catalog.Format(msgs.locale, "findClose", nil)
+}
+
+// ChordMode says "{mode} mode · Esc leaves it"
+// in the language the app shows.
+func ChordMode(mode string) string { return In(i18n.Locale()).ChordMode(mode) }
+
+// ChordMode says "{mode} mode · Esc leaves it"
+// in the language of msgs.
+func (msgs Messages) ChordMode(mode string) string {
+	return Catalog.Format(msgs.locale, "chordMode", map[string]any{"mode": mode})
+}
+
+// ChordPending says "Waiting for the next key of {keys}"
+// in the language the app shows.
+func ChordPending(keys string) string { return In(i18n.Locale()).ChordPending(keys) }
+
+// ChordPending says "Waiting for the next key of {keys}"
+// in the language of msgs.
+func (msgs Messages) ChordPending(keys string) string {
+	return Catalog.Format(msgs.locale, "chordPending", map[string]any{"keys": keys})
 }

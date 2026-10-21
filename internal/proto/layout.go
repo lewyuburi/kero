@@ -127,6 +127,50 @@ func (l *Layout) Neighbor(pane, direction string) string {
 	return best
 }
 
+// ResizeStep is how much of a split's room Resize moves its divider by.
+const ResizeStep = 0.05
+
+// Resize returns the layout with the divider next to pane moved a step in a
+// direction (left, right, up or down): the nearest split that divides the
+// pane on that axis, as the divider of a row moves left or right. It stops
+// short of leaving either side less than a tenth of the room. It returns nil
+// when no split divides the pane that way.
+func (l *Layout) Resize(pane, direction string, step float64) *Layout {
+	row := direction == "left" || direction == "right"
+	if direction == "left" || direction == "up" {
+		step = -step
+	}
+	out := l.Clone()
+	var split *Layout
+	var walk func(n *Layout) bool
+	walk = func(n *Layout) bool {
+		if n == nil {
+			return false
+		}
+		if n.Leaf() {
+			return n.Pane == pane
+		}
+		if walk(n.A) || walk(n.B) {
+			// Deepest first: the first split on the way up that divides the
+			// pane on the axis is the nearest.
+			if split == nil && n.Row == row {
+				split = n
+			}
+			return true
+		}
+		return false
+	}
+	if !walk(out) || split == nil {
+		return nil
+	}
+	ratio := split.Ratio
+	if ratio <= 0 || ratio >= 1 {
+		ratio = 0.5
+	}
+	split.Ratio = min(max(ratio+step, 0.1), 0.9)
+	return out
+}
+
 func (l *Layout) rects(x, y, w, h float64, out map[string][4]float64) {
 	if l == nil {
 		return

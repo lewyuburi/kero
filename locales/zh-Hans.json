@@ -26,6 +26,10 @@
   "actionPaneRight": "右侧窗格",
   "actionPaneAbove": "上方窗格",
   "actionPaneBelow": "下方窗格",
+  "actionPaneResizeLeft": "向左调整窗格大小",
+  "actionPaneResizeRight": "向右调整窗格大小",
+  "actionPaneResizeUp": "向上调整窗格大小",
+  "actionPaneResizeDown": "向下调整窗格大小",
   "actionToggleSidebar": "切换边栏",
   "actionBigger": "放大",
   "actionSmaller": "缩小",
@@ -325,5 +329,7 @@
   "findPlaceholder": "查找",
   "findCount": "{selected}/{total}",
   "findNoMatches": "没有匹配项",
-  "findClose": "关闭查找栏"
+  "findClose": "关闭查找栏",
+  "chordMode": "{mode} 模式 · 按 Esc 退出",
+  "chordPending": "等待 {keys} 的下一个按键"
 }

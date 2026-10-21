@@ -110,4 +110,32 @@ keybind = cmd+k=palette.open
 keybind = cmd+b=unbind
 ```
 
+### Sequences
+
+Join chords with `>` to bind a sequence: press the first, then the next.
+
+```ini
+keybind = ctrl+a>c=session.new
+keybind = ctrl+a>n=session.next
+```
+
+The first chord needs `ctrl`, `alt` or `cmd`, and it is Kero's while a sequence begins with it: it can't also be the shortcut of an action, and the terminal doesn't get it. A key that is none of the sequence's ends it and does nothing, as does waiting for more than a second and a half. While it waits, the window says so.
+
+### Key modes
+
+A key mode is a named set of bindings that is on until you leave it. Bind a key to `mode:<name>` to enter it, and give its bindings the name in front:
+
+```ini
+keybind = ctrl+a>r=mode:resize
+keybind = resize:left=pane.resize.left
+keybind = resize:right=pane.resize.right
+keybind = resize:up=pane.resize.up
+keybind = resize:down=pane.resize.down
+keybind = resize:enter=mode:off
+```
+
+Inside a mode, keys need no modifier, and a key that isn't bound is taken and does nothing, so that it doesn't go to the program. `mode:off` leaves it, and so does Escape unless the mode binds it. The window shows the mode while it's on. `kero actions` lists the actions to bind.
+
+Sequences and modes take the keys of a terminal pane; a browser pane keeps its own. On Linux, a key that only types a character may reach the program without the terminal's key hook seeing it, so bind modes there to arrows, Enter, Escape and keys with a modifier.
+
 Run `kero actions` for every action id, and see [Keyboard Shortcuts](./shortcuts.md) for the defaults.

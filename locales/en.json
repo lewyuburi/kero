@@ -26,6 +26,10 @@
   "actionPaneRight": "Pane Right",
   "actionPaneAbove": "Pane Above",
   "actionPaneBelow": "Pane Below",
+  "actionPaneResizeLeft": "Resize Pane Left",
+  "actionPaneResizeRight": "Resize Pane Right",
+  "actionPaneResizeUp": "Resize Pane Up",
+  "actionPaneResizeDown": "Resize Pane Down",
   "actionToggleSidebar": "Toggle Sidebar",
   "actionBigger": "Bigger",
   "actionSmaller": "Smaller",
@@ -466,5 +470,7 @@
   "findPlaceholder": "Find",
   "findCount": "{selected} of {total}",
   "findNoMatches": "No matches",
-  "findClose": "Close Find Bar"
+  "findClose": "Close Find Bar",
+  "chordMode": "{mode} mode · Esc leaves it",
+  "chordPending": "Waiting for the next key of {keys}"
 }

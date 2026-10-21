@@ -198,16 +198,29 @@ var keys = []key{
 				}
 				out = append(out, configKeys(k)+"="+a.ID)
 			}
+			for _, b := range s.Bindings {
+				out = append(out, b.String())
+			}
 			return out
 		},
 		set: func(s *Settings, v []string) error {
-			s.Shortcuts = nil
+			s.Shortcuts, s.Bindings = nil, nil
 			sc := map[string]string{}
 			var bad []string
+			var bindings []Binding
 			for _, b := range v {
 				i := strings.LastIndex(b, "=")
 				if i <= 0 {
 					bad = append(bad, fmt.Sprintf("%q is not <keys>=<action>", b))
+					continue
+				}
+				if complexBinding(b[:i], strings.TrimSpace(b[i+1:])) {
+					bind, err := ParseBinding(b)
+					if err != nil {
+						bad = append(bad, err.Error())
+						continue
+					}
+					bindings = append(bindings, bind)
 					continue
 				}
 				keys, id := accelerator(b[:i]), strings.TrimSpace(b[i+1:])
@@ -228,11 +241,31 @@ var keys = []key{
 			if len(sc) > 0 {
 				s.Shortcuts = sc
 			}
+			// What begins a sequence is the terminal's to hold: not also an
+			// action's shortcut.
+			for _, b := range bindings {
+				if clash := shortcutOf(b.Keys[0], sc); b.Mode == "" && clash != "" {
+					bad = append(bad, fmt.Sprintf("%s begins a sequence and is also the shortcut of %s", configKeys(b.Keys[0]), clash))
+					continue
+				}
+				s.Bindings = append(s.Bindings, b)
+			}
 			if bad != nil {
 				return fmt.Errorf("%s", strings.Join(bad, "; "))
 			}
 			return nil
 		}},
+}
+
+// shortcutOf is the action that has the accelerator, the user's over the
+// defaults, or "".
+func shortcutOf(accel string, overrides map[string]string) string {
+	for _, a := range actions.All {
+		if k := actions.Keys(a, overrides); k != "" && strings.EqualFold(k, accel) {
+			return a.ID
+		}
+	}
+	return ""
 }
 
 func findKey(name string) *key {

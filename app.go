@@ -66,6 +66,13 @@ type termEntry struct {
 // App is the app's state. It lives on the main thread: other goroutines
 // change it through Window.Update.
 type App struct {
+	// chords is where the user is among the sequences and key modes of the
+	// settings (chords.go); chordBinds are their chords read, for
+	// chordBindsFor.
+	chords        chordState
+	chordBinds    []chordBinding
+	chordBindsFor []settings.Binding
+
 	win *mygo.Window
 
 	cl        *client.Client
@@ -628,6 +635,7 @@ func (a *App) termOptions(id string, conn *gated) terminal.Options {
 			conn.Clear(proto.ClearScreen)
 			return true
 		},
+		OnKey:    a.onKey,
 		OpenLink: func(link string) bool { return a.openLink(id, link) },
 		// A selection copied as it ends shows nothing else: say so.
 		OnCopy: func(_ string, by terminal.CopySource) {

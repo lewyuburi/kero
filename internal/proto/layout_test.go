@@ -90,3 +90,41 @@ func TestLayoutMoveSwap(t *testing.T) {
 		t.Error("a pane moved onto itself")
 	}
 }
+
+func TestResize(t *testing.T) {
+	var l *Layout
+	// a | (b over c): a row, with a column in its second half.
+	l = l.Split("a", "b", "right", 0.5).Split("b", "c", "down", 0.5)
+	if got := l.Resize("a", "right", ResizeStep); got == nil || got.Ratio != 0.55 || got.B.Ratio != 0.5 {
+		t.Errorf("a right: %+v", got)
+	}
+	if got := l.Resize("a", "left", ResizeStep); got == nil || got.Ratio != 0.45 {
+		t.Errorf("a left: %+v", got)
+	}
+	// The divider of the column, the nearest split on the axis; b is in it.
+	if got := l.Resize("b", "down", ResizeStep); got == nil || got.Ratio != 0.5 || got.B.Ratio != 0.55 {
+		t.Errorf("b down: %+v", got)
+	}
+	// c has the column above it and the row beside it.
+	if got := l.Resize("c", "left", ResizeStep); got == nil || got.Ratio != 0.45 {
+		t.Errorf("c left moved %+v", got)
+	}
+	// No split of that axis divides a: nothing to move.
+	if got := l.Resize("a", "down", ResizeStep); got != nil {
+		t.Errorf("a down: %+v", got)
+	}
+	if got := l.Resize("nope", "left", ResizeStep); got != nil {
+		t.Errorf("a pane that is not there: %+v", got)
+	}
+	// The original is left as it was, and the ratio keeps its bounds.
+	if l.Ratio != 0.5 {
+		t.Errorf("the layout changed: %+v", l)
+	}
+	edge := l
+	for range 20 {
+		edge = edge.Resize("a", "right", ResizeStep)
+	}
+	if edge.Ratio != 0.9 {
+		t.Errorf("a pushed to the edge leaves %v", edge.Ratio)
+	}
+}

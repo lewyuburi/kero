@@ -112,6 +112,7 @@ func (a *App) view(c *ui.Context) {
 			a.card(c, pal, bar, shown)
 		})
 	})
+	a.chordHint(c, pal)
 	a.paletteView(c, pal)
 	a.confirmView(c, pal)
 	// A preview that showed no more fades in anew next time.

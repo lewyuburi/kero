@@ -49,6 +49,8 @@ On Windows and Linux, <kbd>Ctrl</kbd> with a letter belongs to the shell (<kbd>C
 | Pane Above    | <kbd>⌘</kbd> <kbd>⌥</kbd> <kbd>↑</kbd> | <kbd>Alt</kbd> <kbd>↑</kbd>                       | `pane.up`          |
 | Pane Below    | <kbd>⌘</kbd> <kbd>⌥</kbd> <kbd>↓</kbd> | <kbd>Alt</kbd> <kbd>↓</kbd>                       | `pane.down`        |
 
+`pane.resize.left`, `pane.resize.right`, `pane.resize.up` and `pane.resize.down` move the divider next to the pane a step that way. They have no keys of their own: bind them, as in a [key mode](./configuration.md#key-modes).
+
 ## View
 
 | Action         | macOS                     | Windows & Linux                               | Action id        |
