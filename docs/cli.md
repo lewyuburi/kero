@@ -196,6 +196,19 @@ kero do pane.browser url=localhost:3000
 kero do sidebar.toggle
 ```
 
+## Calling kerod directly
+
+Everything above is a call to kerod, which `kero api` lists, describes and makes:
+
+```sh
+kero api                                  # every method
+kero api create                           # what it takes and answers
+kero api read '{"id": "api", "lines": 20}'
+echo '{"id": "api", "data": "ls\r"}' | kero api send -
+```
+
+The params are JSON, as the method describes them (`--json` prints the description itself as JSON), and a call prints what kerod answers. A pane or session is named by its id, a prefix of it or a session's name, as in the commands. `kero watch` is the way to follow events, not `subscribe`.
+
 ## Exit status
 
 | Code | Meaning                              |

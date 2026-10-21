@@ -627,6 +627,24 @@ func itoa(n int) string {
 	return string(b[i:])
 }
 
+// APIMethod describes a control method, as the api method lists them.
+type APIMethod struct {
+	Name    string     `json:"name"`
+	Summary string     `json:"summary"`
+	Params  []APIField `json:"params,omitempty"`
+	// Result is the type the method answers with, and ResultFields its
+	// fields when it is a struct.
+	Result       string     `json:"result"`
+	ResultFields []APIField `json:"resultFields,omitempty"`
+}
+
+// APIField is a field of a method's params or result.
+type APIField struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Optional bool   `json:"optional,omitempty"`
+}
+
 // Params of the control methods.
 type (
 	CreateParams struct {

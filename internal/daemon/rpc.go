@@ -40,6 +40,9 @@ func (d *Daemon) call(c *controlConn, method string, raw json.RawMessage) (any, 
 		c.event(proto.Message{Event: "state", State: &st})
 		return true, nil
 
+	case "api":
+		return api(), nil
+
 	case "watch":
 		d.mu.Lock()
 		d.watchers[c] = struct{}{}
