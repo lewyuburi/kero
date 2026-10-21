@@ -70,6 +70,8 @@ Usage:
   kero do <action> [key=value…]  run an action of the app, as its menus do
                                 (needs Remote Control, in Settings › Agents)
   kero actions                  list the actions kero do runs
+  kero api [method [json|-]]    list kerod's methods, describe one, or call
+                                it with JSON params, as kero itself does
   kero config path|show|edit|check
                                 the configuration file: where it is, every
                                 key with its value (--defaults: as kero
@@ -90,7 +92,7 @@ ambiguous one), 4 kerod unreachable.
 
 // Commands lists the subcommands, which main sends here.
 var Commands = []string{"ls", "list", "new", "split", "send", "key", "prompt", "read", "capture", "wait", "watch", "status",
-	"rename", "focus", "close", "kill", "restart", "notify", "report", "projects", "skill", "hook", "daemon", "do", "actions", "config",
+	"rename", "focus", "close", "kill", "restart", "notify", "report", "projects", "skill", "hook", "daemon", "do", "actions", "api", "config",
 	"help", "--help", "-h", "version", "--version"}
 
 // Errors of exit statuses other than 1.
@@ -458,6 +460,9 @@ func run(args []string) error {
 
 	case "watch":
 		return watch(c, st, args)
+
+	case "api":
+		return apiCmd(c, args)
 
 	case "status":
 		f, err := parse(args, nil, map[string]string{"json": "json"})
