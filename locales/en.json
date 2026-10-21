@@ -28,6 +28,10 @@
   "actionPaneRight": "Pane Right",
   "actionPaneAbove": "Pane Above",
   "actionPaneBelow": "Pane Below",
+  "actionPaneResizeLeft": "Resize Pane Left",
+  "actionPaneResizeRight": "Resize Pane Right",
+  "actionPaneResizeUp": "Resize Pane Up",
+  "actionPaneResizeDown": "Resize Pane Down",
   "actionToggleSidebar": "Toggle Sidebar",
   "actionBigger": "Bigger",
   "actionSmaller": "Smaller",
@@ -1014,5 +1018,7 @@
   "browserForward": "Forward",
   "browserReload": "Reload",
   "browserStop": "Stop",
-  "browserAddress": "Address or search"
+  "browserAddress": "Address or search",
+  "chordMode": "{mode} mode · Esc leaves it",
+  "chordPending": "Waiting for the next key of {keys}"
 }

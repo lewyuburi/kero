@@ -91,6 +91,8 @@ func (a *App) run(id string, args map[string]string) {
 		a.cyclePane(-1)
 	case "pane.left", "pane.right", "pane.up", "pane.down":
 		a.focusDirection(id[len("pane."):])
+	case "pane.resize.left", "pane.resize.right", "pane.resize.up", "pane.resize.down":
+		a.resizePane(id[len("pane.resize."):])
 	case "sidebar.toggle":
 		a.toggleSidebar()
 	case "changes.toggle":
@@ -155,6 +157,10 @@ var actionTitles = map[string]func() string{
 	"pane.right":        locales.ActionPaneRight,
 	"pane.up":           locales.ActionPaneAbove,
 	"pane.down":         locales.ActionPaneBelow,
+	"pane.resize.left":  locales.ActionPaneResizeLeft,
+	"pane.resize.right": locales.ActionPaneResizeRight,
+	"pane.resize.up":    locales.ActionPaneResizeUp,
+	"pane.resize.down":  locales.ActionPaneResizeDown,
 	"sidebar.toggle":    locales.ActionToggleSidebar,
 	"changes.toggle":    locales.ActionToggleChanges,
 	"text.bigger":       locales.ActionBigger,
@@ -249,26 +255,8 @@ func (a *App) tip(title, id string) string {
 // menuShortcut shows an action's shortcut by a context menu's item.
 func (a *App) menuShortcut(it *ui.MenuItem, id string) *ui.MenuItem {
 	act, _ := actions.Find(id)
-	parts := strings.Split(actions.Keys(act, a.set.Shortcuts), "+")
-	var mods ui.Modifiers
-	for _, p := range parts[:len(parts)-1] {
-		switch strings.ToLower(p) {
-		case "cmdorctrl", "commandorcontrol":
-			mods |= ui.Cmd
-		case "cmd", "command", "super", "meta", "win":
-			mods |= ui.Super
-		case "ctrl", "control":
-			mods |= ui.Ctrl
-		case "alt", "option":
-			mods |= ui.Alt
-		case "shift":
-			mods |= ui.Shift
-		}
-	}
-	for k, name := range keyNames {
-		if strings.EqualFold(name, parts[len(parts)-1]) {
-			return it.Shortcut(mods, k)
-		}
+	if c, ok := parseAccel(actions.Keys(act, a.set.Shortcuts)); ok {
+		return it.Shortcut(c.mods, c.key)
 	}
 	return it
 }

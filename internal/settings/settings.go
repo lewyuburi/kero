@@ -93,6 +93,8 @@ type Settings struct {
 	// app here to its version, and restart kerod into it, as it can a
 	// server build: off unless the user turns it on here.
 	RemoteUpdates bool `json:"remoteUpdates,omitempty"`
+	// Bindings are the sequences of chords and the key modes' (keybind).
+	Bindings []Binding `json:"bindings,omitempty"`
 }
 
 // Host is a machine whose kerod the app shows: its name, and its address
@@ -286,6 +288,14 @@ func clone(s Settings) Settings {
 			m[k] = v
 		}
 		s.Shortcuts = m
+	}
+	if s.Bindings != nil {
+		bs := make([]Binding, len(s.Bindings))
+		for i, b := range s.Bindings {
+			b.Keys = append([]string(nil), b.Keys...)
+			bs[i] = b
+		}
+		s.Bindings = bs
 	}
 	return s
 }

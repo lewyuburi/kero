@@ -52,6 +52,11 @@ var All = []Action{
 	{ID: "pane.right", Title: "Pane Right", Menu: "Pane", Keys: "CmdOrCtrl+Alt+Right", Remote: true},
 	{ID: "pane.up", Title: "Pane Above", Menu: "Pane", Keys: "CmdOrCtrl+Alt+Up", Remote: true},
 	{ID: "pane.down", Title: "Pane Below", Menu: "Pane", Keys: "CmdOrCtrl+Alt+Down", Remote: true},
+	// The resize actions have no keys, for a key mode to bind (see keybind).
+	{ID: "pane.resize.left", Title: "Resize Pane Left", Menu: "Pane", Remote: true},
+	{ID: "pane.resize.right", Title: "Resize Pane Right", Menu: "Pane", Remote: true},
+	{ID: "pane.resize.up", Title: "Resize Pane Up", Menu: "Pane", Remote: true},
+	{ID: "pane.resize.down", Title: "Resize Pane Down", Menu: "Pane", Remote: true},
 
 	{ID: "sidebar.toggle", Title: "Toggle Sidebar", Menu: "View", Keys: "CmdOrCtrl+B", Remote: true},
 	{ID: "changes.toggle", Title: "Toggle Changes", Menu: "View", Keys: "CmdOrCtrl+Alt+G", Remote: true},

@@ -72,6 +72,13 @@ type termEntry struct {
 // App is the app's state. It lives on the main thread: other goroutines
 // change it through Window.Update.
 type App struct {
+	// chords is where the user is among the sequences and key modes of the
+	// settings (chords.go); chordBinds are their chords read, for
+	// chordBindsFor.
+	chords        chordState
+	chordBinds    []chordBinding
+	chordBindsFor []settings.Binding
+
 	win *mygo.Window
 
 	// hosts are the kerods the app shows, this machine's first; st is
@@ -742,6 +749,9 @@ func (a *App) termOptions(id string, conn *gated) terminal.Options {
 		// ⌘⌫ clears the line the shell is on, as in Ghostty: it sends
 		// Control+U, which shells take as kill-line.
 		OnKey: func(mods ui.Modifiers, key ui.Key) bool {
+			if a.onKey(mods, key) {
+				return true
+			}
 			if runtime.GOOS != "darwin" || mods != ui.Super || key != ui.KeyBackspace {
 				return false
 			}

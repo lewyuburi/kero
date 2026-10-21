@@ -802,6 +802,19 @@ func (a *App) focusDirection(dir string) {
 	}
 }
 
+// resizePane moves the divider next to the focused pane a step toward a
+// direction, as the pane's border does: the layout is kerod's, which keeps it.
+func (a *App) resizePane(dir string) {
+	s := a.session(a.selected)
+	if s == nil || s.Layout == nil || s.Zoomed != "" {
+		return
+	}
+	if l := s.Layout.Resize(a.focusOf(s), dir, proto.ResizeStep); l != nil {
+		s.Layout = l
+		a.call(s.ID, "layout", proto.LayoutParams{Session: s.ID, Layout: l.Clone()}, nil)
+	}
+}
+
 // cyclePane moves to the next or previous pane, in the layout's order.
 func (a *App) cyclePane(d int) {
 	s := a.session(a.selected)
