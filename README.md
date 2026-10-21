@@ -1,5 +1,7 @@
 # Kero
 
+> **This is an unofficial fork of [egoist/kero](https://github.com/egoist/kero).** It adds experiments behind flags (horizontal tabs, a browser agents can drive, custom spacing, loose sessions), status hooks, key sequences and modes, and `kero api`. See [FORK.md](FORK.md) for what is here and how it is kept; the releases below are the original's, not this fork's.
+
 A terminal for coding agents, on macOS, Windows and Linux.
 
 Run Claude Code, Codex, a dev server or a test watcher each in its own session. Kero groups sessions by project in a sidebar that shows which are working, which need you and which are done.
