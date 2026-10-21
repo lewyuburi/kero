@@ -269,3 +269,27 @@ func TestSplitChords(t *testing.T) {
 		}
 	}
 }
+
+// on-status lines are a status and a command, and come back as written.
+func TestOnStatus(t *testing.T) {
+	file := "on-status = waiting osascript -e 'beep'\non-status = idle notify-send \"done\"\n"
+	s, probs := parse(file)
+	if len(probs) != 0 || len(s.OnStatus) != 2 {
+		t.Fatalf("parsed %q, problems %q", s.OnStatus, probs)
+	}
+	hooks := s.StatusHooks()
+	if len(hooks) != 2 || hooks[0].Status != "waiting" || hooks[0].Command != "osascript -e 'beep'" || hooks[1].Command != `notify-send "done"` {
+		t.Errorf("hooks %+v", hooks)
+	}
+	if back, _ := parse(format(s, "")); !reflect.DeepEqual(back.OnStatus, s.OnStatus) {
+		t.Errorf("read back %q, want %q", back.OnStatus, s.OnStatus)
+	}
+	for _, bad := range []string{"on-status = waiting", "on-status = sleepy do-it", "on-status ="} {
+		if s, probs := parse(bad); len(probs) != 1 || len(s.OnStatus) != 0 {
+			t.Errorf("%q: %q, problems %q", bad, s.OnStatus, probs)
+		}
+	}
+	if got := s.Clone(); &got.OnStatus[0] == &s.OnStatus[0] {
+		t.Error("a clone shares the hooks")
+	}
+}

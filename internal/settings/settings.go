@@ -55,8 +55,9 @@ type Settings struct {
 	RightClick   string  `json:"rightClick"` // "menu", "paste" or "copyOrPaste"
 
 	// Shell
-	Shell      string   `json:"shell"` // "" the account's login shell
-	Env        []string `json:"env"`   // "KEY=value", added to every pane's
+	Shell      string   `json:"shell"`    // "" the account's login shell
+	Env        []string `json:"env"`      // "KEY=value", added to every pane's
+	OnStatus   []string `json:"onStatus"` // "<status> <command>", run as a pane comes to the status
 	Scrollback int      `json:"scrollback"`
 
 	// Notifications
@@ -282,6 +283,7 @@ func clone(s Settings) Settings {
 	s.Hosts = slices.Clone(s.Hosts)
 	s.Listen = slices.Clone(s.Listen)
 	s.ListenAllow = slices.Clone(s.ListenAllow)
+	s.OnStatus = append([]string(nil), s.OnStatus...)
 	if s.Shortcuts != nil {
 		m := make(map[string]string, len(s.Shortcuts))
 		for k, v := range s.Shortcuts {

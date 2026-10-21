@@ -40,6 +40,12 @@ func (d *Daemon) call(c *controlConn, method string, raw json.RawMessage) (any, 
 		c.event(proto.Message{Event: "state", State: &st})
 		return true, nil
 
+	case "watch":
+		d.mu.Lock()
+		d.watchers[c] = struct{}{}
+		d.mu.Unlock()
+		return true, nil
+
 	case "create", "split":
 		var p proto.CreateParams
 		if err := decode(&p); err != nil {

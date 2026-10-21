@@ -74,7 +74,7 @@ type Message struct {
 	Result any    `json:"result,omitempty"`
 	Error  string `json:"error,omitempty"`
 
-	Event string `json:"event,omitempty"` // "state", "select", "action", "notice", "browser"
+	Event string `json:"event,omitempty"` // "state", "select", "action", "notice", "browser", "change"
 	State *State `json:"state,omitempty"`
 	// Select asks the app to show a session ("kero focus").
 	Select string `json:"select,omitempty"`
@@ -87,6 +87,9 @@ type Message struct {
 	// Browser asks the app to do something on a browser pane's page
 	// ("kero browser"), which it answers with browser.answer.
 	Browser *BrowserRequest `json:"browser,omitempty"`
+	// Change is what happened (Event "change"), to a client that asked to
+	// watch (the watch method), which gets these and no other events.
+	Change *Change `json:"change,omitempty"`
 }
 
 // Notice is a desktop notification a program in a session sent.

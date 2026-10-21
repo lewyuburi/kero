@@ -50,6 +50,9 @@ type Daemon struct {
 	panes    map[string]*pane
 	subs     map[*controlConn]struct{}
 	clients  map[*proto.ClientInfo]struct{} // the connections, for kero clients
+	// watchers get what changes (see watch), and none of the events the app
+	// answers: they are not what `kero do` reaches.
+	watchers map[*controlConn]struct{}
 	conns    int
 	idleAt   time.Time
 	ending   bool
@@ -68,9 +71,11 @@ type Daemon struct {
 	git      *gitFollow
 	net      *listeners
 	changeCh chan struct{}
-	saveCh   chan struct{}
-	quit     chan struct{}
-	quitOnce sync.Once
+	// hookSlots limits the on-status hooks that run at once (see runHooks).
+	hookSlots chan struct{}
+	saveCh    chan struct{}
+	quit      chan struct{}
+	quitOnce  sync.Once
 }
 
 // Options are how kerod runs.
@@ -141,13 +146,15 @@ func Run(opts Options) error {
 	exe, _ := os.Executable()
 	d := &Daemon{
 		dir: dir, exe: exe, opts: opts, started: time.Now(), log: lg,
-		subs:     map[*controlConn]struct{}{},
-		clients:  map[*proto.ClientInfo]struct{}{},
-		panes:    map[string]*pane{},
-		changeCh: make(chan struct{}, 1),
-		saveCh:   make(chan struct{}, 1),
-		quit:     make(chan struct{}),
-		idleAt:   time.Now(),
+		subs:      map[*controlConn]struct{}{},
+		watchers:  map[*controlConn]struct{}{},
+		clients:   map[*proto.ClientInfo]struct{}{},
+		panes:     map[string]*pane{},
+		changeCh:  make(chan struct{}, 1),
+		hookSlots: make(chan struct{}, hookLimit),
+		saveCh:    make(chan struct{}, 1),
+		quit:      make(chan struct{}),
+		idleAt:    time.Now(),
 	}
 	d.git = newGitFollow(d)
 	empty := ""
@@ -281,7 +288,22 @@ func (d *Daemon) notice(n proto.Notice) {
 	}
 }
 
+// watch sends what changed to the clients that watch.
+func (d *Daemon) watch(changes []proto.Change) {
+	if len(changes) == 0 {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for c := range d.watchers {
+		for i := range changes {
+			c.event(proto.Message{Event: "change", Change: &changes[i]})
+		}
+	}
+}
+
 func (d *Daemon) broadcastLoop() {
+	prev := d.state()
 	for range d.changeCh {
 		// Coalesce a burst of changes into one message.
 		time.Sleep(25 * time.Millisecond)
@@ -295,6 +317,10 @@ func (d *Daemon) broadcastLoop() {
 			c.event(proto.Message{Event: "state", State: &st})
 		}
 		d.mu.Unlock()
+		changes := proto.Changes(prev, st)
+		d.watch(changes)
+		d.runHooks(changes)
+		prev = st
 	}
 }
 
@@ -756,6 +782,7 @@ func (d *Daemon) serveControl(conn net.Conn, r *bufio.Reader) {
 	defer func() {
 		d.mu.Lock()
 		delete(d.subs, c)
+		delete(d.watchers, c)
 		d.mu.Unlock()
 	}()
 	go func() {
