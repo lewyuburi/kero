@@ -1462,3 +1462,27 @@ func TestEnablingHorizontalTabsMovesNothing(t *testing.T) {
 		t.Error("the user's choice did not take")
 	}
 }
+
+// A browser's header says an agent is at the page for a few seconds after
+// kero browser did something to it, and not otherwise.
+func TestBrowserAgentBadge(t *testing.T) {
+	a := testApp(t)
+	s := &a.st.Sessions[0]
+	s.Panes[1] = proto.Pane{ID: "b", Dir: "/tmp", URL: proto.BlankURL, Status: proto.Idle, Progress: -1}
+	tt := ui.NewTester(a.view, 1100, 640)
+	tt.Frame()
+	tt.Frame()
+	if tt.HasText(locales.BrowserAgent()) {
+		t.Errorf("an agent drives a page no command touched; texts %q", tt.Texts())
+	}
+	a.webs["b"].drove = time.Now()
+	tt.Frame()
+	if !tt.HasText(locales.BrowserAgent()) {
+		t.Errorf("no agent badge just after a command; texts %q", tt.Texts())
+	}
+	a.webs["b"].drove = time.Now().Add(-2 * agentShown)
+	tt.Frame()
+	if tt.HasText(locales.BrowserAgent()) {
+		t.Errorf("the agent badge stays long after the last command; texts %q", tt.Texts())
+	}
+}
