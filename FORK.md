@@ -15,7 +15,6 @@ so that what is worth sending back can be, cleanly.
 | `pr/ring-frame-rate` | The status rings painted at 30 frames a second, not at every refresh. On `main`, alone. |
 | `pr/browser-snapshot` | `kero browser snapshot`, refs (`@e3`) for elements, `press`, `scroll`, `url` and `title`. On `main`, alone. |
 | `pr/browser-agent-badge` | The browser's header says **Agent** while a command is at the page. On `main`, alone. |
-| `pr/browser-web-only` | `kero browser open` and `--url` take web pages alone. On `main`, alone. |
 | `fork/main`          | What is built and installed: the branches above merged, then the fork's own layer. |
 
 The `pr/*` branches are what could be sent to egoist/kero: plain settings that
