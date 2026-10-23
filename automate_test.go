@@ -69,3 +69,17 @@ func TestLoadEnds(t *testing.T) {
 		t.Errorf("script ends %q", js[strings.LastIndex(js, ")("):])
 	}
 }
+
+// The page's script does every command that goes to it: those of a
+// snapshot too, which name an element by a ref as by a selector.
+func TestPageScriptDoesItsCommands(t *testing.T) {
+	for _, op := range []string{"text", "html", "click", "type", "url", "title", "snapshot", "press", "scroll", "wait"} {
+		if !strings.Contains(pageOps, `case "`+op+`"`) {
+			t.Errorf("the page's script does not do %s", op)
+		}
+	}
+	js := pageScript(proto.BrowserParams{Op: "click", Selector: "@e3"}, time.Second)
+	if !strings.Contains(js, `"selector":"@e3"`) {
+		t.Errorf("a ref is not passed as it is: %q", js)
+	}
+}

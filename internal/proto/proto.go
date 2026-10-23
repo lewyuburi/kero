@@ -721,12 +721,15 @@ type (
 	// which the app showing it does.
 	BrowserParams struct {
 		ID string `json:"id"`
-		// Op is what to do: open, back, forward, reload, text, html,
-		// click, type, wait, eval or screenshot.
-		Op       string `json:"op"`
+		// Op is what to do: open, back, forward, reload, url, title, text,
+		// html, snapshot, click, type, press, scroll, wait, eval or
+		// screenshot.
+		Op string `json:"op"`
+		// Selector is a CSS selector, or a ref (@e3) that a snapshot gave.
 		Selector string `json:"selector,omitempty"`
-		// Text is the URL to open, the text to type or wait for, or the
-		// script to evaluate.
+		// Text is the URL to open, the text to type or wait for, the key
+		// to press, where to scroll (up, down, top or bottom) when there is
+		// no selector, or the script to evaluate.
 		Text  string `json:"text,omitempty"`
 		Enter bool   `json:"enter,omitempty"` // press Enter after typing
 		// Timeout is how long to wait for the element, or the page to
