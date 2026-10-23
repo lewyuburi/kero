@@ -105,7 +105,7 @@ kero browser eval 'document.title'
 
 | 命令                            | 作用 |
 | ------------------------------- | ---- |
-| `open <url>`                    | 前往某个网页，并等待加载完成 |
+| `open <url>`                    | 前往某个网页（`http` 或 `https`），并等待加载完成 |
 | `back`, `forward`, `reload`     | 后退、前进或重新加载页面，并等待完成 |
 | `url`, `title`                  | 打印页面的地址和标题 |
 | `text [selector]`               | 打印页面的可见文本，或第一个匹配元素的文本 |
