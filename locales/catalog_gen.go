@@ -2350,11 +2350,11 @@ func (msgs Messages) SetHorizontalTabs() string {
 	return Catalog.Format(msgs.locale, "setHorizontalTabs", nil)
 }
 
-// SetHorizontalTabsDetail says "Offer tabs across the top of the window as a choice in Appearance, with ⇧⌘B to switch. Enabling it changes nothin…"
+// SetHorizontalTabsDetail says "Offer tabs across the top of the window as a choice in Appearance, with ⌥⌘B to switch. Enabling it changes nothin…"
 // in the language the app shows.
 func SetHorizontalTabsDetail() string { return In(i18n.Locale()).SetHorizontalTabsDetail() }
 
-// SetHorizontalTabsDetail says "Offer tabs across the top of the window as a choice in Appearance, with ⇧⌘B to switch. Enabling it changes nothin…"
+// SetHorizontalTabsDetail says "Offer tabs across the top of the window as a choice in Appearance, with ⌥⌘B to switch. Enabling it changes nothin…"
 // in the language of msgs.
 func (msgs Messages) SetHorizontalTabsDetail() string {
 	return Catalog.Format(msgs.locale, "setHorizontalTabsDetail", nil)

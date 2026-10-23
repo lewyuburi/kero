@@ -58,7 +58,7 @@ description: Kero 的默认键盘快捷键，以及用于重新绑定的操作 i
 | 操作           | macOS                     | Windows 和 Linux                              | 操作 id          |
 | -------------- | ------------------------- | --------------------------------------------- | ---------------- |
 | 切换边栏       | <kbd>⌘</kbd> <kbd>B</kbd> | <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>B</kbd> | `sidebar.toggle` |
-| 切换横向标签（需 `horizontal-tabs` 标志） | <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>B</kbd> | <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>B</kbd> | `tabs.toggle` |
+| 切换横向标签（需 `horizontal-tabs` 标志） | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>B</kbd> | <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>B</kbd> | `tabs.toggle` |
 | 显示或隐藏改动 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>G</kbd> | <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>G</kbd> | `changes.toggle` |
 | 放大           | <kbd>⌘</kbd> <kbd>=</kbd> | <kbd>Ctrl</kbd> <kbd>=</kbd>                  | `text.bigger`    |
 | 缩小           | <kbd>⌘</kbd> <kbd>-</kbd> | <kbd>Ctrl</kbd> <kbd>-</kbd>                  | `text.smaller`   |

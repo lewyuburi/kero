@@ -19,7 +19,7 @@ Each is a commit or a few, in files of their own where it can be, so that what
 Kero changes under them is settled once, in a merge.
 
 - **Layout:** `card-gap` and `pane-gap` (and the corners that follow them),
-  `tab-layout` with the tab bar across the top (`tabs.go`), ⇧⌘B, and sessions in
+  `tab-layout` with the tab bar across the top (`tabs.go`), ⌥⌘B, and sessions in
   no project (`loose-sessions`).
 - **Keys and hooks:** `keybind` sequences and key modes (`chords.go`), `pane.resize.*`;
   `on-status` hooks and `kero watch`; `kero api` (kerod's methods, described and called).

@@ -21,7 +21,7 @@ const FlagCustomSpacing = "custom-spacing"
 
 // FlagHorizontalTabs offers the sessions' tabs across the top of the window,
 // grouped by project in tinted colors as Dia's are, besides down the sidebar:
-// with it enabled, Appearance lets the user choose, and ⇧⌘B switches. It
+// with it enabled, Appearance lets the user choose, and ⌥⌘B switches. It
 // changes nothing by itself: the choice is tab-layout's, vertical until the
 // user makes it. It was made on macOS and not looked at elsewhere, and
 // starts disabled.

@@ -997,8 +997,8 @@ func TestToggleTabs(t *testing.T) {
 	if !ok || act.Title == "" || act.Menu != "View" {
 		t.Fatalf("no tabs.toggle action in the View menu: %+v", act)
 	}
-	if runtime.GOOS == "darwin" && act.Keys != "CmdOrCtrl+Shift+B" {
-		t.Errorf("tabs.toggle is bound to %q, want CmdOrCtrl+Shift+B", act.Keys)
+	if runtime.GOOS == "darwin" && act.Keys != "CmdOrCtrl+Alt+B" {
+		t.Errorf("tabs.toggle is bound to %q, want CmdOrCtrl+Alt+B", act.Keys)
 	}
 	if side, _ := actions.Find("sidebar.toggle"); side.Keys == act.Keys {
 		t.Errorf("tabs.toggle and sidebar.toggle share %q", act.Keys)
