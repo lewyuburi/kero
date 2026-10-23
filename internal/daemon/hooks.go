@@ -22,6 +22,9 @@ const (
 // runHooks runs the on-status commands of the settings for the status
 // changes among changes, each on its own, off the broadcast loop.
 func (d *Daemon) runHooks(changes []proto.Change) {
+	if len(changes) == 0 {
+		return
+	}
 	hooks := settings.Load().StatusHooks()
 	if len(hooks) == 0 {
 		return

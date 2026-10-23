@@ -3,7 +3,7 @@
 ## mygo
 
 A copy of [mygo](https://github.com/egoist/mygo) at the version `go.mod` names
-(v0.5.6-0.20261020184213-ea23ad2975a8), without its docs, website, examples,
+(v0.6.3-0.20261022115212-d89af4a66c5e), without its docs, website, examples,
 packages and tests, which Kero does not build. `go.mod` points at it with a
 `replace`.
 
