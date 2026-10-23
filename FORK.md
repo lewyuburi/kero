@@ -9,11 +9,13 @@ so that what is worth sending back can be, cleanly.
 | Branch               | What it is |
 | -------------------- | ---------- |
 | `main`               | egoist/kero's `main`, as it is. Only fast-forwards. |
-| `pr/split-key`       | A bug in `main`: a split down built a Row and a Column under one key. |
-| `pr/card-gap`        | `card-gap` and `pane-gap`, and the corners that follow them. On `pr/split-key`. |
+| `pr/card-gap`        | `card-gap` and `pane-gap`, and the corners that follow them. |
 | `pr/horizontal-tabs` | `tab-layout`, the tab bar with a capsule a project, and ⇧⌘B. On `pr/card-gap`. |
 | `pr/loose-sessions`  | `loose-sessions`: a session in no project. On `main`, alone. |
 | `pr/ring-frame-rate` | The status rings painted at 30 frames a second, not at every refresh. On `main`, alone. |
+| `pr/browser-snapshot` | `kero browser snapshot`, refs (`@e3`) for elements, `press`, `scroll`, `url` and `title`. On `main`, alone. |
+| `pr/browser-agent-badge` | The browser's header says **Agent** while a command is at the page. On `main`, alone. |
+| `pr/browser-web-only` | `kero browser open` and `--url` take web pages alone. On `main`, alone. |
 | `fork/main`          | What is built and installed: the branches above merged, then the fork's own layer. |
 
 The `pr/*` branches are what could be sent to egoist/kero: plain settings that
@@ -37,9 +39,18 @@ The fork's layer, on top of them in `fork/main`, in this order:
 ```sh
 git fetch origin
 git switch main && git merge --ff-only origin/main
-git switch pr/split-key && git rebase main        # then each branch on the one under it
-git switch fork/main && git merge main pr/horizontal-tabs pr/loose-sessions pr/ring-frame-rate
+git switch fork/main && git merge main
 ```
+
+Kero's own browser, panes and hosts are the fork's: nothing of theirs is kept
+apart. The fork's changes are commits on `fork/main` over `main`; a conflict is
+settled there, once, as it comes.
+
+The `pr/*` branches that are not `pr/browser-*` were last rebased on Kero 2.0.7.
+Their changes are on `fork/main` over 2.1.9, as the commits of the same names, with
+what 2.1.x changed settled in them (a few tests, the hosts model, the side panel). One
+that is to go upstream is made again on `main` from its commits, then rebased as
+the others were.
 
 A change to a `pr/*` branch is made there, then merged into `fork/main`; only the
 fork's layer is changed on `fork/main` itself.
