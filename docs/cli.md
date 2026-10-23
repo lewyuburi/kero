@@ -116,7 +116,7 @@ kero browser eval 'document.title'
 
 Selectors are CSS selectors; quote them in the shell. Commands that need an element wait for it to appear, and `--timeout` (default `10s`) sets how long they, and the page loads, may take. `type` and `eval` take `-` for text from stdin.
 
-Clicking and typing send the events a real mouse and keyboard would, so pages built with React and other frameworks see them. A screenshot needs the pane to be on screen: show it with `kero focus` first. The rest works on any browser pane, shown or not.
+Clicking and typing send the events a real mouse and keyboard would, so pages built with React and other frameworks see them. While a command is at the page, and a few seconds after, the browser's header says **Agent**, so you see whose hands are on it. A screenshot needs the pane to be on screen: show it with `kero focus` first. The rest works on any browser pane, shown or not.
 
 Like `kero do`, `kero browser` needs Remote Control, in **Settings › Agents**, and the app to be open.
 

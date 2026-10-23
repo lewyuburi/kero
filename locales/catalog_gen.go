@@ -4924,6 +4924,16 @@ func (msgs Messages) BrowserBlank() string {
 	return Catalog.Format(msgs.locale, "browserBlank", nil)
 }
 
+// BrowserAgent says "Agent"
+// in the language the app shows.
+func BrowserAgent() string { return In(i18n.Locale()).BrowserAgent() }
+
+// BrowserAgent says "Agent"
+// in the language of msgs.
+func (msgs Messages) BrowserAgent() string {
+	return Catalog.Format(msgs.locale, "browserAgent", nil)
+}
+
 // BrowserBack says "Back"
 // in the language the app shows.
 func BrowserBack() string { return In(i18n.Locale()).BrowserBack() }

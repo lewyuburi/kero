@@ -58,6 +58,7 @@ func (a *App) browse(h *host, r *proto.BrowserRequest, answer func(*proto.Browse
 		}
 		return
 	}
+	e.drove = time.Now()
 	timeout := time.Duration(r.Timeout) * time.Millisecond
 	if timeout <= 0 {
 		timeout = browseTimeout

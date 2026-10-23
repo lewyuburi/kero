@@ -1010,6 +1010,7 @@
   },
   "browserCantShow": "Can’t show the page",
   "browserBlank": "Type an address or a search above",
+  "browserAgent": "Agent",
   "browserBack": "Back",
   "browserForward": "Forward",
   "browserReload": "Reload",

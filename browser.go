@@ -45,7 +45,14 @@ type webEntry struct {
 	// iconURL is the URL of the icon the page told: until it does, its
 	// site's last shows.
 	iconURL string
+	// drove is when kero browser last did something to the page: the header
+	// says an agent is at it for a few seconds after.
+	drove time.Time
 }
+
+// agentShown is how long the header says an agent drives the page after its
+// last command.
+const agentShown = 4 * time.Second
 
 // browserUA makes the page look like Safari's on macOS: sites serve a bare
 // WKWebView, whose user agent names no browser, older pages.
@@ -321,6 +328,10 @@ func (a *App) browserBar(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 		}
 		gap := ui.Box(c.Key("drag-l")).Width(8).Shrink(0).AlignSelf(ui.Stretch)
 		dragging = a.addressBar(c, pal, s, p, e, multi)
+		if left := agentShown - time.Since(e.drove); !e.drove.IsZero() && left > 0 {
+			agentBadge(c, pal)
+			c.After(left)
+		}
 		// The room the address bar leaves moves the window, and zooms it
 		// on a double click.
 		rest := ui.Box(c.Key("drag")).Grow(1).MinWidth(8).AlignSelf(ui.Stretch)
@@ -335,6 +346,14 @@ func (a *App) browserBar(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 		}
 	})
 	return h, dragging
+}
+
+// agentBadge tells that kero browser is at the page: whose hands are on it.
+func agentBadge(c *ui.Context, pal *palette) {
+	ui.Row(c.Key("agent")).Height(20).Margin(0, 0, 0, 8).Padding(0, 7).Radius(6).AlignItems(ui.Center).Shrink(0).
+		Background(pal.accent.Alpha(0.16)).Children(func() {
+		ui.Text(c, locales.BrowserAgent()).FontSize(11.5).FontWeight(600).TextColor(pal.accent).SingleLine()
+	})
 }
 
 // navButton is a toolbar's button, faint while it can do nothing.
