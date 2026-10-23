@@ -364,7 +364,7 @@ const pageOps = `async (a) => {
     const K = (window.__kero = window.__kero || {});
     K.refs = new Map();
     const clip = (s, n) => { s = String(s == null ? "" : s).replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
-    const label = (el) => clip(el.getAttribute("aria-label") || el.innerText || el.textContent || el.value || el.getAttribute("placeholder") || el.title || el.alt || "", 80);
+    const label = (el) => clip(el.getAttribute("aria-label") || el.innerText || el.textContent || (el.type === "password" ? "" : el.value) || el.getAttribute("placeholder") || el.title || el.alt || "", 80);
     const out = ["title: " + clip(document.title, 120), "url: " + location.href];
     const wanted = "h1,h2,h3,a[href],button,input,select,textarea,summary,[role=button],[role=link],[role=tab],[role=menuitem],[role=checkbox],[role=switch],[role=option],[contenteditable=true],[contenteditable='']";
     let n = 0;
@@ -398,14 +398,26 @@ const pageOps = `async (a) => {
   }
   case "press": {
     const el = document.activeElement || document.body;
-    const codes = { Enter: 13, Tab: 9, Escape: 27, Backspace: 8, ArrowUp: 38, ArrowDown: 40, ArrowLeft: 37, ArrowRight: 39, Space: 32 };
+    const named = { Enter: [13, "Enter"], Tab: [9, "Tab"], Escape: [27, "Escape"], Backspace: [8, "Backspace"], ArrowUp: [38, "ArrowUp"], ArrowDown: [40, "ArrowDown"],
+      ArrowLeft: [37, "ArrowLeft"], ArrowRight: [39, "ArrowRight"], Space: [32, "Space"] };
     const k = a.text === "Space" ? " " : a.text;
-    const code = codes[a.text] || k.toUpperCase().charCodeAt(0);
-    const init = { key: k, code: k.length === 1 ? "Key" + k.toUpperCase() : k, keyCode: code, which: code, bubbles: true, cancelable: true, composed: true };
+    const [code, name] = named[a.text] || [k.length === 1 ? k.toUpperCase().charCodeAt(0) : 0, /^[a-z]$/i.test(k) ? "Key" + k.toUpperCase() : /^[0-9]$/.test(k) ? "Digit" + k : k];
+    const init = { key: k, code: name, keyCode: code, which: code, bubbles: true, cancelable: true, composed: true };
     const go = el.dispatchEvent(new KeyboardEvent("keydown", init));
-    el.dispatchEvent(new KeyboardEvent("keypress", init));
-    if (k === "Enter" && go && el instanceof HTMLInputElement && el.form) {
-      el.form.requestSubmit ? el.form.requestSubmit() : el.form.submit();
+    // A key is keypressed only where it types; what it does besides, as a
+    // user's would, the page's own handlers having let it.
+    if (k.length === 1 || k === "Enter") el.dispatchEvent(new KeyboardEvent("keypress", init));
+    if (go) {
+      if (k === "Enter" && el instanceof HTMLInputElement && el.form) {
+        el.form.requestSubmit ? el.form.requestSubmit() : el.form.submit();
+      } else if ((k === "Enter" || k === " ") && el.closest && el.closest("button, a[href], summary, [role=button]")) {
+        el.closest("button, a[href], summary, [role=button]").click();
+      } else if (k === "Tab") {
+        const tabbable = [...document.querySelectorAll("a[href], button, input, select, textarea, summary, [tabindex]")].filter((e) => !e.disabled && e.tabIndex >= 0 && visible(e));
+        const at = tabbable.indexOf(el);
+        const next = tabbable[(at + 1) % tabbable.length];
+        if (next) next.focus();
+      }
     }
     el.dispatchEvent(new KeyboardEvent("keyup", init));
     return;
