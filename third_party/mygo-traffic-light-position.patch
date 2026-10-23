@@ -1,0 +1,219 @@
+diff --git a/docs/windows.md b/docs/windows.md
+index 124ec32..069637b 100644
+--- a/docs/windows.md
++++ b/docs/windows.md
+@@ -49,7 +49,7 @@ on the screen. Sizes and positions are in device-independent pixels.
+ | `Maximized`, `FullScreen` | creates it maximized or in full screen |
+ | `Frameless` | no title bar and borders: the page draws them, see [custom title bars](frontend.md#custom-title-bars), or the [native UI](ui/windows.md) |
+ | `TitleBarStyle` | hides the title bar but keeps the window buttons over the page, see [custom title bars](frontend.md#custom-title-bars), or over [native UI](ui/windows.md) |
+-| `TrafficLightPosition` | moves the window buttons of a hidden title bar (macOS) |
++| `TrafficLightPosition` | moves the window buttons of a hidden title bar (macOS); `SetTrafficLightPosition` moves them again as the title bar changes height |
+ | `TitleBarHeight` | the height of the title bar the page draws under the window buttons (Linux, Windows) |
+ | `HideWindowButtons` | hides the window buttons of a hidden title bar, which keeps its resizing top edge, shadow and corners: the page draws its own and calls `Minimize`, `Maximize`, `Unmaximize` and `Close` |
+ | `Transparent`, `Vibrancy` | a transparent window, and the material behind a transparent page or [native UI](ui/windows.md) (macOS, Windows 11 22H2). On Windows, a window with a material has no menu bar: Alt and F10 open its menus in a popup |
+@@ -139,6 +139,7 @@ win.Minimize()          // Restore, IsMinimized
+ win.SetFullScreen(true) // ToggleFullScreen, IsFullScreen
+ win.Hide()              // Show, ShowInactive (without focusing), IsVisible
+ win.Focus()             // Blur, IsFocused
++win.SetTrafficLightPosition(18, 23) // macOS, for a window made with TrafficLightPosition
+ ```
+ 
+ `Bounds`, `ContentBounds`, `Size`, `ContentSize` and `Position` read them
+diff --git a/internal/darwin/window.go b/internal/darwin/window.go
+index 34cac2a..ef0b324 100644
+--- a/internal/darwin/window.go
++++ b/internal/darwin/window.go
+@@ -1033,6 +1033,16 @@ func (w *window) Close() {
+ 	send(w.win, "close")
+ }
+ 
++// SetTrafficLightPosition moves the window buttons of a window made with a
++// position (WindowOptions.TrafficLightPosition) and lays them out there.
++func (w *window) SetTrafficLightPosition(x, y int) {
++	if w.trafficLights == nil {
++		return
++	}
++	w.trafficLights = &platform.Point{X: x, Y: y}
++	w.layoutTrafficLights()
++}
++
+ // layoutTrafficLights puts the top-left corner of the close button at the
+ // requested position, and the other buttons after it, in a title bar that
+ // leaves as much room below them as above. AppKit lays the title bar out
+diff --git a/internal/e2e/e2e_test.go b/internal/e2e/e2e_test.go
+index f69b667..e47c417 100644
+--- a/internal/e2e/e2e_test.go
++++ b/internal/e2e/e2e_test.go
+@@ -829,6 +829,32 @@ func TestTrafficLightPosition(t *testing.T) {
+ 	placed("after the window took an appearance of its own")
+ }
+ 
++// SetTrafficLightPosition moves the window buttons of a window made with a
++// position, once it is open, and AppKit laying the title bar out again does
++// not put them back.
++func TestMoveTrafficLights(t *testing.T) {
++	w := newWindow(t, mygo.WindowOptions{Width: 400, Height: 240, TitleBarStyle: mygo.TitleBarHidden,
++		TrafficLightPosition: &mygo.Point{X: 18, Y: 23}})
++	if _, _, ok := trafficLights(w); !ok {
++		t.Skip("only macOS windows have traffic lights")
++	}
++	placed := func(x, y float64, when string) {
++		t.Helper()
++		eventually(t, fmt.Sprintf("the close button at (%v, %v) %s", x, y, when), func() bool {
++			gx, gy, _ := trafficLights(w)
++			return gx == x && gy == y
++		})
++	}
++	placed(18, 23, "in a new window")
++	w.SetTrafficLightPosition(18, 15)
++	placed(18, 15, "once moved up")
++	w.SetTrafficLightPosition(24, 29)
++	placed(24, 29, "once moved down and in")
++	w.Page().LoadHTML("<title>Moved</title>", "")
++	eventually(t, "the page's title", func() bool { return w.Title() == "Moved" })
++	placed(24, 29, "once the window takes the page's title")
++}
++
+ // GTK gives frameless windows no resize borders, so the outer pixels of
+ // the page resize them instead, as the borders do on macOS and Windows.
+ func TestFramelessResizeEdges(t *testing.T) {
+diff --git a/internal/fake/fake.go b/internal/fake/fake.go
+index ab8036e..2cd8b60 100644
+--- a/internal/fake/fake.go
++++ b/internal/fake/fake.go
+@@ -472,6 +472,7 @@ type Window struct {
+ 	minimized bool
+ 	maximized bool
+ 	full      bool
++	lights    platform.Point
+ 	zoom      float64
+ 	closed    bool
+ 	devtools  bool
+@@ -636,6 +637,21 @@ func (w *Window) SetClosable(bool)                 {}
+ func (w *Window) IsClosable() bool                 { return w.Opts.Closable }
+ func (w *Window) SetAlwaysOnTop(bool)              {}
+ func (w *Window) IsAlwaysOnTop() bool              { return w.Opts.AlwaysOnTop }
++
++// SetTrafficLightPosition records where the window buttons were put.
++func (w *Window) SetTrafficLightPosition(x, y int) {
++	w.mu.Lock()
++	w.lights = platform.Point{X: x, Y: y}
++	w.mu.Unlock()
++}
++
++// TrafficLights is where SetTrafficLightPosition last put the window buttons.
++func (w *Window) TrafficLights() platform.Point {
++	w.mu.Lock()
++	defer w.mu.Unlock()
++	return w.lights
++}
++
+ func (w *Window) Show() {
+ 	w.mu.Lock()
+ 	w.visible = true
+diff --git a/internal/linux/window.go b/internal/linux/window.go
+index 91f089d..4c728bf 100644
+--- a/internal/linux/window.go
++++ b/internal/linux/window.go
+@@ -699,6 +699,9 @@ func (w *window) Unmaximize()       { gtkWindowUnmaximize(w.win) }
+ func (w *window) IsMaximized() bool { return gtkWindowIsMaximized(w.win) }
+ func (w *window) Restore()          { gtkWindowDeiconify(w.win) }
+ 
++// SetTrafficLightPosition does nothing: GTK has no window buttons to move.
++func (w *window) SetTrafficLightPosition(x, y int) {}
++
+ func (w *window) SetFullScreen(v bool) {
+ 	if v {
+ 		gtkWindowFullscreen(w.win)
+diff --git a/internal/platform/platform.go b/internal/platform/platform.go
+index c5702d0..af66f52 100644
+--- a/internal/platform/platform.go
++++ b/internal/platform/platform.go
+@@ -418,6 +418,10 @@ type Window interface {
+ 	IsResizable() bool
+ 	SetMovable(v bool)
+ 	IsMovable() bool
++	// SetTrafficLightPosition moves the window buttons of a window made with
++	// WindowOptions.TrafficLightPosition (macOS), as that option does as it
++	// is made; elsewhere, or for a window made without one, it does nothing.
++	SetTrafficLightPosition(x, y int)
+ 	SetMinimizable(v bool)
+ 	IsMinimizable() bool
+ 	SetMaximizable(v bool)
+diff --git a/internal/web/window.go b/internal/web/window.go
+index d52e64e..e031f25 100644
+--- a/internal/web/window.go
++++ b/internal/web/window.go
+@@ -168,6 +168,9 @@ func (w *window) Focus()          { w.s.focus() }
+ func (w *window) Blur()           { w.s.input.Call("blur") }
+ func (w *window) IsFocused() bool { return w.focused }
+ 
++// SetTrafficLightPosition does nothing: a browser has no window buttons to move.
++func (w *window) SetTrafficLightPosition(x, y int) {}
++
+ // SetFullScreen asks the browser to show the window's element on the whole
+ // screen, which it allows while the user acts.
+ func (w *window) SetFullScreen(v bool) {
+diff --git a/internal/windows/window.go b/internal/windows/window.go
+index 6c27c9a..533d0a2 100644
+--- a/internal/windows/window.go
++++ b/internal/windows/window.go
+@@ -856,6 +856,10 @@ func (w *window) IsMaximized() bool {
+ 
+ func (w *window) Restore() { procShowWindow.Call(w.hwnd, swRestore) }
+ 
++// SetTrafficLightPosition does nothing: the window buttons stay where Windows
++// puts them.
++func (w *window) SetTrafficLightPosition(x, y int) {}
++
+ // SetFullScreen takes the window's frame and menu bar away, or gives them
+ // back. Each step sizes the window again: it is laid out once, at the end.
+ func (w *window) SetFullScreen(v bool) {
+diff --git a/mygo_test.go b/mygo_test.go
+index 7260985..a45e0d6 100644
+--- a/mygo_test.go
++++ b/mygo_test.go
+@@ -578,6 +578,23 @@ func TestWindowControls(t *testing.T) {
+ 	}
+ }
+ 
++// SetTrafficLightPosition reaches the backend's window, after the position
++// the window was made with.
++func TestSetTrafficLightPosition(t *testing.T) {
++	w, fw := testWindow(t, WindowOptions{TitleBarStyle: TitleBarHidden, TrafficLightPosition: &Point{X: 18, Y: 23}})
++	if p := fw.Opts.TrafficLightPosition; p == nil || *p != (platform.Point{X: 18, Y: 23}) {
++		t.Fatalf("made with %v, want (18, 23)", p)
++	}
++	w.SetTrafficLightPosition(18, 15)
++	if p := fw.TrafficLights(); p != (platform.Point{X: 18, Y: 15}) {
++		t.Errorf("moved to %v, want (18, 15)", p)
++	}
++	w.SetTrafficLightPosition(24, 31)
++	if p := fw.TrafficLights(); p != (platform.Point{X: 24, Y: 31}) {
++		t.Errorf("moved again to %v, want (24, 31)", p)
++	}
++}
++
+ type badService struct{}
+ 
+ func (badService) Bad(ch chan int) {}
+diff --git a/window.go b/window.go
+index 6c1305e..b4a0506 100644
+--- a/window.go
++++ b/window.go
+@@ -915,6 +915,15 @@ func (w *Window) SetMaximumSize(width, height int) {
+ 	w.do(func(n platform.Window) { n.SetMaximumSize(platform.Size{Width: width, Height: height}) })
+ }
+ 
++// SetTrafficLightPosition moves the window buttons of a window made with
++// WindowOptions.TrafficLightPosition, to x and y DIPs from the window's top
++// left corner, as the option does as the window is made, for a title bar
++// whose height follows what the window shows. It does nothing on Linux and
++// Windows, and for a window made without a position.
++func (w *Window) SetTrafficLightPosition(x, y int) {
++	w.do(func(n platform.Window) { n.SetTrafficLightPosition(x, y) })
++}
++
+ // SetResizable sets whether the user can resize the window.
+ func (w *Window) SetResizable(v bool) { w.do(func(n platform.Window) { n.SetResizable(v) }) }
+ 

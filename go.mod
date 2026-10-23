@@ -20,3 +20,7 @@ require (
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 )
+
+// A copy of mygo with Window.SetTrafficLightPosition, which the fork moves the
+// traffic lights with as the panel gap changes. See third_party/README.md.
+replace github.com/egoist/mygo => ./third_party/mygo
