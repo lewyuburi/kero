@@ -30,6 +30,9 @@ func TestPublicKeyIsTheApps(t *testing.T) {
 	if err := json.Unmarshal(b, &cfg); err != nil {
 		t.Fatal(err)
 	}
+	if cfg.Updates.PublicKey == "" {
+		t.Skip("mygo.json has no updates: this build takes none")
+	}
 	if cfg.Updates.PublicKey != PublicKey {
 		t.Errorf("update.PublicKey is %q, mygo.json's %q", PublicKey, cfg.Updates.PublicKey)
 	}
