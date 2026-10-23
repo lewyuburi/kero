@@ -51,11 +51,14 @@ description: Kero 的默认键盘快捷键，以及用于重新绑定的操作 i
 | 上方窗格      | <kbd>⌘</kbd> <kbd>⌥</kbd> <kbd>↑</kbd> | <kbd>Alt</kbd> <kbd>↑</kbd>                       | `pane.up`          |
 | 下方窗格      | <kbd>⌘</kbd> <kbd>⌥</kbd> <kbd>↓</kbd> | <kbd>Alt</kbd> <kbd>↓</kbd>                       | `pane.down`        |
 
+`pane.resize.left`、`pane.resize.right`、`pane.resize.up` 和 `pane.resize.down` 会把相邻窗格旁边的分隔线朝该方向移动一步。它们没有默认快捷键：请像在[按键模式](./configuration.md#key-modes)中那样自行绑定。
+
 ## 显示
 
 | 操作           | macOS                     | Windows 和 Linux                              | 操作 id          |
 | -------------- | ------------------------- | --------------------------------------------- | ---------------- |
 | 切换边栏       | <kbd>⌘</kbd> <kbd>B</kbd> | <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>B</kbd> | `sidebar.toggle` |
+| 切换横向标签（需 `horizontal-tabs` 标志） | <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>B</kbd> | <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>B</kbd> | `tabs.toggle` |
 | 显示或隐藏改动 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>G</kbd> | <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>G</kbd> | `changes.toggle` |
 | 放大           | <kbd>⌘</kbd> <kbd>=</kbd> | <kbd>Ctrl</kbd> <kbd>=</kbd>                  | `text.bigger`    |
 | 缩小           | <kbd>⌘</kbd> <kbd>-</kbd> | <kbd>Ctrl</kbd> <kbd>-</kbd>                  | `text.smaller`   |

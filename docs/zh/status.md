@@ -37,6 +37,32 @@ Dock 图标会显示有多少会话需要你（`dock-badge`），也可以在有
 
 <a id="reporting-status-from-a-program"></a>
 
+<a id="running-a-command-on-a-status"></a>
+
+## 状态变化时运行命令
+
+`on-status` 会在窗格进入某个状态时运行一条命令，无论应用是否打开。它接收一个状态（`working`、`waiting`、`idle`、`error` 或 `exited`）和命令，可以重复：
+
+```ini
+on-status = waiting osascript -e 'display notification "needs you" with title "Kero"'
+on-status = idle ~/bin/agent-done
+```
+
+命令在 shell 中、窗格所在目录里运行，发生的事情通过环境变量传入：
+
+| 变量                 | 值                                                        |
+| -------------------- | --------------------------------------------------------- |
+| `KERO_EVENT`         | `status`                                                  |
+| `KERO_STATUS`        | 窗格进入的状态                                            |
+| `KERO_PREVIOUS`      | 之前的状态                                                |
+| `KERO_SESSION`、`KERO_PANE` | 会话和窗格，命令中的 `kero` 因此能指向它们         |
+| `KERO_SESSION_NAME`  | 会话名称                                                  |
+| `KERO_MESSAGE`       | 程序上报或通知的内容                                      |
+| `KERO_AGENT`         | 窗格中的编码智能体（如果已知）                            |
+| `KERO_DIR`           | 窗格所在目录                                              |
+
+运行超过一分钟的钩子会被终止，同时最多运行八个。如果要在一个本来就在运行的脚本里对变化做出反应，请用 [`kero watch`](./cli.md#watching)。
+
 ## 从程序报告状态
 
 程序和智能体可以用 `kero report` 告诉 Kero 自己在做什么：

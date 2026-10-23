@@ -85,7 +85,23 @@ echo "go test exited with $?"
 
 命令结束后，窗格连同输出会保留下来，你可以用 `kero read` 读取。如果 shell 是 `cmd`，则无法等待命令结束，因为它判断不出命令何时结束。
 
+<a id="watching"></a>
+
+### 监听变化
+
+`kero watch` 会在变化发生时打印出来，直到你停止它：
+
+```sh
+kero watch                                # 所有变化
+kero watch api --for waiting,error        # 只看某个会话，只看这些状态
+kero watch --json                         # 每行一个 JSON 对象
+kero watch --once --for waiting           # 第一次出现就停止
+```
+
+每行以制表符分隔：事件（`status`、`session.new` 或 `session.closed`）、会话、窗格、变化后的状态和之前的状态、会话名称，以及程序上报的消息。`--json` 输出同样的内容，格式为对象，可以交给 `jq` 读取。
+
 <a id="browsing"></a>
+
 ## 浏览网页
 
 `kero browser` 操控浏览器窗格中的网页，就像 `kero send` 和 `kero read` 操控终端一样：点击、输入、读取页面、截图。它的目标是一个浏览器窗格，或者一个会话（指其中的浏览器）。不指定目标时，它操控所在会话的浏览器。
@@ -187,6 +203,19 @@ kero do pane.split.right
 kero do pane.browser url=localhost:3000
 kero do sidebar.toggle
 ```
+
+## 直接调用 kerod
+
+上面所有命令都是对 kerod 的调用，`kero api` 可以列出、说明并发起这些调用：
+
+```sh
+kero api                                  # 所有方法
+kero api create                           # 它接收什么、返回什么
+kero api read '{"id": "api", "lines": 20}'
+echo '{"id": "api", "data": "ls\r"}' | kero api send -
+```
+
+参数是 JSON，格式以方法的说明为准（`--json` 会把说明本身输出为 JSON），调用会打印 kerod 的回应。窗格或会话用它的 id、id 的前缀或会话名称指定，和各命令中一样。要跟踪事件，请用 `kero watch`，而不是 `subscribe`。
 
 ## 退出码
 

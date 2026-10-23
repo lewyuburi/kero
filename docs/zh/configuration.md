@@ -53,9 +53,12 @@ kero config check             # 报告未知的配置项和无效的值
 | 配置项               | 默认值   | 说明                                                            |
 | -------------------- | -------- | --------------------------------------------------------------- |
 | `window-theme`       | `system` | 应用外观：`system`、`light` 或 `dark`                            |
+| `tab-layout`         | `vertical` | 会话标签的位置：`vertical` 在边栏中纵向排列，`horizontal` 在窗口顶部横向排列，按项目分组并带有不同底色。需要 `horizontal-tabs` 标志，该标志只提供这个选择。标签在顶部时，切换边栏不起作用 |
 | `language`           | `system` | 应用语言：`system`、`en` 或 `zh-Hans`                            |
 | `background`         | `petal`  | 窗口底色：`petal`、`mist`、`meadow`、`dusk` 或 `plain`           |
 | `window-translucent` | `true`   | 让桌面透过窗口显示出来                                          |
+| `card-gap`           | `8`      | 窗口边缘与面板之间的间距，单位为点，范围 `0` 到 `12`。为 `0` 时面板铺满窗口，并沿用窗口的圆角。需要 `custom-spacing` 标志 |
+| `pane-gap`           | `same`   | 分屏窗格之间的间距，单位为点，范围 `0` 到 `16`，或 `same` 表示跟随 `card-gap`。为 `0` 时窗格相接，相接处的圆角为直角。需要 `custom-spacing` 标志 |
 
 ## 终端
 
@@ -95,6 +98,7 @@ kero config check             # 报告未知的配置项和无效的值
 | `notify-sound`      | `false` | 通知时播放提示音                               |
 | `dock-badge`        | `true`  | 在 Dock 图标上显示有多少会话需要你             |
 | `dock-bounce`       | `false` | 有会话开始需要你时，Dock 图标跳动一次          |
+| `on-status`         |         | 窗格进入某个状态时运行一条命令，格式为 `<状态> <命令>`，可重复。见[状态变化时运行命令](./status.md#running-a-command-on-a-status) |
 
 ## 智能体
 
@@ -148,6 +152,22 @@ browser-filter-list = fanboy-cookie
 browser-filter-list = https://example.com/my-filters.txt
 ```
 
+<a id="flags"></a>
+
+## 标志
+
+标志是实验性功能，和 Chrome 的一样：每个标志默认启用或禁用（默认值可能因平台而异），用 `flag` 设为 `<id>=enabled` 或 `<id>=disabled`，每个标志写一行。设置 › 高级会列出它们及其默认值。
+
+```
+flag = custom-spacing=disabled
+```
+
+| 标志              | 默认值   | 说明 |
+| ----------------- | -------- | ---- |
+| `custom-spacing`  | 禁用     | 让 `card-gap` 和 `pane-gap` 生效，并让窗口控件随之移动。禁用时，布局保持固定的 8 点 |
+| `horizontal-tabs` | 禁用     | 提供 `tab-layout`，以及切换它的 ⇧⌘B。启用本身不会改变任何东西：在 `tab-layout` 设为 `horizontal` 之前，标签仍在边栏中。点击项目名称可折叠该项目，它的菜单可以重命名项目或更改颜色 |
+| `loose-sessions`  | 禁用     | 允许会话不属于任何项目：在既不属于某个项目、也不属于 git 仓库的文件夹中启动的会话、用“在主目录新建会话”有意启动的会话，或从菜单中移出项目的会话。它们排在边栏最前面且没有标题；标签在顶部时，则排在任何分组之外 |
+
 <a id="keyboard"></a>
 
 ## 键盘
@@ -161,3 +181,33 @@ keybind = cmd+b=unbind
 ```
 
 运行 `kero actions` 查看所有操作 id，默认快捷键见[键盘快捷键](./shortcuts.md)。
+
+### 序列
+
+用 `>` 连接多个组合键，即可绑定一个序列：先按第一个，再按下一个。
+
+```ini
+keybind = ctrl+a>c=session.new
+keybind = ctrl+a>n=session.next
+```
+
+第一个组合键需要带 `ctrl`、`alt` 或 `cmd`。以它开头的序列由 Kero 接管：它不能同时是某个操作的快捷键，终端也收不到它。序列中按下不属于它的键会结束序列并且什么都不做；等待超过一秒半也一样。等待期间，窗口会提示。
+
+<a id="key-modes"></a>
+
+### 按键模式
+
+按键模式是一组命名的绑定，开启后一直有效，直到你退出。把某个键绑定到 `mode:<名称>` 即可进入，并在其绑定前写上这个名称：
+
+```ini
+keybind = ctrl+a>r=mode:resize
+keybind = resize:left=pane.resize.left
+keybind = resize:right=pane.resize.right
+keybind = resize:up=pane.resize.up
+keybind = resize:down=pane.resize.down
+keybind = resize:enter=mode:off
+```
+
+在模式中，按键不需要修饰键；没有绑定的键会被吞掉且什么都不做，这样它就不会传给程序。`mode:off` 退出模式，Escape 也可以，除非该模式绑定了它。模式开启期间，窗口会显示它。运行 `kero actions` 查看可绑定的操作。
+
+序列和模式从终端窗格的按键开始。进入模式后，或在序列进行到一半时，它的按键在窗口中无论键盘在哪里都会交给它（对话框之外）；浏览器窗格保留自己的按键，所以聚焦到浏览器窗格会结束模式。在 Linux 上，只输入字符的键可能在终端的按键钩子看到之前就已传给程序，因此在那里请把模式绑定到方向键、Enter、Escape 和带修饰键的按键上。
