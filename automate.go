@@ -117,9 +117,16 @@ func (a *App) browse(h *host, r *proto.BrowserRequest, answer func(*proto.Browse
 			return
 		}
 		eval(pageScript(r.BrowserParams, timeout))
-	case "text", "html", "click", "type":
-		if r.Op != "text" && r.Op != "html" && r.Selector == "" {
+	case "text", "html", "click", "type", "url", "title", "snapshot", "press", "scroll":
+		switch {
+		case (r.Op == "click" || r.Op == "type") && r.Selector == "":
 			fail("%s: which element?", r.Op)
+			return
+		case r.Op == "press" && strings.TrimSpace(r.Text) == "":
+			fail("press: which key?")
+			return
+		case r.Op == "scroll" && r.Selector == "" && r.Text == "":
+			fail("scroll: up, down, top, bottom or which element?")
 			return
 		}
 		eval(pageScript(r.BrowserParams, timeout))
@@ -251,9 +258,16 @@ const pageOps = `async (a) => {
   const deadline = Date.now() + a.timeout;
   const pause = () => new Promise((r) => setTimeout(r, 50));
   const visible = (el) => el.checkVisibility ? el.checkVisibility() : el.getClientRects().length > 0;
+  // A selector is CSS, or a ref (@e3) that a snapshot gave an element.
+  const lookup = (selector) => {
+    if (selector[0] !== "@") return document.querySelector(selector);
+    const el = window.__kero && window.__kero.refs && window.__kero.refs.get(selector.slice(1));
+    if (!el || !el.isConnected) throw new Error(selector + " is not on the page now: take a snapshot again");
+    return el;
+  };
   const find = async (shown) => {
     for (;;) {
-      const el = document.querySelector(a.selector);
+      const el = lookup(a.selector);
       if (el && (!shown || visible(el))) return el;
       if (Date.now() > deadline) throw new Error((el ? "no visible element matches " : "no element matches ") + a.selector);
       await pause();
@@ -338,11 +352,77 @@ const pageOps = `async (a) => {
     }
     return;
   }
+  case "url":
+    return location.href;
+  case "title":
+    return document.title;
+  case "snapshot": {
+    const K = (window.__kero = window.__kero || {});
+    K.refs = new Map();
+    const clip = (s, n) => { s = String(s == null ? "" : s).replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+    const label = (el) => clip(el.getAttribute("aria-label") || el.innerText || el.textContent || el.value || el.getAttribute("placeholder") || el.title || el.alt || "", 80);
+    const out = ["title: " + clip(document.title, 120), "url: " + location.href];
+    const wanted = "h1,h2,h3,a[href],button,input,select,textarea,summary,[role=button],[role=link],[role=tab],[role=menuitem],[role=checkbox],[role=switch],[role=option],[contenteditable=true],[contenteditable='']";
+    let n = 0;
+    for (const el of document.querySelectorAll(wanted)) {
+      if (!visible(el) || el.getClientRects().length === 0) continue;
+      const tag = el.tagName.toLowerCase();
+      if (/^h[1-3]$/.test(tag)) { out.push(tag + ' "' + label(el) + '"'); continue; }
+      if (tag === "input" && (el.type || "").toLowerCase() === "hidden") continue;
+      if (n === 400) { out.push("… more below: scroll, then take a snapshot again"); break; }
+      const ref = "e" + ++n;
+      K.refs.set(ref, el);
+      let d;
+      if (tag === "a") {
+        d = 'link "' + label(el) + '"' + (el.href ? " → " + clip(el.href, 100) : "");
+      } else if (tag === "input") {
+        const t = (el.type || "text").toLowerCase();
+        d = "input[" + t + '] "' + label(el) + '"';
+        if (t === "checkbox" || t === "radio") d += el.checked ? " checked" : " unchecked";
+        else if (t !== "submit" && t !== "button") d += ' value="' + (t === "password" ? (el.value ? "••••" : "") : clip(el.value, 60)) + '"';
+      } else if (tag === "textarea") {
+        d = 'textarea "' + label(el) + '" value="' + clip(el.value, 60) + '"';
+      } else if (tag === "select") {
+        const opts = [...el.options].slice(0, 12).map((o) => clip(o.text, 30)).join(" | ");
+        d = 'select "' + clip(el.getAttribute("aria-label") || el.name || el.id || "", 80) + '" value="' + clip(el.selectedIndex >= 0 ? el.options[el.selectedIndex].text : "", 40) + '" options: ' + opts;
+      } else {
+        d = (el.getAttribute("role") || tag) + ' "' + label(el) + '"';
+      }
+      out.push("@" + ref + " " + d + (el.disabled ? " disabled" : ""));
+    }
+    return out.join("\n");
+  }
+  case "press": {
+    const el = document.activeElement || document.body;
+    const codes = { Enter: 13, Tab: 9, Escape: 27, Backspace: 8, ArrowUp: 38, ArrowDown: 40, ArrowLeft: 37, ArrowRight: 39, Space: 32 };
+    const k = a.text === "Space" ? " " : a.text;
+    const code = codes[a.text] || k.toUpperCase().charCodeAt(0);
+    const init = { key: k, code: k.length === 1 ? "Key" + k.toUpperCase() : k, keyCode: code, which: code, bubbles: true, cancelable: true, composed: true };
+    const go = el.dispatchEvent(new KeyboardEvent("keydown", init));
+    el.dispatchEvent(new KeyboardEvent("keypress", init));
+    if (k === "Enter" && go && el instanceof HTMLInputElement && el.form) {
+      el.form.requestSubmit ? el.form.requestSubmit() : el.form.submit();
+    }
+    el.dispatchEvent(new KeyboardEvent("keyup", init));
+    return;
+  }
+  case "scroll": {
+    const page = document.scrollingElement || document.documentElement;
+    switch (a.text) {
+    case "up": scrollBy({ top: -innerHeight * 0.8 }); break;
+    case "down": scrollBy({ top: innerHeight * 0.8 }); break;
+    case "top": scrollTo({ top: 0 }); break;
+    case "bottom": scrollTo({ top: page.scrollHeight }); break;
+    default: (await find()).scrollIntoView({ block: "center", inline: "center" });
+    }
+    await pause();
+    return "at " + Math.round(scrollY) + " of " + Math.max(0, Math.round(page.scrollHeight - innerHeight));
+  }
   case "wait": {
     if (a.selector) await find(true);
     if (!a.text) return;
     for (;;) {
-      const el = a.selector ? document.querySelector(a.selector) : root();
+      const el = a.selector ? lookup(a.selector) : root();
       if (el && el.innerText.includes(a.text)) return;
       if (Date.now() > deadline) throw new Error("no " + JSON.stringify(a.text) + " on the page");
       await pause();

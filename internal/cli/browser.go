@@ -16,7 +16,7 @@ import (
 
 // browserCommands are what kero browser does to a page, which name no
 // target: kero browser text is this session's browser's text.
-var browserCommands = []string{"open", "back", "forward", "reload", "text", "html", "click", "type", "wait", "eval", "screenshot"}
+var browserCommands = []string{"open", "back", "forward", "reload", "url", "title", "text", "html", "snapshot", "click", "type", "press", "scroll", "wait", "eval", "screenshot"}
 
 // browserCmd drives a browser pane's page, which the app has: kerod asks
 // the app, and hands its answer back.
@@ -26,7 +26,7 @@ func browserCmd(c *client.Client, st proto.State, args []string) error {
 	if err != nil {
 		return err
 	}
-	const use = "kero browser [target] <open|back|forward|reload|text|html|click|type|wait|eval|screenshot> [args…]"
+	const use = "kero browser [target] <open|back|forward|reload|url|title|text|html|snapshot|click|type|press|scroll|wait|eval|screenshot> [args…]"
 	pos := f.pos
 	var t target
 	if len(pos) > 0 && !slices.Contains(browserCommands, pos[0]) {
@@ -76,7 +76,7 @@ func browserCmd(c *client.Client, st proto.State, args []string) error {
 		if strings.TrimSpace(p.Text) == "" {
 			return usageErr("kero browser [target] open <url>")
 		}
-	case "back", "forward", "reload", "screenshot":
+	case "back", "forward", "reload", "url", "title", "snapshot", "screenshot":
 		if len(pos) > 0 || len(f.rest) > 0 {
 			return usageErr("kero browser [target] %s takes no arguments", op)
 		}
@@ -89,12 +89,26 @@ func browserCmd(c *client.Client, st proto.State, args []string) error {
 		}
 	case "click":
 		if len(pos) != 1 {
-			return usageErr("kero browser [target] click <selector>")
+			return usageErr("kero browser [target] click <selector|@ref>")
 		}
 		p.Selector = pos[0]
+	case "press":
+		if len(pos) != 1 || len(f.rest) > 0 {
+			return usageErr("kero browser [target] press <key>")
+		}
+		p.Text = pos[0]
+	case "scroll":
+		if len(pos) != 1 || len(f.rest) > 0 {
+			return usageErr("kero browser [target] scroll <up|down|top|bottom|selector>")
+		}
+		if slices.Contains([]string{"up", "down", "top", "bottom"}, pos[0]) {
+			p.Text = pos[0]
+		} else {
+			p.Selector = pos[0]
+		}
 	case "type":
 		if len(pos) < 1 {
-			return usageErr("kero browser [target] type <selector> <text…> [--enter]")
+			return usageErr("kero browser [target] type <selector|@ref> <text…> [--enter]")
 		}
 		p.Selector, p.Enter = pos[0], f.set["enter"]
 		if p.Text, err = rest(pos[1:]); err != nil {
