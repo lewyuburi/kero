@@ -200,6 +200,6 @@ keybind = resize:enter=mode:off
 
 Inside a mode, keys need no modifier, and a key that isn't bound is taken and does nothing, so that it doesn't go to the program. `mode:off` leaves it, and so does Escape unless the mode binds it. The window shows the mode while it's on. `kero actions` lists the actions to bind.
 
-Sequences and modes take the keys of a terminal pane; a browser pane keeps its own. On Linux, a key that only types a character may reach the program without the terminal's key hook seeing it, so bind modes there to arrows, Enter, Escape and keys with a modifier.
+Sequences and modes begin with the keys of a terminal pane. Once in a mode, or in the middle of a sequence, its keys go to it wherever the keyboard is in the window, outside a dialog; a browser pane keeps its own keys, so focusing one ends the mode. On Linux, a key that only types a character may reach the program without the terminal's key hook seeing it, so bind modes there to arrows, Enter, Escape and keys with a modifier.
 
 Run `kero actions` for every action id, and see [Keyboard Shortcuts](./shortcuts.md) for the defaults.

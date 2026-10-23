@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"time"
 
@@ -161,6 +162,44 @@ func (s *chordState) enter(action string) bool {
 	}
 	s.mode = name
 	return true
+}
+
+// next lists the chords that would go on from where the user is: those of the
+// mode's bindings that follow what the sequence has so far, and Escape, which
+// leaves a mode and cancels a sequence.
+func (s *chordState) next(binds []chordBinding) []chord {
+	out := []chord{{key: ui.KeyEscape}}
+	for _, b := range binds {
+		if b.mode != s.mode || len(b.keys) <= len(s.pending) || !equalChords(b.keys[:len(s.pending)], s.pending) {
+			continue
+		}
+		if c := b.keys[len(s.pending)]; !slices.Contains(out, c) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// chordShortcuts takes the keys of a mode, or the rest of a sequence, where
+// no terminal sees them: with the sidebar or a text field in focus, as a
+// mode is for the window and not for a terminal alone. They begin in a
+// terminal, which is where keys of the user's own are free to take. A
+// browser pane's page has the keyboard to itself, so a mode ends when one is
+// where the keys go.
+func (a *App) chordShortcuts(c *ui.Context) {
+	if !a.chords.active() {
+		return
+	}
+	if s := a.session(a.selected); s != nil && a.isBrowser(a.focusOf(s)) {
+		a.chords = chordState{}
+		return
+	}
+	for _, ch := range a.chords.next(a.chordBinds) {
+		if c.Shortcut(ch.mods, ch.key) {
+			a.onKey(ch.mods, ch.key)
+			return
+		}
+	}
 }
 
 // onKey sees a key of a terminal before it does: it reports whether a

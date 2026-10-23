@@ -307,6 +307,7 @@ func (a *App) shortcuts(c *ui.Context) {
 	if c.Shortcut(ui.Ctrl|ui.Shift, ui.KeyTab) {
 		a.selectOffset(-1)
 	}
+	a.chordShortcuts(c)
 	if a.copyText != "" {
 		c.WriteClipboard(a.copyText)
 		c.Toast(locales.ToastCopied())

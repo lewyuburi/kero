@@ -234,3 +234,35 @@ func TestChordsInATerminal(t *testing.T) {
 		t.Errorf("the program got %q, want one right, one left and no ctrl+a", sent)
 	}
 }
+
+// A mode's keys go to it wherever the keyboard is, not only in a terminal:
+// with the sidebar in focus, as with a pane's, and a mode ends when a
+// browser pane, which keeps its keys, is where they go.
+func TestChordsOutsideTerminals(t *testing.T) {
+	a := testApp(t)
+	a.set.Bindings = []settings.Binding{{Mode: "m", Keys: []string{"Left"}, Action: "sidebar.toggle"}}
+	a.chordBinds, a.chordBindsFor = compileBindings(a.set.Bindings), a.set.Bindings
+	tt := ui.NewTester(a.view, 1100, 640)
+	tt.Frame()
+	a.chords.mode = "m"
+	hidden := a.prefs.SidebarHidden
+	tt.Key(0, ui.KeyLeft)
+	tt.Frame()
+	if a.prefs.SidebarHidden == hidden {
+		t.Error("a key of the mode did nothing with no terminal to take it")
+	}
+	tt.Key(0, ui.KeyEscape)
+	tt.Frame()
+	if a.chords.active() {
+		t.Error("Escape left the mode in no terminal's")
+	}
+
+	a.chords.mode = "m"
+	s := &a.st.Sessions[0]
+	s.Panes[1] = proto.Pane{ID: "b", Dir: "/tmp", URL: proto.BlankURL, Status: proto.Idle, Progress: -1}
+	a.setFocus(s, "b")
+	tt.Frame()
+	if a.chords.active() {
+		t.Error("a mode goes on with a browser pane, which keeps the keys, in focus")
+	}
+}
