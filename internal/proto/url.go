@@ -24,21 +24,6 @@ func BrowserURL(text string) string {
 	return "https://www.google.com/search?q=" + url.QueryEscape(text)
 }
 
-// IsWebAddress reports whether text goes to a web page, or the blank one:
-// not to a file, a script or another kind of address, which what drives a
-// page, as kero browser does, would read or run with the app's own leave.
-func IsWebAddress(text string) bool {
-	u, err := url.Parse(BrowserURL(text))
-	if err != nil {
-		return false
-	}
-	switch strings.ToLower(u.Scheme) {
-	case "http", "https":
-		return u.Host != ""
-	}
-	return u.String() == BlankURL
-}
-
 // IsAddress reports whether text is a URL or a host, as BrowserURL goes to,
 // rather than words it would search for.
 func IsAddress(text string) bool {

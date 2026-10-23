@@ -117,7 +117,7 @@ kero browser eval 'document.title'
 
 | Command                         | What it does |
 | ------------------------------- | ------------ |
-| `open <url>`                    | Go to a web page (`http` or `https`), and wait for it to load |
+| `open <url>`                    | Go to a page, and wait for it to load |
 | `back`, `forward`, `reload`     | Go back or forward, or load the page again, and wait for it |
 | `url`, `title`                  | Print where the page is, and what it is called |
 | `text [selector]`               | Print the page's visible text, or the first matching element's |
