@@ -47,3 +47,25 @@ func TestIsAddress(t *testing.T) {
 		}
 	}
 }
+
+// A web page, or the blank one, is what a program that drives a page may
+// open: not a file, a script or another kind of address.
+func TestIsWebAddress(t *testing.T) {
+	for text, want := range map[string]bool{
+		"localhost:3000":         true,
+		"http://localhost:3000/": true,
+		"kero.sh":                true,
+		"https://kero.sh/docs":   true,
+		"about:blank":            true,
+		"file:///etc/passwd":     false,
+		"FILE:///etc/passwd":     false,
+		"javascript:alert(1)":    false,
+		"data:text/html,<b>x":    false,
+		"ftp://example.com":      false,
+		"http://":                false,
+	} {
+		if got := IsWebAddress(text); got != want {
+			t.Errorf("IsWebAddress(%q) = %v, want %v", text, got, want)
+		}
+	}
+}

@@ -88,6 +88,9 @@ func (a *App) browse(h *host, r *proto.BrowserRequest, answer func(*proto.Browse
 		case r.Op == "open" && strings.TrimSpace(r.Text) == "":
 			fail("open: which page?")
 			return
+		case r.Op == "open" && !proto.IsWebAddress(r.Text):
+			fail("open: only http and https pages open, not %s", proto.BrowserURL(r.Text))
+			return
 		case r.Op == "back" && !page.CanGoBack():
 			fail("no page to go back to")
 			return

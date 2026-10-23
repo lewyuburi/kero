@@ -342,6 +342,9 @@ func run(args []string, host string) error {
 		if f.vals["url"] != "" && (len(command) > 0 || f.set["wait"]) {
 			return usageErr("kero new --url shows a page, and runs no command")
 		}
+		if u := f.vals["url"]; u != "" && !proto.IsWebAddress(u) {
+			return usageErr("kero new --url takes a web page: http or https")
+		}
 		dir := f.vals["dir"]
 		// Here, unless the session is of another machine, whose kerod
 		// then starts it in the project's directory, or the home.
@@ -393,6 +396,9 @@ func run(args []string, host string) error {
 		}
 		if f.vals["url"] != "" && (len(command) > 0 || f.set["wait"]) {
 			return usageErr("kero split --url shows a page, and runs no command")
+		}
+		if u := f.vals["url"]; u != "" && !proto.IsWebAddress(u) {
+			return usageErr("kero split --url takes a web page: http or https")
 		}
 		var s proto.Session
 		if err := c.Call("split", proto.CreateParams{Split: t.ref(), Direction: dir, Ratio: ratio,
