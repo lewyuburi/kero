@@ -68,29 +68,3 @@ func TestRunHooksMatchStatus(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
-
-// Watchers get the changes, and a subscriber, the app, does not: nothing
-// the app answers goes to a watcher either.
-func TestWatchSendsChangesToWatchers(t *testing.T) {
-	watcher := &controlConn{out: make(chan proto.Message, 4)}
-	app := &controlConn{out: make(chan proto.Message, 4)}
-	d := &Daemon{
-		watchers: map[*controlConn]struct{}{watcher: {}},
-		subs:     map[*controlConn]struct{}{app: {}},
-	}
-	d.watch(nil)
-	d.watch([]proto.Change{{Event: proto.ChangeStatus, Session: "s1", Pane: "p1", Status: proto.Idle, Previous: proto.Working}})
-	select {
-	case m := <-watcher.out:
-		if m.Event != "change" || m.Change == nil || m.Change.Status != proto.Idle {
-			t.Errorf("the watcher got %+v", m)
-		}
-	default:
-		t.Fatal("the watcher got nothing")
-	}
-	select {
-	case m := <-app.out:
-		t.Errorf("the app got %+v", m)
-	default:
-	}
-}

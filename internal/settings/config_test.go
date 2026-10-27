@@ -103,6 +103,18 @@ func TestKeybinds(t *testing.T) {
 	}
 }
 
+// Ghostty's global: prefix binds the quick terminal as Ghostty's
+// configuration writes it.
+func TestGlobalKeybind(t *testing.T) {
+	s, probs := parse("keybind = global:ctrl+`=quickTerminal.toggle\n")
+	if len(probs) != 0 || s.Shortcuts["quickTerminal.toggle"] != "Ctrl+`" {
+		t.Errorf("quick terminal %q, problems %q", s.Shortcuts["quickTerminal.toggle"], probs)
+	}
+	if out := format(s, ""); !strings.Contains(out, "keybind = ctrl+`=quickTerminal.toggle\n") {
+		t.Errorf("formatted:\n%s", out)
+	}
+}
+
 func TestBadValuesKeepDefaults(t *testing.T) {
 	s, probs := parse("cursor-style = triangle\nfont-size = big\nconfirm-close = maybe\n")
 	d := Default()
@@ -423,5 +435,54 @@ func TestTabLayout(t *testing.T) {
 	out := format(s, "")
 	if back, _ := parse(out); back.TabLayout != TabsHorizontal || !back.Flag(FlagHorizontalTabs) {
 		t.Errorf("choice and flag do not come back from:\n%s", out)
+	}
+}
+
+func TestSaveKeepsASymlinkedConfig(t *testing.T) {
+	dir := t.TempDir()
+	dotfiles := filepath.Join(dir, "dotfiles", "kero", "config")
+	os.MkdirAll(filepath.Dir(dotfiles), 0o755)
+	os.WriteFile(dotfiles, []byte("# mine\nfont-size = 14\n"), 0o600)
+	link := filepath.Join(dir, "config", "kero", "config")
+	os.MkdirAll(filepath.Dir(link), 0o755)
+	if err := os.Symlink("../../dotfiles/kero/config", link); err != nil {
+		t.Skip(err) // Windows without the privilege
+	}
+	t.Setenv("KERO_HOME", dir)
+	t.Setenv("KERO_CONFIG", link)
+	mu.Lock()
+	cache = nil
+	mu.Unlock()
+	s := Load()
+	s.FontSize = 16
+	if err := Save(s); err != nil {
+		t.Fatal(err)
+	}
+	if st, err := os.Lstat(link); err != nil || st.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("the symlink went: %v %v", st, err)
+	}
+	b, _ := os.ReadFile(dotfiles)
+	if string(b) != "# mine\nfont-size = 16\n" {
+		t.Errorf("dotfiles' config:\n%s", b)
+	}
+	if st, _ := os.Stat(dotfiles); st.Mode().Perm() != 0o600 {
+		t.Errorf("mode %v", st.Mode().Perm())
+	}
+}
+
+func TestTargetFollowsSymlinks(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "dotfiles", "config") // not there yet, as before stow's first save
+	mid := filepath.Join(dir, "mid")
+	link := filepath.Join(dir, "config")
+	if err := os.Symlink("dotfiles/config", mid); err != nil {
+		t.Skip(err)
+	}
+	os.Symlink(mid, link)
+	if got := target(link); got != file {
+		t.Errorf("target(link) = %s, want %s", got, file)
+	}
+	if got := target(file); got != file {
+		t.Errorf("target(file) = %s", got)
 	}
 }

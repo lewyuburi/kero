@@ -28,6 +28,7 @@ kero split --url localhost:3000  # 新建一个显示网页的浏览器窗格
 kero rename api backend          # 重命名会话
 kero focus backend               # 在 app 中显示它
 kero close backend               # 结束会话（如果给的是窗格，则关闭该窗格）
+kero close fix-login --remove-worktree   # 同时删除它专属的工作树
 kero restart <pane>              # 重新启动已退出窗格的 shell
 ```
 
@@ -41,6 +42,8 @@ kero restart <pane>              # 重新启动已退出窗格的 shell
 | `-f`, `--focus`             | 在 app 中显示它                                 |
 | `-w`, `--wait`              | 等待它的命令结束，并以该命令的退出码退出        |
 | `-u`, `--url <url>`         | 打开显示该网页的浏览器，而不是 shell            |
+| `--worktree <branch>`       | 在专属的 git 工作树中、以新分支启动（[详情](./changes.md#sessions-in-their-own-worktree)） |
+| `--base <ref>`              | 工作树分支的起点（默认：默认分支）              |
 
 ## 输入与读取
 
@@ -85,20 +88,37 @@ echo "go test exited with $?"
 
 命令结束后，窗格连同输出会保留下来，你可以用 `kero read` 读取。如果 shell 是 `cmd`，则无法等待命令结束，因为它判断不出命令何时结束。
 
-<a id="watching"></a>
+## 监听事件
 
-### 监听变化
-
-`kero watch` 会在变化发生时打印出来，直到你停止它：
+`kero events` 会在会话和窗格发生变化时立即打印出来，每个事件一行，直到你停止它。脚本可以借此同时跟踪所有智能体，而不必轮询 `kero status`。
 
 ```sh
-kero watch                                # 所有变化
-kero watch api --for waiting,error        # 只看某个会话，只看这些状态
-kero watch --json                         # 每行一个 JSON 对象
-kero watch --once --for waiting           # 第一次出现就停止
+kero events                               # 所有会话
+kero events api                           # 一个会话，或一个窗格
+kero events -p kero                       # 一个项目的会话
+kero events --for waiting,error           # 只看进入这些状态的窗格
+kero events --json | jq -r .name          # 每行一个 JSON 对象
+kero events --for waiting --once          # 第一个事件之后就退出
 ```
 
-每行以制表符分隔：事件（`status`、`session.new` 或 `session.closed`）、会话、窗格、变化后的状态和之前的状态、会话名称，以及程序上报的消息。`--json` 输出同样的内容，格式为对象，可以交给 `jq` 读取。
+```
+12:04:31  api x78n9ss  working → waiting  Allow Bash: rm -rf dist?
+12:04:40  api  renamed api → backend
+```
+
+| 事件 | 何时 | 字段 |
+| --- | --- | --- |
+| `pane.status` | 窗格的状态改变 | `pane`、`from`、`to`、`message`、`kind`、`agent`；变为 exited 时还有 `exitCode` |
+| `command.exited` | 窗格启动时所带的命令结束，shell 继续运行 | `pane`、`exitCode` |
+| `pane.created`、`pane.closed` | 窗格启动或关闭 | `pane` |
+| `session.created`、`session.closed` | 会话启动或关闭 | |
+| `session.renamed` | 会话改名 | `from`、`to` |
+| `session.moved` | 会话移到另一个项目 | `from`、`to`（项目的 ID） |
+| `notice` | 会话中的程序发出桌面通知 | `pane`、`title`、`body` |
+
+加上 `--json` 时，每个事件还带有 `event`、`time`（unix 毫秒）、`session`、`project` 和 `name`（会话在侧边栏中显示的名字）。
+
+`kero events` 只报告从现在开始的变化；已有的内容请用 `kero ls --json` 查看。指定目标时，目标关闭后它就会停止。`--once` 在第一个匹配的事件之后退出；如果目标先关闭或超过 `--timeout`，则以 `1` 退出。kerod 在状态稳定后才发送它，所以只持续一瞬间的状态（比如短暂的工作中）可能不会出现。
 
 <a id="browsing"></a>
 
@@ -126,7 +146,7 @@ kero browser eval 'document.title'
 | `url`, `title`                  | 打印页面的地址和标题 |
 | `text [selector]`               | 打印页面的可见文本，或第一个匹配元素的文本 |
 | `html [selector]`               | 打印页面的 HTML，或该元素的 HTML |
-| `snapshot`                      | 列出页面上可操作的内容：标题、链接、按钮和输入框，每项带一个引用，如 `@e3` |
+| `snapshot [selector]`           | 以角色和名称组成的树打印页面所显示的内容（`button "Add"`、`textbox "Email"`），每个元素带一个引用，或只打印某个元素的部分 |
 | `click <selector>`              | 像鼠标一样点击该元素 |
 | `type <selector> <text…>`       | 向输入框输入文本，替换原有内容；`--enter` 会在之后按回车，从而提交所在表单 |
 | `press <key>`                   | 按下 `Enter`、`Tab`、`Escape`、方向键或某个字母，由当前获得焦点的元素接收 |
@@ -135,11 +155,23 @@ kero browser eval 'document.title'
 | `eval <js…>`                    | 在页面中运行 JavaScript 并打印结果：字符串原样输出，其他值输出为 JSON |
 | `screenshot [-o file.png]`      | 保存页面截图，并打印保存位置；`-o -` 会写到标准输出 |
 
-选择器是 CSS 选择器，在 shell 中记得加引号。凡是接受选择器的地方，也接受 `snapshot` 给出的引用（`kero browser click @e3`）：它指向快照列出的那个元素；页面变化使其失效后，会提示重新做一次快照。需要元素的命令会等它出现，`--timeout`（默认 `10s`）设定这些命令以及页面加载最多等多久。`type` 和 `eval` 接受 `-`，表示从标准输入读取文本。
+选择器是 CSS 选择器，在 shell 中记得加引号。凡是命令接受选择器的地方，都可以改用 `--ref` 传入 `snapshot` 给出的引用：`kero browser click --ref e5`。元素的引用在页面跳转到另一个页面之前保持不变；对应元素已不在页面上的引用会失败，而不是去猜另一个元素。需要元素的命令会等它出现，`--timeout`（默认 `10s`）设定这些命令以及页面加载最多等多久。`type` 和 `eval` 接受 `-`，表示从标准输入读取文本。
 
 点击和输入发送的是真实鼠标和键盘会产生的事件，所以 React 等框架构建的页面也能收到。命令操作页面期间及之后的几秒内，浏览器的标题栏会显示 **智能体**，让你知道是谁在操作页面。截图需要窗格显示在屏幕上：先用 `kero focus` 显示它。其余命令对任何浏览器窗格都有效，无论是否显示。
 
 和 `kero do` 一样，`kero browser` 需要开启 **设置 › 智能体** 中的 **远程控制**，并且 app 处于打开状态。
+
+## 过去的对话
+
+```sh
+kero history                     # 窗格中运行过的智能体对话，最近运行的在前
+kero history -p kero -n 50       # 某个项目的对话，最多 50 个
+kero history login --json        # 与 “login” 匹配的对话，输出 JSON
+kero resume 13b9                 # 恢复一个对话：用 ID、ID 的前缀或名字
+kero resume fix-login -f         # 恢复并在 app 中显示
+```
+
+`kero resume` 会在对话的目录和项目中启动一个恢复该对话的会话，并打印会话的 ID。如果某个窗格仍在运行这个对话，则返回那个会话。参见 [过去的对话](./sessions.md#past-conversations)。
 
 ## 状态
 
@@ -215,7 +247,7 @@ kero api read '{"id": "api", "lines": 20}'
 echo '{"id": "api", "data": "ls\r"}' | kero api send -
 ```
 
-参数是 JSON，格式以方法的说明为准（`--json` 会把说明本身输出为 JSON），调用会打印 kerod 的回应。窗格或会话用它的 id、id 的前缀或会话名称指定，和各命令中一样。要跟踪事件，请用 `kero watch`，而不是 `subscribe`。
+参数是 JSON，格式以方法的说明为准（`--json` 会把说明本身输出为 JSON），调用会打印 kerod 的回应。窗格或会话用它的 id、id 的前缀或会话名称指定，和各命令中一样。要跟踪事件，请用 `kero events`，而不是 `subscribe`。
 
 ## 退出码
 

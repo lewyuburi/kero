@@ -8,7 +8,7 @@ const (
 )
 
 // Change is one thing that happened between two states of the daemon, as
-// `kero watch` prints it and the on-status hooks run on it.
+// the on-status hooks run on it.
 type Change struct {
 	Event   string `json:"event"`
 	Session string `json:"session"`

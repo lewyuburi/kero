@@ -38,6 +38,11 @@ prefix works), or a session's name; a session stands for its focused pane.
     kero prompt <target> "run the tests"      # send + Enter, wait, print screen
     kero wait <target> [--for idle,waiting,error,exited] [--timeout 10m]
     kero wait <target> --exit                 # until its command ends; exits with its status
+    kero new --worktree <branch> -- claude    # an agent on a new branch, in a worktree of its own
+    kero events [target] [--for waiting,error] [--json]
+                                              # a line per change, as it happens
+    kero history [query] [--json]             # agents' past conversations, to resume
+    kero resume <conversation>                # a session resuming one
     kero read <target> [-n 40] [-a]           # the screen, or with scrollback
     kero status <target> --json               # status, program, directory
     kero ls                                   # every session and pane
@@ -57,9 +62,10 @@ A browser pane's page is yours to drive, as a user would, to check what
 you built: open it with kero split --url, then
 
     kero browser open localhost:3000/todos     # go to a page, wait for it to load
-    kero browser snapshot                      # what is on it: headings, links, fields, each with a ref (@e3)
-    kero browser type '#new-todo' "Buy milk"   # fill a field (--enter submits)
-    kero browser click 'button[type=submit]'   # click an element (a CSS selector, or a ref from the snapshot)
+    kero browser snapshot                      # roles, names and refs: button "Add" [ref=e5]
+    kero browser click --ref e5                # click what a snapshot showed
+    kero browser type --ref e3 "Buy milk"      # fill a field (--enter submits)
+    kero browser click 'button[type=submit]'   # or name an element by CSS selector
     kero browser press Enter                   # a key, as the focused element takes it
     kero browser scroll down                   # or up, top, bottom, or to an element
     kero browser wait --text "Welcome"         # or wait <selector>; --timeout 30s
@@ -67,8 +73,12 @@ you built: open it with kero split --url, then
     kero browser url|title
     kero browser html [selector]
     kero browser eval 'document.title'         # run JavaScript, print its value
-    kero browser screenshot -o /tmp/page.png   # the pane must be on screen
+    kero browser screenshot -o /tmp/page.png   # shown or not, without the focus
     kero browser back|forward|reload
+    kero browser cookies save state.json       # or load: Playwright's, or cookies.txt
+
+Refs last until the page goes to another; one whose element is gone
+fails: take a new snapshot.
 
 With no target, kero browser drives your session's browser pane; name
 one (kero browser <target> text) when there are several. It needs the app

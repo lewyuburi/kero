@@ -54,7 +54,7 @@ func apiCmd(c *client.Client, args []string) error {
 		return nil
 	}
 	if m.Name == "subscribe" || m.Name == "watch" {
-		return usageErr("%s streams events: use kero watch", m.Name)
+		return usageErr("%s streams events: use kero events", m.Name)
 	}
 	params, err := apiParams(f.pos[1], os.Stdin)
 	if err != nil {
