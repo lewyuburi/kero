@@ -57,7 +57,7 @@ The command runs in a shell, in the pane's directory, with what happened in its 
 | `KERO_AGENT`         | The coding agent in the pane, if known                    |
 | `KERO_DIR`           | The pane's directory                                      |
 
-A hook that runs longer than a minute is ended, and no more than eight run at once. To act on a change from a script that is running anyway, use [`kero watch`](./cli.md#watching).
+A hook that runs longer than a minute is ended, and no more than eight run at once. To act on a change from a script that is running anyway, use [`kero events`](./cli.md#watching).
 
 ## Reporting status from a program
 

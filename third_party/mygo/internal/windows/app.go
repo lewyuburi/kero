@@ -72,7 +72,10 @@ type Backend struct {
 
 	// captions are the windows of the controls of windows with a hidden
 	// title bar (titlebar.go), captionFonts their glyphs by DPI.
-	captions     map[uintptr]*captionBar
+	captions map[uintptr]*captionBar
+	// topEdges are the windows over the top resize borders of windows
+	// without a caption (topedge.go), and their windows.
+	topEdges     map[uintptr]*window
 	captionFonts map[int]captionFont
 	// menuFonts are the fonts of the menu items MyGo draws by DPI, and
 	// menuBrushes the brushes of menus' backgrounds by color
@@ -107,6 +110,7 @@ func New() *Backend {
 		menus:         newMenuTable(),
 		themeSource:   "system",
 		captions:      map[uintptr]*captionBar{},
+		topEdges:      map[uintptr]*window{},
 		captionFonts:  map[int]captionFont{},
 		surfaces:      map[uintptr]*surface{},
 	}
@@ -343,6 +347,10 @@ func wndProc(hwnd, m, wp, lp uintptr) uintptr {
 			if r, ok := c.message(hwnd, uint32(m), wp, lp); ok {
 				return r
 			}
+		} else if w := b.topEdges[hwnd]; w != nil {
+			if r, ok := w.topEdgeMessage(uint32(m), wp, lp); ok {
+				return r
+			}
 		} else if s := b.surfaces[hwnd]; s != nil {
 			if r, ok := s.message(hwnd, uint32(m), wp, lp); ok {
 				return r
@@ -535,6 +543,12 @@ func (a appController) Unhide() {
 func (a appController) IsHidden() bool        { return len(a.b.hidden) > 0 }
 func (a appController) SetBadge(label string) { a.b.badge = label }
 func (a appController) Badge() string         { return a.b.badge }
+
+// IsActive reports whether the window in front is one of the app's.
+func (a appController) IsActive() bool {
+	fg, _, _ := procGetForegroundWindow.Call()
+	return a.b.windows[fg] != nil
+}
 
 const (
 	flashwStop      = 0

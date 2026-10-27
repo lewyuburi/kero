@@ -1,10 +1,18 @@
 {
   "name": "Kero (fork)",
   "identifier": "sh.kero.fork",
-  "version": "2.1.9",
+  "version": "2.1.24",
   "out": "build",
   "i18n": {
     "dir": "locales",
     "source": "en"
+  },
+  "macos": {
+    "entitlements": "entitlements.plist",
+    "infoPlist": {
+      "NSMicrophoneUsageDescription": "A program running in Kero would like to use the microphone.",
+      "NSCameraUsageDescription": "A program running in Kero would like to use the camera.",
+      "NSAppleEventsUsageDescription": "A program running in Kero would like to control another app."
+    }
   }
 }

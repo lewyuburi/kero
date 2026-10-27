@@ -48,6 +48,9 @@ type webEntry struct {
 	// drove is when kero browser last did something to the page: the header
 	// says an agent is at it for a few seconds after.
 	drove time.Time
+	// staged lays the page out unseen, for kero browser screenshot of a
+	// pane never shown, which has no size, and so no picture.
+	staged bool
 }
 
 // agentShown is how long the header says an agent drives the page after its

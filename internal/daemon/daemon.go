@@ -49,10 +49,11 @@ type Daemon struct {
 	sessions []*session
 	panes    map[string]*pane
 	subs     map[*controlConn]struct{}
-	clients  map[*proto.ClientInfo]struct{} // the connections, for kero clients
-	// watchers get what changes (see watch), and none of the events the app
-	// answers: they are not what `kero do` reaches.
+	// watchers are the connections that follow the state and notices,
+	// as kero events does, but are no app: no action, select or browser
+	// call goes to them, nor do they count as an app being open.
 	watchers map[*controlConn]struct{}
+	clients  map[*proto.ClientInfo]struct{} // the connections, for kero clients
 	conns    int
 	idleAt   time.Time
 	ending   bool
@@ -69,6 +70,7 @@ type Daemon struct {
 	// panes answer programs' questions about the colors with.
 	theme    atomic.Pointer[terminal.Theme]
 	git      *gitFollow
+	convs    convStore
 	net      *listeners
 	changeCh chan struct{}
 	// hookSlots limits the on-status hooks that run at once (see runHooks).
@@ -164,6 +166,7 @@ func Run(opts Options) error {
 	// The listeners first: Tailscale Serve's socket takes a umask of its
 	// own, which no program kerod starts may get.
 	d.net = d.listen()
+	d.loadConversations()
 	d.restore()
 
 	signal.Ignore(syscall.SIGHUP, syscall.SIGPIPE)
@@ -175,6 +178,7 @@ func Run(opts Options) error {
 		lg.Printf("%v: saving and exiting", s)
 		d.saveHistories(true)
 		d.saveState()
+		d.saveConversations()
 		d.stop()
 	}()
 
@@ -283,22 +287,16 @@ func (d *Daemon) save() {
 func (d *Daemon) notice(n proto.Notice) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	for c := range d.subs {
-		c.event(proto.Message{Event: "notice", Notice: &n})
-	}
+	d.broadcastLocked(proto.Message{Event: "notice", Notice: &n})
 }
 
-// watch sends what changed to the clients that watch.
-func (d *Daemon) watch(changes []proto.Change) {
-	if len(changes) == 0 {
-		return
+// broadcastLocked sends m to the apps and the watchers; d.mu is held.
+func (d *Daemon) broadcastLocked(m proto.Message) {
+	for c := range d.subs {
+		c.event(m)
 	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
 	for c := range d.watchers {
-		for i := range changes {
-			c.event(proto.Message{Event: "change", Change: &changes[i]})
-		}
+		c.watchEvent(m)
 	}
 }
 
@@ -311,14 +309,14 @@ func (d *Daemon) broadcastLoop() {
 		case <-d.changeCh:
 		default:
 		}
-		st := d.state()
+		// The state is taken under the lock it goes out under, so that
+		// the states a connection gets are in order: a watcher tells
+		// changes from the difference of two.
 		d.mu.Lock()
-		for c := range d.subs {
-			c.event(proto.Message{Event: "state", State: &st})
-		}
+		st := d.stateLocked()
+		d.broadcastLocked(proto.Message{Event: "state", State: &st})
 		d.mu.Unlock()
 		changes := proto.Changes(prev, st)
-		d.watch(changes)
 		d.runHooks(changes)
 		prev = st
 	}
@@ -637,6 +635,19 @@ func (c *controlConn) event(m proto.Message) {
 	select {
 	case c.out <- m:
 	default:
+	}
+}
+
+// watchEvent queues an event for a watcher, which tells changes from
+// each state and notice in turn: one far behind is cut off, as a stalled
+// write cuts it off, rather than left to miss some without knowing.
+func (c *controlConn) watchEvent(m proto.Message) {
+	select {
+	case c.out <- m:
+	default:
+		if c.conn != nil {
+			c.conn.Close()
+		}
 	}
 }
 

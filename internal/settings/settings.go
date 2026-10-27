@@ -28,7 +28,9 @@ type Settings struct {
 	ConfirmClose      bool   `json:"confirmClose"`      // before closing a pane a program runs in
 	RestoreSessions   bool   `json:"restoreSessions"`   // after kerod restarts, as after a reboot
 	ResumeAgents      bool   `json:"resumeAgents"`      // as it restores sessions: the agents' own
+	SessionHistory    bool   `json:"sessionHistory"`    // the sidebar lists the agents' ended conversations
 	QuitConfirm       bool   `json:"quitConfirm"`       // tell, the first time, that quitting keeps sessions
+	AppIcon           string `json:"appIcon"`           // macOS: AppIcons; elsewhere the icon is always in the notification area
 
 	// Appearance
 	Appearance  string `json:"appearance"`  // "system", "light" or "dark"
@@ -78,6 +80,12 @@ type Settings struct {
 	// Git
 	GitStatus  bool   `json:"gitStatus"`  // each pane's branch and changes, which kerod follows
 	DiffLayout string `json:"diffLayout"` // the changes panel's diffs: "auto", "unified" or "split"
+	// WorktreeBase is what a session's own worktree branches from:
+	// "default", the repository's default branch, or "current", the
+	// branch of the session the user is in. WorktreeDir is where its
+	// worktrees go, "" for .kero/worktrees in the repository.
+	WorktreeBase string `json:"worktreeBase"`
+	WorktreeDir  string `json:"worktreeDir"`
 
 	// Browser
 	BlockAds bool     `json:"blockAds"` // in browser panes, with AdLists
@@ -140,6 +148,7 @@ func Default() Settings {
 		RestoreSessions: true,
 		ResumeAgents:    true,
 		QuitConfirm:     true,
+		AppIcon:         "dock-and-menubar",
 		Appearance:      "system",
 		TabLayout:       TabsVertical,
 		Language:        "system",
@@ -168,6 +177,7 @@ func Default() Settings {
 		RemoteControl:   true,
 		GitStatus:       true,
 		DiffLayout:      "auto",
+		WorktreeBase:    "default",
 		BlockAds:        true,
 		AdLists:         slices.Clone(adblock.DefaultLists),
 	}
@@ -192,7 +202,11 @@ const (
 
 // Languages are the languages the app is written in, as the catalogs of
 // kero/locales name them.
-var Languages = []string{"en", "zh-Hans"}
+var Languages = []string{"en", "ja", "zh-Hans"}
+
+// AppIcons are where the app's icon shows on macOS: the Dock and the menu
+// bar, the Dock alone, or the menu bar alone.
+var AppIcons = []string{"dock-and-menubar", "dock", "menubar"}
 
 // Backgrounds are the washes the window can show.
 var Backgrounds = []struct{ ID, Name string }{
@@ -287,18 +301,45 @@ func Save(s Settings) error {
 	return nil
 }
 
-// write writes the configuration; mu is held.
+// write writes the configuration; mu is held. A configuration that is a
+// symlink, as one kept in a dotfiles repository is, stays one: the file it
+// points to is what changes.
 func write(s Settings) error {
-	old, _ := os.ReadFile(Path())
+	path := Target()
+	old, _ := os.ReadFile(path)
 	data := format(s, string(old))
-	if err := os.MkdirAll(filepath.Dir(Path()), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	tmp := Path() + ".tmp"
-	if err := os.WriteFile(tmp, []byte(data), 0o644); err != nil {
+	mode := os.FileMode(0o644)
+	if st, err := os.Stat(path); err == nil {
+		mode = st.Mode().Perm()
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, []byte(data), mode); err != nil {
 		return err
 	}
-	return os.Rename(tmp, Path())
+	return os.Rename(tmp, path)
+}
+
+// Target returns the file the configuration is in: Path, or the file it
+// is a symlink to, as one kept in a dotfiles repository.
+func Target() string { return target(Path()) }
+
+// target returns the file a path's symlinks lead to, even one not there
+// yet, else the path itself.
+func target(path string) string {
+	for range 40 {
+		dest, err := os.Readlink(path)
+		if err != nil {
+			return path
+		}
+		if !filepath.IsAbs(dest) {
+			dest = filepath.Join(filepath.Dir(path), dest)
+		}
+		path = dest
+	}
+	return path
 }
 
 // Clone returns a copy that shares nothing with s.
@@ -355,6 +396,8 @@ func (s *Settings) normalize() {
 	oneOf(&s.Clipboard, d.Clipboard, "ask", "allow", "deny")
 	oneOf(&s.RightClick, d.RightClick, "menu", "paste", "copyOrPaste")
 	oneOf(&s.DiffLayout, d.DiffLayout, "auto", "unified", "split")
+	oneOf(&s.WorktreeBase, d.WorktreeBase, "default", "current")
+	oneOf(&s.AppIcon, d.AppIcon, AppIcons...)
 	known := false
 	for _, b := range Backgrounds {
 		known = known || b.ID == s.Background

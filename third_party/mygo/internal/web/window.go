@@ -122,6 +122,8 @@ func (w *window) HasShadow() bool                            { return false }
 func (w *window) SetIgnoreMouseEvents(bool)                  {}
 func (w *window) SetContentProtection(bool)                  {}
 func (w *window) SetVibrancy(string)                         {}
+func (w *window) SetActiveAppearance(bool)                   {}
+func (w *window) SetWindowButtonsTheme(string)               {}
 func (w *window) SetProgressBar(string, float64)             {}
 func (w *window) FlashFrame(bool)                            {}
 func (w *window) SetSkipTaskbar(bool)                        {}
@@ -231,6 +233,10 @@ func (w *window) UserAgent() string                                        { ret
 func (w *window) OpenDevTools()                                            {}
 func (w *window) CloseDevTools()                                           {}
 func (w *window) IsDevToolsOpened() bool                                   { return false }
+func (w *window) ProcessID() int                                           { return 0 }
+func (w *window) IsAudible() bool                                          { return false }
+func (w *window) SetAudioMuted(bool)                                       {}
+func (w *window) IsAudioMuted() bool                                       { return false }
 func (w *window) DroppedFiles() []string                                   { return nil }
 func (w *window) Print()                                                   {}
 func (w *window) CapturePage(cb func([]byte, error))                       { cb(nil, errUnsupported) }

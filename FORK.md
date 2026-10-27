@@ -22,10 +22,9 @@ Kero changes under them is settled once, in a merge.
   `tab-layout` with the tab bar across the top (`tabs.go`), ⌥⌘B, and sessions in
   no project (`loose-sessions`).
 - **Keys and hooks:** `keybind` sequences and key modes (`chords.go`), `pane.resize.*`;
-  `on-status` hooks and `kero watch`; `kero api` (kerod's methods, described and called).
-- **Browser:** Kero's own, with `kero browser snapshot` and refs (`@e3`) for
-  elements, `press`, `scroll`, `url` and `title`, and **Agent** in the header
-  while a command is at the page.
+  `on-status` hooks; `kero api` (kerod's methods, described and called).
+- **Browser:** Kero's own (snapshot, refs, cookies), with `press`, `scroll`,
+  `url` and `title`, and **Agent** in the header while a command is at the page.
 - **Status rings** painted at 30 frames a second, not at every refresh.
 - **Flags** (`internal/settings/flags.go`, Settings › Advanced): `horizontal-tabs`,
   `custom-spacing` and `loose-sessions` start disabled, as experiments do.
@@ -60,7 +59,7 @@ prune what Kero does not build (docs, website, examples, packages, scripts, test
 Once MyGo has the method itself, drop the `replace` in `go.mod`, the folder and
 `moveLights`.
 
-`mygo.json`'s `version` follows Kero's. Tag what is installed, as `fork-2.1.9`.
+`mygo.json`'s `version` follows Kero's. Tag what is installed, as `fork-2.1.24`.
 
 To keep merges small: put what is new in a file of its own, change Kero's files
 little and by a line or two, and add a test for what is added, so that a merge
