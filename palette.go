@@ -218,6 +218,7 @@ func (a *App) paletteItems() []paletteItem {
 			paletteItem{title: locales.PickerTitle(h.name), detail: h.addr.String(), words: en.PickerTitle(h.name), run: func() { a.openProjectOn(h) }},
 			paletteItem{title: locales.HostReconnectTo(h.name), detail: h.addr.String(), words: en.HostReconnectTo(h.name), run: func() { a.reconnectHost(h) }})
 	}
+	cmds = append(cmds, a.gameItems()...)
 	convs := a.conversationItems()
 	if a.pal.query == "" && len(convs) > recentConversations {
 		convs = convs[:recentConversations]

@@ -42,7 +42,7 @@ func (a *App) browse(h *host, r *proto.BrowserRequest, answer func(*proto.Browse
 		return
 	}
 	p := s.PaneByID(r.Pane)
-	if !p.Browser() {
+	if !p.Browser() || p.Game() != "" {
 		fail("pane %s is a terminal, not a browser", r.Pane)
 		return
 	}

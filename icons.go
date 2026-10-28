@@ -50,6 +50,7 @@ var (
 	revertIcon      = glyph("f7-arrow-uturn-left")
 	openFileIcon    = glyph("f7-arrow-up-right-square")
 	globeIcon       = glyph("f7-globe")
+	gameIcon        = glyph("f7-sparkles")
 	chevronLeftIcon = glyph("f7-chevron-left")
 	reloadIcon      = glyph("f7-arrow-clockwise")
 	copyIcon        = glyph("f7-doc-on-doc")
@@ -79,6 +80,9 @@ func init() {
 // while the shell is in the foreground or the program has none; a globe
 // for a browser.
 func programIcon(p *proto.Pane) *ui.SVG {
+	if p.Game() != "" {
+		return gameIcon
+	}
 	if p.Browser() {
 		return globeIcon
 	}

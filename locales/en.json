@@ -173,6 +173,7 @@
     }
   },
   "newSessionIn": "New Session in {project}",
+  "newGame": "New Game: {game}",
   "sessionRename": "Rename",
   "sessionMarkRead": "Mark as Read",
   "sessionMoveToProject": "Move to Project",
@@ -403,6 +404,8 @@
   "setMiddleClickCloseDetail": "Close a session with a click of the middle button on its tab or its row in the sidebar, asking first if something runs in it.",
   "setTabReorder": "Reorder tabs by dragging",
   "setTabReorderDetail": "Drag a session by its tab or row to another place in its project, and a project by its name or header to another place in the list.",
+  "setGames": "Games",
+  "setGamesDetail": "Offer panes that play a game, as Snake, from the command palette (New Game). A game pane lives in a session like any other, and stops while you are in another pane.",
   "sessionNoProject": "No Project",
   "setHorizontalTabs": "Horizontal tabs",
   "setHorizontalTabsDetail": "Offer tabs across the top of the window as a choice in Appearance, with ⌥⌘B to switch. Enabling it changes nothing by itself: the tabs stay where they are until you choose. Made on macOS; not yet looked at on other platforms.",

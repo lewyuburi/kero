@@ -170,6 +170,7 @@ flag = custom-spacing=disabled
 | `loose-sessions` | disabled | Lets a session be in no project: one started in a folder that is neither a project's nor a git repository's, one started on purpose with New Session in Home, or one moved out of its project from its menu. They come first in the sidebar with no header, and across the top outside any group |
 | `middle-click-close` | disabled | Closes a session with a click of the middle button on its tab or its row in the sidebar, asking first if something runs in it |
 | `tab-reorder` | disabled | Drags a session by its tab or row to another place in its project, and a project by its name or header to another place in the list |
+| `games` | disabled | Offers panes that play a game, as Snake, from the command palette (New Game). A game pane is a pane like any other and stops while you are in another one |
 
 ## Keyboard
 

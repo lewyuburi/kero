@@ -43,6 +43,10 @@ const FlagMiddleClickClose = "middle-click-close"
 // its header. It starts disabled: Kero's own cannot be.
 const FlagTabReorder = "tab-reorder"
 
+// FlagGames offers panes that play a game, from the command palette. It
+// starts disabled: Kero has none.
+const FlagGames = "games"
+
 // retiredFlags are flags that were, which a configuration may still name:
 // they are ignored, not a problem.
 var retiredFlags = map[string]bool{"tab-groups": true}
@@ -54,6 +58,7 @@ var Flags = []Flag{
 	{FlagLooseSessions, func(string) bool { return false }},
 	{FlagMiddleClickClose, func(string) bool { return false }},
 	{FlagTabReorder, func(string) bool { return false }},
+	{FlagGames, func(string) bool { return false }},
 }
 
 // The states of a flag, as Advanced offers them: the default's, or a choice

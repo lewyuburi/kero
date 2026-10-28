@@ -1402,6 +1402,8 @@ func flagText(id string) (name, detail string) {
 		return locales.SetMiddleClickClose(), locales.SetMiddleClickCloseDetail()
 	case settings.FlagTabReorder:
 		return locales.SetTabReorder(), locales.SetTabReorderDetail()
+	case settings.FlagGames:
+		return locales.SetGames(), locales.SetGamesDetail()
 	}
 	return id, ""
 }

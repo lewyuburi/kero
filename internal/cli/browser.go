@@ -178,17 +178,17 @@ func browserCmd(c *client.Client, st proto.State, args []string) error {
 // browser.
 func browserOf(t target) (string, error) {
 	if t.pane != "" {
-		if p := t.s.PaneByID(t.pane); p == nil || !p.Browser() {
+		if p := t.s.PaneByID(t.pane); p == nil || !p.Browser() || p.Game() != "" {
 			return "", fmt.Errorf("%w: pane %s is a terminal, not a browser", errNotFound, t.pane)
 		}
 		return t.pane, nil
 	}
-	if p := t.s.FocusPane(); p != nil && p.Browser() {
+	if p := t.s.FocusPane(); p != nil && p.Browser() && p.Game() == "" {
 		return p.ID, nil
 	}
 	var ids []string
 	for _, p := range t.s.Panes {
-		if p.Browser() {
+		if p.Browser() && p.Game() == "" {
 			ids = append(ids, p.ID)
 		}
 	}

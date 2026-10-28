@@ -1247,6 +1247,9 @@ func listSessions(st proto.State) {
 	}
 	// A browser's program is the browser, and its place its page.
 	program := func(p proto.Pane) string {
+		if p.Game() != "" {
+			return "game"
+		}
 		if p.Browser() {
 			return "browser"
 		}

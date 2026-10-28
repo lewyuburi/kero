@@ -249,6 +249,11 @@ func (a *App) paneCorners(top, left, right, bottom bool) [4]float32 {
 func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, p *proto.Pane, top, left, right, bottom, multi bool) {
 	focused := p.ID == a.focusOf(s)
 	bg := pal.card
+	if p.Game() != "" {
+		// A game's screen goes to the card's edges: the card is its paper.
+		_, paper := screenColors(pal.dark)
+		bg = ui.RGB(paper.R, paper.G, paper.B)
+	}
 	// A browser's page stays opaque, so its toolbar does too, and neither
 	// fades: a page is read, not typed into, from beside it.
 	if multi && !focused && !p.Browser() && a.set.DimUnfocused {
@@ -289,7 +294,10 @@ func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float
 
 	dragging := false
 	card.Children(func() {
-		if p.Browser() {
+		if p.Game() != "" {
+			dragging = a.paneHeader(c, pal, bar, shown, s, p, top, left, right, multi, focused, hovered)
+			a.paneGame(c, pal, s, p)
+		} else if p.Browser() {
 			// A browser's address bar is its header.
 			dragging = a.paneBrowser(c, pal, bar, shown, s, p, top, left, right, multi, focused, hovered)
 		} else {
@@ -501,7 +509,13 @@ func (a *App) paneHeader(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 				if p.Status != proto.Idle || p.Unread {
 					statusIconP(c, pal, p.Status, p.Unread, p.Progress, 13)
 				} else {
-					ui.Icon(c, programIcon(p)).Size(14, 14).TextColor(pal.textFaint)
+					// A game's header is on its paper, where the faint gray of a
+					// program's logo is lost.
+					icon := pal.textFaint
+					if p.Game() != "" {
+						icon = pal.text.Alpha(0.75)
+					}
+					ui.Icon(c, programIcon(p)).Size(14, 14).TextColor(icon)
 				}
 			}
 			title, size := p.PaneName(), float32(13.5)

@@ -114,6 +114,7 @@ type App struct {
 	icons       favicons             // and the icons they show
 	lru         []string
 	refs        map[string]*ui.Handle // panes' terminals, and splits, by id
+	games       map[string]*gamePlay  // the games game panes play, by pane id
 	focus       map[string]string     // the pane the user is in, by session
 	layoutDrag  struct {              // the split whose divider is dragged
 		session, split string

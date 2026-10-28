@@ -1236,6 +1236,16 @@ func (msgs Messages) NewSessionIn(project string) string {
 	return Catalog.Format(msgs.locale, "newSessionIn", map[string]any{"project": project})
 }
 
+// NewGame says "New Game: {game}"
+// in the language the app shows.
+func NewGame(game string) string { return In(i18n.Locale()).NewGame(game) }
+
+// NewGame says "New Game: {game}"
+// in the language of msgs.
+func (msgs Messages) NewGame(game string) string {
+	return Catalog.Format(msgs.locale, "newGame", map[string]any{"game": game})
+}
+
 // SessionRename says "Rename"
 // in the language the app shows.
 func SessionRename() string { return In(i18n.Locale()).SessionRename() }
@@ -2610,6 +2620,26 @@ func SetTabReorderDetail() string { return In(i18n.Locale()).SetTabReorderDetail
 // in the language of msgs.
 func (msgs Messages) SetTabReorderDetail() string {
 	return Catalog.Format(msgs.locale, "setTabReorderDetail", nil)
+}
+
+// SetGames says "Games"
+// in the language the app shows.
+func SetGames() string { return In(i18n.Locale()).SetGames() }
+
+// SetGames says "Games"
+// in the language of msgs.
+func (msgs Messages) SetGames() string {
+	return Catalog.Format(msgs.locale, "setGames", nil)
+}
+
+// SetGamesDetail says "Offer panes that play a game, as Snake, from the command palette (New Game). A game pane lives in a session like any …"
+// in the language the app shows.
+func SetGamesDetail() string { return In(i18n.Locale()).SetGamesDetail() }
+
+// SetGamesDetail says "Offer panes that play a game, as Snake, from the command palette (New Game). A game pane lives in a session like any …"
+// in the language of msgs.
+func (msgs Messages) SetGamesDetail() string {
+	return Catalog.Format(msgs.locale, "setGamesDetail", nil)
 }
 
 // SessionNoProject says "No Project"
