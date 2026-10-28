@@ -59,7 +59,7 @@ kero config check             # report unknown keys and bad values
 | `language`           | `system` | The app's language: `system`, `en`, `ja` or `zh-Hans`           |
 | `background`         | `petal`  | The window's wash: `petal`, `mist`, `meadow`, `dusk` or `plain` |
 | `window-translucent` | `true`   | Let the desktop show through the window                         |
-| `card-gap`           | `8`      | Points between the window's edge and the panels, `0` to `12`. At `0` the panels fill the window and take its corners. Needs the `custom-spacing` flag |
+| `card-gap`           | `8`      | Points between the window's edge and the panels, `0` to `12`. At `0` the panels fill the window, with borders and square corners. Needs the `custom-spacing` flag |
 | `pane-gap`           | `same`   | Points between split panes, `0` to `16`, or `same` to follow `card-gap`. At `0` the panes touch and the corners that meet are square. Needs the `custom-spacing` flag |
 
 ## Terminal

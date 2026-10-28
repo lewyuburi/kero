@@ -21,6 +21,9 @@ import (
 func (a *App) tabBar(c *ui.Context, pal *palette, bar ui.TitleBar) {
 	w := a.tabWidth(c, bar)
 	ui.Row(c.Key("tabbar")).Height(tabBarH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, lead(bar, a.chrome.gap)).Gap(4).DragWindow().Children(func() {
+		if a.chrome.gap == 0 {
+			tabLine(c, pal)
+		}
 		ui.ScrollHorizontal(c.Key("tabs")).Shrink(1).MinWidth(0).Height(tabBarH - 6).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Height(tabBarH - 6).Children(func() {
 				if !a.loaded {

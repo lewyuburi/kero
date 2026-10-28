@@ -2884,11 +2884,11 @@ func (msgs Messages) SetPaneGapDetail() string {
 	return Catalog.Format(msgs.locale, "setPaneGapDetail", nil)
 }
 
-// SetCardGapDetail says "Space between the window’s edge and the panels. At 0 they fill the window and take its corners."
+// SetCardGapDetail says "Space between the window’s edge and the panels. At 0 they fill the window, with borders and square corners."
 // in the language the app shows.
 func SetCardGapDetail() string { return In(i18n.Locale()).SetCardGapDetail() }
 
-// SetCardGapDetail says "Space between the window’s edge and the panels. At 0 they fill the window and take its corners."
+// SetCardGapDetail says "Space between the window’s edge and the panels. At 0 they fill the window, with borders and square corners."
 // in the language of msgs.
 func (msgs Messages) SetCardGapDetail() string {
 	return Catalog.Format(msgs.locale, "setCardGapDetail", nil)

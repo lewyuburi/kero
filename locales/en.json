@@ -447,7 +447,7 @@
   "setPaneGapSameDetail": "Leave as much space between split panes as around them. Turn off to set it apart.",
   "setPaneGap": "Pane gap",
   "setPaneGapDetail": "Space between split panes. At 0 they touch and the corners that meet are square.",
-  "setCardGapDetail": "Space between the window’s edge and the panels. At 0 they fill the window and take its corners.",
+  "setCardGapDetail": "Space between the window’s edge and the panels. At 0 they fill the window, with borders and square corners.",
   "setBackground": "Background",
   "bgPetal": "Petal",
   "bgMist": "Mist",

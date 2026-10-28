@@ -203,6 +203,9 @@ func (a *App) settingsView(c *ui.Context) {
 			top = barMid(gapOf(a.set)) - (controlH+2)/2
 		}
 		ui.Column(c).Width(212).Shrink(0).Padding(top, 10, 12, 10).Gap(2).DragWindow().Children(func() {
+			if gapOf(a.set) == 0 {
+				sideLine(c, pal, 1)
+			}
 			a.settingsSearch(c, pal)
 			for _, p := range settingsPages {
 				if found == nil || found[p.id] != nil {
@@ -229,7 +232,7 @@ func (a *App) settingsView(c *ui.Context) {
 		})
 		gap := gapOf(a.set)
 		ui.Column(c).Grow(1).MinWidth(0).Padding(gap, gap, gap, 0).Children(func() {
-			card := raised(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(gap)).Background(pal.card), pal).Clip()
+			card := edged(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(gap)).Background(pal.card), pal, gap).Clip()
 			card.Children(func() {
 				page := settingsPages[0]
 				for _, p := range settingsPages {

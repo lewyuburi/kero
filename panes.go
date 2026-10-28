@@ -227,23 +227,18 @@ func (a *App) dragDivider(c *ui.Context, pal *palette, s *proto.Session, l *prot
 
 // paneCorners rounds a pane's corners, top left first, going round: one the
 // window's edges meet on both sides takes the card's radius, and one that
-// touches another pane the pane gap's (paneRadius), square with none. Under
-// the bar of tabs there is no window corner to follow: with no gap the top
-// ones are square, as the bar meets the cards.
+// touches another pane the pane gap's (paneRadius), square with none. With
+// no panel gap they are all square.
 func (a *App) paneCorners(top, left, right, bottom bool) [4]float32 {
 	outer := cardRadius(a.chrome.gap)
 	inner := paneRadius(paneGapOf(a.set), outer)
-	outerTop := outer
-	if tabsHorizontal(a.set) && a.chrome.gap == 0 {
-		outerTop = 0
-	}
 	pick := func(edge bool, outer float32) float32 {
 		if edge {
 			return outer
 		}
 		return inner
 	}
-	return [4]float32{pick(top && left, outerTop), pick(top && right, outerTop), pick(bottom && right, outer), pick(bottom && left, outer)}
+	return [4]float32{pick(top && left, outer), pick(top && right, outer), pick(bottom && right, outer), pick(bottom && left, outer)}
 }
 
 // paneCard is a pane: a card with a header and the terminal. top, left,
@@ -261,7 +256,7 @@ func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float
 	}
 	corners := a.paneCorners(top, left, right, bottom)
 	card := ui.Column(c.Key("pane-"+p.ID)).Grow(1).Basis(0).MinWidth(0).MinHeight(0).Radius(corners[0], corners[1], corners[2], corners[3]).Clip().Bind(a.paneRef("card-" + p.ID))
-	raised(card.Background(card.AnimateColor("bg", bg, ui.Animation{Duration: 140 * time.Millisecond})), pal)
+	edged(card.Background(card.AnimateColor("bg", bg, ui.Animation{Duration: 140 * time.Millisecond})), pal, min(a.chrome.gap, paneGapOf(a.set)))
 	hovered := card.Hovered()
 	if a.set.FocusFollowsMouse && multi {
 		a.followMouse(c, s, p, card, hovered, focused)
@@ -306,6 +301,11 @@ func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float
 			v := ui.Box(c.Key("veil")).Absolute().Top(0).Left(0).Right(0).Bottom(0).PassThrough().Background(pal.veil)
 			v.Opacity(v.Animate("on", b2f(!focused), 160*time.Millisecond))
 		}
+		// With no pane gap, a line parts a pane from its neighbour, over the
+		// veil like the chrome's own (sideLine, tabLine), so that a pane out
+		// of focus does not dim it.
+		flat := paneGapOf(a.set) == 0
+		hairlines(c, pal, flat && !left, flat && !top)
 		if zone != zoneNone {
 			a.dropPreview(c, pal, p.ID, zone)
 		}

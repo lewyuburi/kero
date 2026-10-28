@@ -105,11 +105,14 @@ func paneRadius(gap, outer float32) float32 {
 	return min(outer, defaultRadius*gap/settings.DefaultPaneGap)
 }
 
-// cardRadius rounds a card to the window's corner: with no gap, the window's
-// own, so that a card in the corner leaves nothing of the wash showing;
-// from there it moves to defaultRadius at the default gap, and on past it,
-// as a wider gap asks of a corner that is farther in.
+// cardRadius rounds a card's corners: none with no gap, where the cards
+// fill the window and an edge sets them apart (card); from there it moves
+// from the window's own to defaultRadius at the default gap, and on past
+// it, as a wider gap asks of a corner that is farther in.
 func cardRadius(gap float32) float32 {
+	if gap == 0 {
+		return 0
+	}
 	t := gap / settings.DefaultCardGap
 	return max(windowRadius+(defaultRadius-windowRadius)*t, minRadius)
 }
@@ -222,6 +225,9 @@ func (a *App) view(c *ui.Context) {
 		side.Children(func() {
 			ui.Column(c).Width(a.prefs.SidebarWidth).Shrink(0).Margin(0, 0, 0, w-a.prefs.SidebarWidth).
 				Opacity(0.4 + 0.6*shown).Children(func() { a.sidebar(c, pal, bar) })
+			if a.chrome.gap == 0 && shown > 0.01 {
+				sideLine(c, pal, shown)
+			}
 		})
 		// The gaps around the cards move the window too.
 		main := ui.Column(c).Grow(1).MinWidth(0).Padding(a.chrome.gap, a.chrome.gap, a.chrome.gap, a.chrome.mainPad).DragWindow()
@@ -939,7 +945,7 @@ func (a *App) card(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32) 
 		return
 	}
 	// No session: one card, for what the app has to say.
-	card := raised(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(a.chrome.gap)).Background(pal.card), pal).Clip()
+	card := edged(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(a.chrome.gap)).Background(pal.card), pal, a.chrome.gap).Clip()
 	card.Children(func() {
 		left := a.chrome.headerPad
 		ui.Row(c).Height(headerH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, left).DragWindow().Children(func() {

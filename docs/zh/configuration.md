@@ -59,7 +59,7 @@ kero config check             # 报告未知的配置项和无效的值
 | `language`           | `system` | 应用语言：`system`、`en`、`ja` 或 `zh-Hans`                      |
 | `background`         | `petal`  | 窗口底色：`petal`、`mist`、`meadow`、`dusk` 或 `plain`           |
 | `window-translucent` | `true`   | 让桌面透过窗口显示出来                                          |
-| `card-gap`           | `8`      | 窗口边缘与面板之间的间距，单位为点，范围 `0` 到 `12`。为 `0` 时面板铺满窗口，并沿用窗口的圆角。需要 `custom-spacing` 标志 |
+| `card-gap`           | `8`      | 窗口边缘与面板之间的间距，单位为点，范围 `0` 到 `12`。为 `0` 时面板铺满窗口，带边框且为直角。需要 `custom-spacing` 标志 |
 | `pane-gap`           | `same`   | 分屏窗格之间的间距，单位为点，范围 `0` 到 `16`，或 `same` 表示跟随 `card-gap`。为 `0` 时窗格相接，相接处的圆角为直角。需要 `custom-spacing` 标志 |
 
 ## 终端

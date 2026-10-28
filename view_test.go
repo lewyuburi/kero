@@ -579,9 +579,9 @@ find:
 }
 
 // The cards' corners: the default gap keeps the 14 they always had, none
-// takes the window's own, and a wide gap does not square them.
+// squares them, and a wide gap does not square them.
 func TestCardRadius(t *testing.T) {
-	for gap, want := range map[float32]float32{0: windowRadius, 8: defaultRadius, 4: (windowRadius + defaultRadius) / 2} {
+	for gap, want := range map[float32]float32{0: 0, 8: defaultRadius, 4: (windowRadius + defaultRadius) / 2} {
 		if got := cardRadius(gap); got != want {
 			t.Errorf("cardRadius(%v) = %v, want %v", gap, got, want)
 		}
@@ -1243,7 +1243,7 @@ func panesTester(t *testing.T, direction string) (*App, *ui.Tester, map[string]u
 	t.Helper()
 	a := testApp(t)
 	a.set.SetFlag(settings.FlagCustomSpacing, settings.StateEnabled)
-	a.set.CardGap, a.set.PaneGapSame, a.set.PaneGap = 0, false, 0
+	a.set.CardGap, a.set.PaneGapSame, a.set.PaneGap = settings.DefaultCardGap, false, 0
 	a.prefs.SidebarHidden = true
 	var l *proto.Layout
 	a.st.Sessions[0].Layout = l.Split("a", "b", direction, 0)
@@ -1331,8 +1331,7 @@ func TestTouchingPanesCorners(t *testing.T) {
 }
 
 // Under the bar of tabs the cards keep half their gap from it, less the
-// room the bar has itself, and with none the top corners, which
-// meet the bar and not the window's, are square.
+// room the bar has itself, and with none the corners are square.
 func TestCardsUnderTheTabs(t *testing.T) {
 	for _, gap := range []int{0, 2, 8, settings.MaxCardGap} {
 		a := testApp(t)
@@ -1354,8 +1353,8 @@ func TestCardsUnderTheTabs(t *testing.T) {
 			t.Errorf("gap %d: card at %v,%v, want %v,%d", gap, card.X, card.Y, want, gap)
 		}
 		got := a.paneCorners(true, true, false, true)
-		if gap == 0 && (got[0] != 0 || got[3] == 0) {
-			t.Errorf("no gap: corners %v, want the top left square and the bottom left not", got)
+		if gap == 0 && got != [4]float32{} {
+			t.Errorf("no gap: corners %v, want them square", got)
 		}
 		if gap > 0 && got[0] != got[3] {
 			t.Errorf("gap %d: top left %v and bottom left %v differ", gap, got[0], got[3])

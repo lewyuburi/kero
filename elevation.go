@@ -20,6 +20,48 @@ func raised(e ui.Element, pal *palette) ui.Element {
 	return e.Shadow(0, 1, 2, 0, pal.cardShadow).Shadow(0, 1, 6, 0, pal.cardShadow2)
 }
 
+// edged sets a card apart from what is beside it: raised, or flat with no
+// gap, where hairlines (see hairlines) part it from its neighbours.
+func edged(e ui.Element, pal *palette, gap float32) ui.Element {
+	if gap == 0 {
+		return e
+	}
+	return raised(e, pal)
+}
+
+// hairline is the line that parts flat surfaces: black in the light, white
+// in the dark, barely there.
+func hairline(pal *palette) ui.Color {
+	if pal.dark {
+		return ui.RGBA(255, 255, 255, 0.08)
+	}
+	return ui.RGBA(0, 0, 0, 0.07)
+}
+
+// hairlines draws, inside a flat card, a line along its left and top edges
+// where another pane meets them, to be called in its children. Against the
+// chrome the line is the chrome's (sideLine, tabLine).
+func hairlines(c *ui.Context, pal *palette, left, top bool) {
+	if left {
+		ui.Box(c.Key("hair-left")).Absolute().Top(0).Bottom(0).Left(0).Width(1).PassThrough().Background(hairline(pal))
+	}
+	if top {
+		ui.Box(c.Key("hair-top")).Absolute().Top(0).Left(0).Right(0).Height(1).PassThrough().Background(hairline(pal))
+	}
+}
+
+// sideLine is the line at the sidebar's right edge, over the sidebar, when
+// the cards are flat. It fades with the sidebar.
+func sideLine(c *ui.Context, pal *palette, shown float32) {
+	ui.Box(c.Key("side-line")).Absolute().Top(0).Bottom(0).Right(0).Width(1).PassThrough().Background(hairline(pal)).Opacity(shown)
+}
+
+// tabLine is the line at the bar of tabs' lower edge, over the bar, when
+// the cards are flat.
+func tabLine(c *ui.Context, pal *palette) {
+	ui.Box(c.Key("tab-line")).Absolute().Left(0).Right(0).Bottom(0).Height(1).PassThrough().Background(hairline(pal))
+}
+
 // chosen lifts the chosen row of a list, the sidebars', a hair: an even
 // ring a shade darker than what is under it, and a faint shadow close
 // under it, as Rex's rows, lighter than a card's. In the dark, as raised.
