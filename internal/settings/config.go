@@ -126,6 +126,7 @@ func mapChoice(name, doc string, f func(*Settings) *string, file, ours []string)
 var keys = []key{
 	mapChoice("new-session-directory", "where a new session starts", func(s *Settings) *string { return &s.NewSessionDir },
 		[]string{"current", "project", "home"}, []string{"current", "project", "home"}),
+	boolKey("new-session-loose", "with the loose-sessions flag, start a new session in no project, as the + and New Session do, unless started from a project's own +", func(s *Settings) *bool { return &s.NewSessionLoose }),
 	choiceKey("session-name", "what names a session you or an agent didn't: the program in the pane you're in, else in the one that most needs you; the program in the one that most needs you; or the first pane's folder",
 		func(s *Settings) *string { return &s.SessionName }, proto.NameFocused, proto.NameLead, proto.NameFolder),
 	boolKey("focus-follows-mouse", "focus the pane the pointer moves into", func(s *Settings) *bool { return &s.FocusFollowsMouse }),

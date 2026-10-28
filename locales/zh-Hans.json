@@ -201,6 +201,8 @@
   "setDirCurrent": "当前文件夹",
   "setDirProject": "项目",
   "setDirHome": "主目录",
+  "setNewSessionLoose": "新会话不属于项目",
+  "setNewSessionLooseDetail": "通过 +、新建会话和 ⌘T 创建的会话不属于任何项目。项目自己的 + 仍会添加到该项目。",
   "setSessionName": "会话名称取自",
   "setSessionNameDetail": "在你或智能体为会话命名之前。选择“当前窗格”时，只运行着 Shell 的窗格会沿用最需要你的窗格的名称。",
   "setNameFocused": "当前窗格",

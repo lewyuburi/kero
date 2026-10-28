@@ -201,6 +201,8 @@
   "setDirCurrent": "現在のフォルダ",
   "setDirProject": "プロジェクト",
   "setDirHome": "ホーム",
+  "setNewSessionLoose": "新規セッションを単独で開始",
+  "setNewSessionLooseDetail": "+、新規セッション、⌘T ではプロジェクトに属さないセッションを開始します。プロジェクト自身の + はそのプロジェクトに追加します。",
   "setSessionName": "セッション名の付け方",
   "setSessionNameDetail": "あなたかエージェントが名前を付けるまで使われます。“使用中のペイン”では、シェルだけが動いているペインは、最も対応が必要なペインに譲ります。",
   "setNameFocused": "使用中のペイン",

@@ -32,6 +32,7 @@ func settingsIndex() []searchEntry {
 		{"general", locales.SetResumeAgents(), "resume-agents claude codex pi opencode conversation restore reboot"},
 		{"general", locales.SetSessionHistory(), "session-history ended sessions archived resume claude codex conversation"},
 		{"general", locales.SetGitStatus(), "git-status branch changes diff repository worktree"},
+		{"general", locales.SetNewSessionLoose(), "new-session-loose loose sessions project tab standalone plus"},
 		{"general", locales.SetDiffLayout(), "diff-layout diff unified split side by side changes"},
 		{"general", locales.SetOpenAtLogin(), "startup launch login items"},
 		{"general", locales.SetVersion(), "updates check for updates software update about"},
@@ -173,9 +174,10 @@ var pageWords = map[string]string{
 // rows are on the page while it is enabled, and so the search finds them.
 func flagGated() map[string]string {
 	return map[string]string{
-		locales.SetTabLayout():   settings.FlagHorizontalTabs,
-		locales.SetCardGap():     settings.FlagCustomSpacing,
-		locales.SetPaneGapSame(): settings.FlagCustomSpacing,
+		locales.SetTabLayout():       settings.FlagHorizontalTabs,
+		locales.SetNewSessionLoose(): settings.FlagLooseSessions,
+		locales.SetCardGap():         settings.FlagCustomSpacing,
+		locales.SetPaneGapSame():     settings.FlagCustomSpacing,
 	}
 }
 

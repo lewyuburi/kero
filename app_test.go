@@ -14,6 +14,7 @@ import (
 
 	"kero/internal/client"
 	"kero/internal/proto"
+	"kero/internal/settings"
 )
 
 // Split Right creates a session when there is no pane to split, and
@@ -215,6 +216,55 @@ func TestOpenProjectRemotePaths(t *testing.T) {
 			stop()
 			if !slices.Equal(opened, []string{dir}) {
 				t.Errorf("remote sessions opened in %q, want [%q]", opened, dir)
+			}
+		})
+	}
+}
+
+// With loose-sessions and new-session-loose, a new session started from a
+// project's session is loose; a project's own + still adds to it, and
+// without the setting the session stays in its project.
+func TestNewSessionLoose(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		flag, set   bool
+		project     string
+		wantProject string
+		wantLoose   bool
+	}{
+		{"off", true, false, "", "p1", false},
+		{"flag off", false, true, "", "p1", false},
+		{"on", true, true, "", "", true},
+		{"project's own +", true, true, "p1", "p1", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := testApp(t)
+			a.st.Sessions = []proto.Session{{ID: "s1", Project: "p1", Panes: []proto.Pane{{ID: "a", Dir: "/tmp"}}, Focus: "a"}}
+			a.selected = "s1"
+			a.local().conn = connReady
+			if tc.flag {
+				a.set.SetFlag(settings.FlagLooseSessions, settings.StateEnabled)
+			}
+			a.set.NewSessionLoose = tc.set
+			got := make(chan proto.CreateParams, 1)
+			cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
+				var p proto.CreateParams
+				if err := json.Unmarshal(raw, &p); err != nil {
+					return nil, err
+				}
+				got <- p
+				return proto.Session{ID: "s2", Project: p.Project}, nil
+			})
+			a.local().cl = cl
+			defer stop()
+			a.newSession(tc.project)
+			select {
+			case p := <-got:
+				if p.Project != tc.wantProject || p.Loose != tc.wantLoose {
+					t.Errorf("created in project %q loose %v, want %q, %v", p.Project, p.Loose, tc.wantProject, tc.wantLoose)
+				}
+			case <-time.After(time.Second):
+				t.Fatal("no session was created")
 			}
 		})
 	}

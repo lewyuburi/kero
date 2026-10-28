@@ -42,6 +42,7 @@ kero config check             # report unknown keys and bad values
 | Key                     | Default   | Description                                                   |
 | ----------------------- | --------- | ------------------------------------------------------------- |
 | `new-session-directory` | `current` | Where a new session starts: `current`, `project` or `home`    |
+| `new-session-loose`     | `false`   | With the `loose-sessions` flag, new sessions start in no project, except from a project's own + |
 | `session-name`          | `focused` | What names a session you haven't: `focused`, `lead` or `folder` ([more](./sessions.md#how-an-unnamed-session-is-named)) |
 | `focus-follows-mouse`   | `false`   | Focus the pane the pointer moves into                         |
 | `confirm-close`         | `true`    | Ask before closing a pane that a program is running in        |

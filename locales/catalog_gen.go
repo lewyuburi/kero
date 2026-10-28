@@ -2070,6 +2070,26 @@ func (msgs Messages) SetDirHome() string {
 	return Catalog.Format(msgs.locale, "setDirHome", nil)
 }
 
+// SetNewSessionLoose says "New sessions are loose"
+// in the language the app shows.
+func SetNewSessionLoose() string { return In(i18n.Locale()).SetNewSessionLoose() }
+
+// SetNewSessionLoose says "New sessions are loose"
+// in the language of msgs.
+func (msgs Messages) SetNewSessionLoose() string {
+	return Catalog.Format(msgs.locale, "setNewSessionLoose", nil)
+}
+
+// SetNewSessionLooseDetail says "Start new sessions in no project: from +, New Session and ⌘T. A project’s own + still adds to it."
+// in the language the app shows.
+func SetNewSessionLooseDetail() string { return In(i18n.Locale()).SetNewSessionLooseDetail() }
+
+// SetNewSessionLooseDetail says "Start new sessions in no project: from +, New Session and ⌘T. A project’s own + still adds to it."
+// in the language of msgs.
+func (msgs Messages) SetNewSessionLooseDetail() string {
+	return Catalog.Format(msgs.locale, "setNewSessionLooseDetail", nil)
+}
+
 // SetSessionName says "Name sessions after"
 // in the language the app shows.
 func SetSessionName() string { return In(i18n.Locale()).SetSessionName() }

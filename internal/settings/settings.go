@@ -23,6 +23,7 @@ import (
 type Settings struct {
 	// General
 	NewSessionDir     string `json:"newSessionDir"`     // "current", "project" or "home"
+	NewSessionLoose   bool   `json:"newSessionLoose"`   // with loose-sessions, a new session is loose unless started in a project
 	SessionName       string `json:"sessionName"`       // what names an unnamed session: proto.NameFocused, NameLead or NameFolder
 	FocusFollowsMouse bool   `json:"focusFollowsMouse"` // a pane the pointer enters takes the focus
 	ConfirmClose      bool   `json:"confirmClose"`      // before closing a pane a program runs in

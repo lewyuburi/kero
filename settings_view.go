@@ -492,6 +492,11 @@ func (a *App) generalPage(c *ui.Context, pal *palette) {
 		settingRow(c, pal, locales.SetNewSessionsStartIn(), "", func() {
 			segmented(c, "newdir", &s.NewSessionDir, []string{"current", "project", "home"}, []string{locales.SetDirCurrent(), locales.SetDirProject(), locales.SetDirHome()})
 		})
+		if looseOn(a.set) {
+			settingRow(c, pal, locales.SetNewSessionLoose(), locales.SetNewSessionLooseDetail(), func() {
+				toggle(c.Key("newloose"), &s.NewSessionLoose, pal)
+			})
+		}
 		settingRow(c, pal, locales.SetSessionName(), locales.SetSessionNameDetail(), func() {
 			segmented(c, "sessionname", &s.SessionName, []string{proto.NameFocused, proto.NameLead, proto.NameFolder},
 				[]string{locales.SetNameFocused(), locales.SetNameLead(), locales.SetNameFolder()})

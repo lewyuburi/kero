@@ -1170,12 +1170,21 @@ func (a *App) newSessionOn(h *host, projectID string) {
 		return
 	}
 	p := proto.CreateParams{Project: projectID}
+	// With none asked for, a new session may start in no project, as the
+	// setting says; a project's own + names it.
+	loose := projectID == "" && looseOn(a.set) && a.set.NewSessionLoose
 	if cur := a.session(a.selected); cur != nil && a.hostOf(cur.ID) == h {
 		if projectID == "" || cur.Project == projectID {
 			p.Project, p.After = cur.Project, cur.ID
 			// From a loose session, a new one is loose: where its folder
 			// is does not put it in a project.
 			p.Loose = looseOn(a.set) && cur.Project == ""
+			if loose {
+				p.Project, p.Loose = "", true
+				if cur.Project != "" {
+					p.After = ""
+				}
+			}
 			if a.set.NewSessionDir == "current" {
 				p.Dir = cur.FocusPane().WorkDir()
 			}
@@ -1188,6 +1197,12 @@ func (a *App) newSessionOn(h *host, projectID string) {
 	}
 	if a.set.NewSessionDir == "home" {
 		p.Dir = home
+	}
+	if loose {
+		p.Project, p.Loose = "", true
+		if a.set.NewSessionDir != "current" || p.Dir == "" {
+			p.Dir = home
+		}
 	}
 	if p.Project == "" && len(a.projectsOf(h)) == 0 {
 		p.Dir = home
