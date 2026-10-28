@@ -253,6 +253,8 @@
   "setLooseSessionsDetail": "允许会话不属于任何项目：在既非项目文件夹也非 git 仓库的文件夹中启动的会话、用“在主目录中新建会话”特意启动的会话，或从菜单中移出项目的会话。它们排在最前，没有标题，在顶部时也不在任何分组中。",
   "setMiddleClickClose": "中键关闭标签页",
   "setMiddleClickCloseDetail": "用鼠标中键点击会话的标签页或边栏中的行来关闭它；其中有程序运行时会先询问。",
+  "setTabReorder": "拖动重新排序标签页",
+  "setTabReorderDetail": "拖动会话的标签页或行，把它移到项目内的其他位置；拖动项目名称或标题，把项目移到列表中的其他位置。",
   "sessionNoProject": "无项目",
   "setHorizontalTabs": "水平标签页",
   "setHorizontalTabsDetail": "在“外观”中提供窗口顶部标签页的选项，并用 ⌥⌘B 切换。启用本身不会改变任何设置：在你选择之前，标签页保持原位。在 macOS 上开发；其他平台尚未验证。",

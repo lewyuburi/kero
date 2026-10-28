@@ -401,6 +401,8 @@
   "setLooseSessionsDetail": "Let a session be in no project: one started in a folder that is neither a project's nor a git repository's, or with New Session in Home, which starts one on purpose, or moved out of its project from its menu. They come first, with no header, and across the top outside any group.",
   "setMiddleClickClose": "Middle-click closes tabs",
   "setMiddleClickCloseDetail": "Close a session with a click of the middle button on its tab or its row in the sidebar, asking first if something runs in it.",
+  "setTabReorder": "Reorder tabs by dragging",
+  "setTabReorderDetail": "Drag a session by its tab or row to another place in its project, and a project by its name or header to another place in the list.",
   "sessionNoProject": "No Project",
   "setHorizontalTabs": "Horizontal tabs",
   "setHorizontalTabsDetail": "Offer tabs across the top of the window as a choice in Appearance, with ⌥⌘B to switch. Enabling it changes nothing by itself: the tabs stay where they are until you choose. Made on macOS; not yet looked at on other platforms.",

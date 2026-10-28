@@ -449,7 +449,11 @@ func (a *App) groupView(c *ui.Context, pal *palette, g group, gi int, n *int) {
 	}
 	pointerTooltip(c, hdr, "tip-project-"+key, g.host.shortDir(g.project.Dir))
 	hdr.ContextMenu(func(m *ui.Menu) { a.projectMenu(m, g, collapsed, false) })
+	a.groupHandle(hdr, pal, g)
+	// Expanded, a header is the top of its project: a drop goes before it.
+	mark := a.reorderableGroup(hdr, g, false, collapsed)
 	hdr.Children(func() {
+		dropMark(c, pal, mark, false)
 		if renaming {
 			in := ui.TextInputBase(c.Key("rename"), &a.renameBuf).Grow(1).MinWidth(0).FontSize(12.5).FontWeight(600).AutoFocus()
 			if in.Shortcut(0, ui.KeyEscape) {
@@ -595,6 +599,7 @@ func (a *App) sessionRow(c *ui.Context, pal *palette, s *proto.Session, n *int) 
 		id := s.ID
 		a.defer_(func() { a.closeSession(id, true) })
 	}
+	mark := a.reorderable(row, pal, s, false)
 	if row.DoubleClicked() {
 		a.startRename(s.ID)
 	}
@@ -612,6 +617,7 @@ func (a *App) sessionRow(c *ui.Context, pal *palette, s *proto.Session, n *int) 
 	pointerTooltip(c, row, "tip-"+s.ID, tip)
 	row.ContextMenu(func(m *ui.Menu) { a.sessionMenu(m, s) })
 	row.Children(func() {
+		dropMark(c, pal, mark, false)
 		if a.renaming == s.ID {
 			in := ui.TextInputBase(c.Key("rename"), &a.renameBuf).Grow(1).MinWidth(0).FontSize(13.5).AutoFocus()
 			if in.Submitted() || in.Shortcut(0, ui.KeyEscape) {

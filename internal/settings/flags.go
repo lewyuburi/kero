@@ -38,6 +38,11 @@ const FlagLooseSessions = "loose-sessions"
 // its tab or its row in the sidebar. It starts disabled: Kero's own does not.
 const FlagMiddleClickClose = "middle-click-close"
 
+// FlagTabReorder lets a session be dragged to another place in its project,
+// and a project to another place among the projects, by its tab, its row or
+// its header. It starts disabled: Kero's own cannot be.
+const FlagTabReorder = "tab-reorder"
+
 // retiredFlags are flags that were, which a configuration may still name:
 // they are ignored, not a problem.
 var retiredFlags = map[string]bool{"tab-groups": true}
@@ -48,6 +53,7 @@ var Flags = []Flag{
 	{FlagHorizontalTabs, func(string) bool { return false }},
 	{FlagLooseSessions, func(string) bool { return false }},
 	{FlagMiddleClickClose, func(string) bool { return false }},
+	{FlagTabReorder, func(string) bool { return false }},
 }
 
 // The states of a flag, as Advanced offers them: the default's, or a choice

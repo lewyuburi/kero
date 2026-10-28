@@ -269,3 +269,119 @@ func TestNewSessionLoose(t *testing.T) {
 		})
 	}
 }
+
+// A session dropped beside another of its project's lands there at once, and
+// the daemon is told where in the project, counting it without the one moved.
+func TestMoveBeside(t *testing.T) {
+	for _, tc := range []struct {
+		id, target string
+		after      bool
+		order      []string
+		index      int
+	}{
+		{"a", "c", false, []string{"b", "a", "c", "x"}, 1},
+		{"a", "c", true, []string{"b", "c", "a", "x"}, -1}, // last: the daemon takes -1 for the end
+		{"c", "a", false, []string{"c", "a", "b", "x"}, 0},
+		{"a", "b", false, []string{"a", "b", "c", "x"}, 0},
+		{"a", "x", false, nil, 0}, // another project's: nothing moves
+	} {
+		a := testApp(t)
+		a.st.Sessions = []proto.Session{{ID: "a", Project: "p"}, {ID: "b", Project: "p"}, {ID: "x", Project: "q"}, {ID: "c", Project: "p"}}
+		a.local().conn = connReady
+		got := make(chan proto.MoveParams, 1)
+		cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
+			var p proto.MoveParams
+			if err := json.Unmarshal(raw, &p); err != nil {
+				return nil, err
+			}
+			got <- p
+			return true, nil
+		})
+		a.local().cl = cl
+		a.moveBeside(tc.id, tc.target, tc.after)
+		if tc.order == nil {
+			select {
+			case p := <-got:
+				t.Errorf("%s beside %s moved %+v, want nothing", tc.id, tc.target, p)
+			case <-time.After(100 * time.Millisecond):
+			}
+			stop()
+			continue
+		}
+		select {
+		case p := <-got:
+			if p.ID != tc.id || p.Project != "p" || p.Index != tc.index {
+				t.Errorf("%s beside %s (after %v) asked for %+v, want index %d", tc.id, tc.target, tc.after, p, tc.index)
+			}
+		case <-time.After(time.Second):
+			t.Fatal("no move was asked for")
+		}
+		stop()
+		var order []string
+		for _, s := range a.st.Sessions {
+			order = append(order, s.ID)
+		}
+		// x is where the project's others left it: only p's order is asked.
+		var inP []string
+		for _, id := range order {
+			if id != "x" {
+				inP = append(inP, id)
+			}
+		}
+		var want []string
+		for _, id := range tc.order {
+			if id != "x" {
+				want = append(want, id)
+			}
+		}
+		if !slices.Equal(inP, want) {
+			t.Errorf("%s beside %s (after %v): order %v, want %v", tc.id, tc.target, tc.after, inP, want)
+		}
+	}
+}
+
+// A project dropped beside another lands there at once, and the daemon is
+// told its place among the host's projects without it.
+func TestMoveGroupBeside(t *testing.T) {
+	for _, tc := range []struct {
+		id, target string
+		after      bool
+		order      []string
+		index      int
+	}{
+		{"a", "c", false, []string{"b", "a", "c"}, 1},
+		{"a", "c", true, []string{"b", "c", "a"}, 2},
+		{"c", "a", false, []string{"c", "a", "b"}, 0},
+	} {
+		a := testApp(t)
+		a.st.Projects = []proto.Project{{ID: "a"}, {ID: "b"}, {ID: "c"}}
+		a.local().conn = connReady
+		got := make(chan proto.MoveProjectParams, 1)
+		cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
+			var p proto.MoveProjectParams
+			if err := json.Unmarshal(raw, &p); err != nil {
+				return nil, err
+			}
+			got <- p
+			return true, nil
+		})
+		a.local().cl = cl
+		a.moveGroupBeside(tc.id, tc.target, tc.after)
+		select {
+		case p := <-got:
+			if p.ID != tc.id || p.Index != tc.index {
+				t.Errorf("%s beside %s (after %v) asked for %+v, want index %d", tc.id, tc.target, tc.after, p, tc.index)
+			}
+		case <-time.After(time.Second):
+			t.Fatal("no move was asked for")
+		}
+		stop()
+		var order []string
+		for _, p := range a.st.Projects {
+			order = append(order, p.ID)
+		}
+		if !slices.Equal(order, tc.order) {
+			t.Errorf("%s beside %s (after %v): order %v, want %v", tc.id, tc.target, tc.after, order, tc.order)
+		}
+	}
+}

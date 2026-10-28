@@ -1400,6 +1400,8 @@ func flagText(id string) (name, detail string) {
 		return locales.SetLooseSessions(), locales.SetLooseSessionsDetail()
 	case settings.FlagMiddleClickClose:
 		return locales.SetMiddleClickClose(), locales.SetMiddleClickCloseDetail()
+	case settings.FlagTabReorder:
+		return locales.SetTabReorder(), locales.SetTabReorderDetail()
 	}
 	return id, ""
 }

@@ -2592,6 +2592,26 @@ func (msgs Messages) SetMiddleClickCloseDetail() string {
 	return Catalog.Format(msgs.locale, "setMiddleClickCloseDetail", nil)
 }
 
+// SetTabReorder says "Reorder tabs by dragging"
+// in the language the app shows.
+func SetTabReorder() string { return In(i18n.Locale()).SetTabReorder() }
+
+// SetTabReorder says "Reorder tabs by dragging"
+// in the language of msgs.
+func (msgs Messages) SetTabReorder() string {
+	return Catalog.Format(msgs.locale, "setTabReorder", nil)
+}
+
+// SetTabReorderDetail says "Drag a session by its tab or row to another place in its project, and a project by its name or header to another plac…"
+// in the language the app shows.
+func SetTabReorderDetail() string { return In(i18n.Locale()).SetTabReorderDetail() }
+
+// SetTabReorderDetail says "Drag a session by its tab or row to another place in its project, and a project by its name or header to another plac…"
+// in the language of msgs.
+func (msgs Messages) SetTabReorderDetail() string {
+	return Catalog.Format(msgs.locale, "setTabReorderDetail", nil)
+}
+
 // SessionNoProject says "No Project"
 // in the language the app shows.
 func SessionNoProject() string { return In(i18n.Locale()).SessionNoProject() }

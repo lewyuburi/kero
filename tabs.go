@@ -97,8 +97,11 @@ func (a *App) tabGroup(c *ui.Context, pal *palette, g group, n *int, w float32) 
 	if pal.dark {
 		tint = col.Fill.Alpha(0.3)
 	}
-	ui.Row(c.Key("tabgroup-"+key)).Height(tabBarH-8).Padding(0, 3).Gap(2).AlignItems(ui.Center).Radius(12).Shrink(0).Background(tint).Children(func() {
+	capsule := ui.Row(c.Key("tabgroup-"+key)).Height(tabBarH-8).Padding(0, 3).Gap(2).AlignItems(ui.Center).Radius(12).Shrink(0).Background(tint)
+	mark := a.reorderableGroup(capsule, g, true, true)
+	capsule.Children(func() {
 		a.tabLabel(c, pal, g, col)
+		dropMark(c, pal, mark, true)
 		shown := a.shownTabs(g)
 		if len(shown) > 0 {
 			ui.Box(c.Key("sep")).Size(1, 14).Margin(0, 3).Shrink(0).Background(pal.text.Alpha(0.14))
@@ -125,6 +128,7 @@ func (a *App) tabLabel(c *ui.Context, pal *palette, g group, col projectColor) {
 	}
 	pointerTooltip(c, lbl, "tip-tabproject-"+key, g.host.shortDir(g.project.Dir))
 	lbl.ContextMenu(func(m *ui.Menu) { a.projectMenu(m, g, collapsed, true) })
+	a.groupHandle(lbl, pal, g)
 	lbl.Children(func() {
 		ui.Box(c).Size(8, 8).Radius(4).Shrink(0).Background(col.Fill)
 		if renaming {
@@ -238,6 +242,7 @@ func (a *App) tab(c *ui.Context, pal *palette, s *proto.Session, n *int, w float
 		id := s.ID
 		a.defer_(func() { a.closeSession(id, true) })
 	}
+	mark := a.reorderable(row, pal, s, true)
 	if selected && a.revealedTab != s.ID {
 		// Chosen by a shortcut or a new session, it comes into view in the
 		// tabs, once; in every frame it would keep the user from scrolling.
@@ -257,6 +262,7 @@ func (a *App) tab(c *ui.Context, pal *palette, s *proto.Session, n *int, w float
 	pointerTooltip(c, row, "tip-tab-"+s.ID, tip)
 	row.ContextMenu(func(m *ui.Menu) { a.sessionMenu(m, s) })
 	row.Children(func() {
+		dropMark(c, pal, mark, true)
 		if a.renaming == s.ID {
 			in := ui.TextInputBase(c.Key("rename"), &a.renameBuf).Grow(1).MinWidth(0).FontSize(13).AutoFocus()
 			if in.Submitted() || in.Shortcut(0, ui.KeyEscape) {

@@ -21,14 +21,15 @@ Kero changes under them is settled once, in a merge.
 - **Layout:** `card-gap` and `pane-gap` (and the corners that follow them),
   `tab-layout` with the tab bar across the top (`tabs.go`), ⌥⌘B, and sessions in
   no project (`loose-sessions`, with `new-session-loose` to start them from the +,
-  New Session and the shortcut), and middle-click closing tabs (`middle-click-close`).
+  New Session and the shortcut), middle-click closing tabs (`middle-click-close`)
+  and dragging tabs and projects into order (`tab-reorder`, `reorder.go`).
 - **Keys and hooks:** `keybind` sequences and key modes (`chords.go`), `pane.resize.*`;
   `on-status` hooks; `kero api` (kerod's methods, described and called).
 - **Browser:** Kero's own (snapshot, refs, cookies), with `press`, `scroll`,
   `url` and `title`, and **Agent** in the header while a command is at the page.
 - **Status rings** painted at 30 frames a second, not at every refresh.
 - **Flags** (`internal/settings/flags.go`, Settings › Advanced): `horizontal-tabs`,
-  `custom-spacing`, `loose-sessions` and `middle-click-close` start
+  `custom-spacing`, `loose-sessions`, `middle-click-close` and `tab-reorder` start
   disabled, as experiments do, so that the fork looks like Kero until one is enabled.
 - **`third_party/mygo`:** MyGo with `Element.MiddleClicked` and `MiddlePressed`
   (`ui/input.go`), and `Window.SetTrafficLightPosition`, so the macOS
