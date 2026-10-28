@@ -1,0 +1,54 @@
+# Games
+
+A game pane plays one of the games here (the `games` flag offers them in the
+command palette). The app knows none by name: the pane in `games.go` asks this
+package for the catalog, and draws what a game says on a screen of pixels.
+
+```
+internal/pixel          the screen: canvas, images and modes, fonts, sheets, tilemaps, themes
+internal/games          the interface a game keeps, and the catalog
+internal/games/snake    a game: engine, view, sprites
+```
+
+## A new game
+
+A package under `internal/games/<name>` with an engine, which knows nothing of
+the window and is tested without one, and a view that draws it:
+
+1. The engine is a `games.Game`: `Interval` (the time between its steps, 0 while
+   it waits), `Step`, `Key` and `Status`. Steps are the game's clock, not frames:
+   a game that is stepped at 30 a second does the same on any machine.
+   Add `games.Animator` for something that moves between steps, as a shake.
+2. The view is `Draw(g, canvas)`, and registers the game in `init` with
+   `games.Register(games.Kind{...})`: its name, its title, the size of its
+   screen in pixels and its `Draw`. Leave the top `games.HUDHeight` pixels
+   free: the pane draws the score and the hint there.
+3. Add `_ "kero/internal/games/<name>"` to the imports in `games.go`.
+
+Keep the screen to the proportions of a handheld's, 5 to 3, as Snake's board is
+(25 by 15 cells of 8 pixels, half of Playdate's 400 by 240). The pane shows it
+as large as fits at a whole number of the display's pixels, and never changes
+its proportions.
+
+## What is data
+
+- **Sprites**: a `.sheet` file, embedded with `go:embed` and read with
+  `pixel.MustSheet`. `sprite name` and its rows (`#` ink, `.` paper, space
+  transparent), `anim name ticks frame...` for an animation. Draw with
+  `canvas.Draw(sheet.Image("name"), x, y, mode)`.
+- **Fonts**: a `.font` file in `internal/pixel/fonts`, read by name with
+  `pixel.FontNamed`. A header (`height`, `tracking`, `space`, `kern AV -1`) and
+  a block to a glyph, as wide as its rows. A serif font is a new file; set
+  `Font` in the game's `Kind` to use it.
+- **Themes**: the colors of a screen, in `internal/pixel/theme.go`; set `Theme`
+  in the `Kind`.
+
+## Drawing
+
+- Modes (`Copy`, `InkOnly`, `PaperOnly`, `FillInk`, `FillPaper`, `XOR`, `NXOR`,
+  `Inverted`) apply to images and text, as a handheld's drawing modes do. Shapes
+  (`Rect`, `Frame`, `Dither`) are drawn as they say.
+- A shade is dithered (`Dither`), in a pattern that is the same wherever it is
+  drawn. A shade from the half up is a checkerboard, which flashes if it moves a
+  pixel at a time: move by pairs of pixels (`pixel.ShakeOffset` does), or draw
+  the dither after moving.

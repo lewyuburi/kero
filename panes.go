@@ -251,8 +251,7 @@ func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float
 	bg := pal.card
 	if p.Game() != "" {
 		// A game's screen goes to the card's edges: the card is its paper.
-		_, paper := screenColors(pal.dark)
-		bg = ui.RGB(paper.R, paper.G, paper.B)
+		bg = a.gamePaper(p, pal.dark)
 	}
 	// A browser's page stays opaque, so its toolbar does too, and neither
 	// fades: a page is read, not typed into, from beside it.

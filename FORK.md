@@ -24,7 +24,8 @@ Kero changes under them is settled once, in a merge.
   New Session and the shortcut), middle-click closing tabs (`middle-click-close`)
   dragging tabs and projects into order (`tab-reorder`, `reorder.go`), and panes
   that play a game (`games`, `games.go`: a pane with a `kero-game://` URL, which the
-  daemon keeps as it keeps a browser's).
+  daemon keeps as it keeps a browser's; the games, and the pixels they are drawn in,
+  are `internal/games` and `internal/pixel`, with a README on adding one).
 - **Keys and hooks:** `keybind` sequences and key modes (`chords.go`), `pane.resize.*`;
   `on-status` hooks; `kero api` (kerod's methods, described and called).
 - **Browser:** Kero's own (snapshot, refs, cookies), with `press`, `scroll`,

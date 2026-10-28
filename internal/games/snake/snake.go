@@ -1,33 +1,14 @@
-package main
+// Package snake is the game of the snake: it eats to grow, and dies on a wall
+// or on itself, and now and then a bonus fruit comes and goes.
+package snake
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
+
+	"kero/internal/games"
 )
-
-// gameKey is what a player can press, whatever the game.
-type gameKey int
-
-const (
-	keyUp gameKey = iota
-	keyDown
-	keyLeft
-	keyRight
-	keyAction // space: pause, or begin
-	keyRestart
-)
-
-// game is what a game pane plays: it steps at the interval it asks and takes
-// keys. The engine knows nothing of the window, so it is tested without one;
-// what a game looks like is its view's (gameKind.draw).
-type game interface {
-	// Interval is the time between steps, 0 while it waits for a key.
-	Interval() time.Duration
-	Step()
-	Key(k gameKey)
-	// Status is the score and a hint, which is empty while the game is on.
-	Status() (score, hint string)
-}
 
 type point struct{ x, y int }
 
@@ -56,6 +37,8 @@ var bonusPoints = map[bonusKind]int{bonusCherry: 3, bonusStar: 6, bonusClock: 1}
 const (
 	bonusChance = 2.0 // percent
 	slowSteps   = 30  // how long a clock slows it down
+	shakeFrames = 12  // how long the screen shakes as it dies
+	flashFrames = 4   // and flashes as a bonus is taken
 )
 
 // snake is the game of the snake: it eats to grow, and dies on a wall or
@@ -70,11 +53,15 @@ type snake struct {
 	paused        bool
 	bonus         *bonus
 	slow          int // steps left of a clock's slowing
+	shake, flash  int // frames left of the screen shaking, and flashing
 	rng           *rand.Rand
 }
 
+// New is a game, with a board of its own and what it deals from seed.
+func New(seed int64) games.Game { return newSnake(seed) }
+
 func newSnake(seed int64) *snake {
-	g := &snake{w: snakeCols, h: snakeRows, rng: rand.New(rand.NewSource(seed))}
+	g := &snake{w: Cols, h: Rows, rng: rand.New(rand.NewSource(seed))}
 	g.reset()
 	return g
 }
@@ -101,16 +88,16 @@ func (g *snake) Interval() time.Duration {
 	return iv
 }
 
-func (g *snake) Key(k gameKey) {
-	turn := map[gameKey]point{keyUp: {0, -1}, keyDown: {0, 1}, keyLeft: {-1, 0}, keyRight: {1, 0}}
+func (g *snake) Key(k games.Key) {
+	turn := map[games.Key]point{games.Up: {0, -1}, games.Down: {0, 1}, games.Left: {-1, 0}, games.Right: {1, 0}}
 	switch d, isTurn := turn[k]; {
-	case k == keyRestart && g.over:
+	case k == games.Restart && g.over:
 		g.reset()
-	case k == keyAction && g.over:
+	case k == games.Action && g.over:
 		g.reset()
-	case k == keyAction && g.started:
+	case k == games.Action && g.started:
 		g.paused = !g.paused
-	case k == keyAction:
+	case k == games.Action:
 		g.started = true
 	case isTurn && !g.over:
 		// Not back on itself.
@@ -135,8 +122,7 @@ func (g *snake) Step() {
 		rest = g.body[:len(g.body)-1]
 	}
 	if head.x < 0 || head.y < 0 || head.x >= g.w || head.y >= g.h || contains(rest, head) {
-		g.over = true
-		g.best = max(g.best, g.score)
+		g.die()
 		return
 	}
 	g.body = append([]point{head}, rest...)
@@ -146,17 +132,32 @@ func (g *snake) Step() {
 			g.slow = slowSteps
 		}
 		g.bonus = nil
+		g.flash = flashFrames
 	}
 	if eats {
 		g.score++
 		if len(g.body) == g.w*g.h {
-			g.over = true
-			g.best = max(g.best, g.score)
+			g.die()
 			return
 		}
 		g.placeFood()
 	}
 	g.tickBonus()
+}
+
+// die ends the game, and shakes the screen.
+func (g *snake) die() {
+	g.over = true
+	g.best = max(g.best, g.score)
+	g.shake = shakeFrames
+}
+
+// Animating tells whether the screen is shaking or flashing; Frame lets a
+// frame of it go by.
+func (g *snake) Animating() bool { return g.shake > 0 || g.flash > 0 }
+
+func (g *snake) Frame() {
+	g.shake, g.flash = max(g.shake-1, 0), max(g.flash-1, 0)
 }
 
 // tickBonus ages what the snake has not taken: a bonus goes as its time is
@@ -217,7 +218,7 @@ func (g *snake) placeFood() {
 }
 
 func (g *snake) Status() (score, hint string) {
-	score = itoa(g.score) + " · best " + itoa(max(g.best, g.score))
+	score = strconv.Itoa(g.score) + " · best " + strconv.Itoa(max(g.best, g.score))
 	switch {
 	case g.over:
 		hint = "game over - space"

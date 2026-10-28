@@ -1,10 +1,14 @@
 package main
 
 import (
+	"image"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 
+	"kero/internal/games"
+	_ "kero/internal/games/snake" // the games there are: each registers itself
+	"kero/internal/pixel"
 	"kero/internal/proto"
 	"kero/internal/settings"
 	"kero/locales"
@@ -13,31 +17,16 @@ import (
 // A game pane is a browser pane's kin: the daemon keeps it as a pane with a
 // URL and no process (proto.Pane.Game), so that it splits, moves, closes and
 // comes back as any pane does, and the app draws the game here instead of a
-// page. What a game is lives in its own file; this one is the pane.
-
-// hudHeight is the band at the top of a game's screen where the score and
-// the hint are drawn, which a game leaves free.
-const hudHeight = 12
-
-// gameKind is a game a pane can play.
-type gameKind struct {
-	id, title string
-	new       func() game
-	// canvas is the size of the game's screen in pixels, and draw paints it.
-	// The screen keeps its proportions in any pane.
-	canvas func() (w, h int)
-	draw   func(g game, cv *pixelCanvas)
-}
-
-var gameKinds = []gameKind{
-	{"snake", "Snake", func() game { return newSnake(time.Now().UnixNano()) }, snakeCanvas, drawSnake},
-}
+// page. What a game is lives in internal/games; this file is the pane, and
+// knows of no game by name.
 
 // gamePlay is a game being played in a pane, and where its clock stands.
 type gamePlay struct {
-	g       game
-	kind    gameKind
-	cv      *pixelCanvas
+	g       games.Game
+	kind    games.Kind
+	cv      *pixel.Canvas
+	img     *image.RGBA
+	bm      *ui.Bitmap
 	last    time.Time // when it last stepped
 	running bool      // it was stepping in the last frame
 	focused bool
@@ -49,18 +38,17 @@ func (a *App) gameFor(p *proto.Pane) *gamePlay {
 	if play := a.games[p.ID]; play != nil {
 		return play
 	}
-	for _, k := range gameKinds {
-		if k.id == p.Game() {
-			if a.games == nil {
-				a.games = map[string]*gamePlay{}
-			}
-			w, h := k.canvas()
-			play := &gamePlay{g: k.new(), kind: k, cv: newPixelCanvas(w, h)}
-			a.games[p.ID] = play
-			return play
-		}
+	k, ok := games.Lookup(p.Game())
+	if !ok {
+		return nil
 	}
-	return nil
+	if a.games == nil {
+		a.games = map[string]*gamePlay{}
+	}
+	w, h := k.Canvas()
+	play := &gamePlay{g: k.New(), kind: k, cv: pixel.NewCanvas(w, h)}
+	a.games[p.ID] = play
+	return play
 }
 
 // openGame splits the pane in focus with a pane playing a game, or with no
@@ -86,9 +74,9 @@ func (a *App) gameItems() []paletteItem {
 		return nil
 	}
 	var items []paletteItem
-	for _, k := range gameKinds {
-		id := k.id
-		items = append(items, paletteItem{title: locales.NewGame(k.title), words: "game play " + id, run: func() { a.openGame(id) }})
+	for _, k := range games.Kinds() {
+		id := k.ID
+		items = append(items, paletteItem{title: locales.NewGame(k.Title), words: "game play " + id, run: func() { a.openGame(id) }})
 	}
 	return items
 }
@@ -96,19 +84,19 @@ func (a *App) gameItems() []paletteItem {
 // gameKeys are the keys a game takes.
 var gameKeys = []struct {
 	key  ui.Key
-	game gameKey
+	game games.Key
 }{
-	{ui.KeyUp, keyUp}, {ui.KeyW, keyUp},
-	{ui.KeyDown, keyDown}, {ui.KeyS, keyDown},
-	{ui.KeyLeft, keyLeft}, {ui.KeyA, keyLeft},
-	{ui.KeyRight, keyRight}, {ui.KeyD, keyRight},
-	{ui.KeySpace, keyAction}, {ui.KeyEnter, keyRestart},
+	{ui.KeyUp, games.Up}, {ui.KeyW, games.Up},
+	{ui.KeyDown, games.Down}, {ui.KeyS, games.Down},
+	{ui.KeyLeft, games.Left}, {ui.KeyA, games.Left},
+	{ui.KeyRight, games.Right}, {ui.KeyD, games.Right},
+	{ui.KeySpace, games.Action}, {ui.KeyEnter, games.Restart},
 }
 
-// paneGame is a game pane's body, under the header a pane has: the board
-// in a monospaced font, and a line of status. It takes the keyboard as a
-// terminal does, steps while it has it, and waits where it is when the
-// player is in another pane.
+// paneGame is a game pane's body, under the header a pane has: the screen of
+// the game, in the paper of its colors. It takes the keyboard as a terminal
+// does, steps while it has it, and waits where it is when the player is in
+// another pane.
 func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.Pane) {
 	play := a.gameFor(p)
 	ref := a.paneRef(p.ID)
@@ -130,17 +118,35 @@ func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.P
 	}
 	a.stepGame(c, play, focused)
 	score, hint := play.g.Status()
-	play.kind.draw(play.g, play.cv)
-	// The score at the left and the hint at the right, in the screen's font.
-	play.cv.Text(4, 3, score)
-	play.cv.Text(play.cv.w-4-play.cv.TextWidth(hint), 3, hint)
-	ink, paper := screenColors(pal.dark)
-	bm := play.cv.Bitmap(ink, paper)
+	play.kind.Draw(play.g, play.cv)
+	// The score at the left and the hint at the right, in the screen's font,
+	// centered in the band the game leaves for them.
+	font := pixel.FontNamed(play.kind.Font)
+	y := (games.HUDHeight - font.Height + 1) / 2
+	play.cv.Text(font, 4, y, score, pixel.Copy)
+	play.cv.Text(font, play.cv.W-4-font.Width(hint), y, hint, pixel.Copy)
+	theme := pixel.ThemeNamed(play.kind.Theme, pal.dark)
+	play.img = play.cv.RGBA(theme.Ink, theme.Paper, play.img)
+	if play.bm == nil {
+		play.bm = ui.NewBitmap(play.img).Pixelated()
+	} else {
+		play.bm.Update(play.img)
+	}
 	body.Children(func() {
 		ui.Box(c.Key("screen")).Grow(1).MinWidth(0).MinHeight(0).AlignSelf(ui.Stretch).Draw(func(p *ui.Painter, r ui.Rect) {
-			drawScreen(p, r, bm, play.cv.w, play.cv.h)
+			drawScreen(p, r, play.bm, play.cv.W, play.cv.H)
 		})
 	})
+}
+
+// gamePaper is the paper of a game pane's card: the screen's, so that the
+// screen goes to the card's edges.
+func (a *App) gamePaper(p *proto.Pane, dark bool) ui.Color {
+	theme := pixel.ThemeNamed("", dark)
+	if k, ok := games.Lookup(p.Game()); ok {
+		theme = pixel.ThemeNamed(k.Theme, dark)
+	}
+	return ui.RGB(theme.Paper.R, theme.Paper.G, theme.Paper.B)
 }
 
 // drawScreen shows a screen of w by h pixels in the middle of r, as large as
@@ -164,8 +170,21 @@ func drawScreen(p *ui.Painter, r ui.Rect, bm *ui.Bitmap, w, h int) {
 
 // stepGame advances a game by the time that has passed while it had the
 // keyboard, and asks for the frame after its next step. A game that loses
-// the keyboard stops, and goes on from where it was when it has it again.
+// the keyboard stops, and goes on from where it was when it has it again. A
+// game with something moving on its screen between steps (games.Animator)
+// has a frame of it in each frame time, with the keyboard or not.
 func (a *App) stepGame(c *ui.Context, play *gamePlay, focused bool) {
+	if an, ok := play.g.(games.Animator); ok {
+		if an.Animating() {
+			an.Frame()
+		}
+		// What a step starts moving is drawn in the frames after it.
+		defer func() {
+			if an.Animating() {
+				c.After(games.FrameTime)
+			}
+		}()
+	}
 	now := c.Now()
 	iv := play.g.Interval()
 	if !focused || iv == 0 || !play.running || focused != play.focused {

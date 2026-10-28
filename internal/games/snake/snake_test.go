@@ -1,13 +1,9 @@
-package main
+package snake
 
 import (
-	"encoding/json"
 	"testing"
-	"time"
 
-	"github.com/egoist/mygo/ui"
-
-	"kero/internal/proto"
+	"kero/internal/games"
 )
 
 func TestSnakeMovesTurnsAndDiesOnTheWall(t *testing.T) {
@@ -16,18 +12,18 @@ func TestSnakeMovesTurnsAndDiesOnTheWall(t *testing.T) {
 	if g.Interval() != 0 {
 		t.Fatal("a game that has not begun steps")
 	}
-	g.Key(keyAction)
+	g.Key(games.Action)
 	g.Step()
 	if g.body[0] != (point{head.x + 1, head.y}) || len(g.body) != 3 {
 		t.Errorf("after a step the head is %v, body %d long", g.body[0], len(g.body))
 	}
 	// Not back on itself.
-	g.Key(keyLeft)
+	g.Key(games.Left)
 	g.Step()
 	if g.dir != (point{1, 0}) {
 		t.Errorf("turned back on itself: %v", g.dir)
 	}
-	g.Key(keyUp)
+	g.Key(games.Up)
 	g.Step()
 	if g.dir != (point{0, -1}) {
 		t.Errorf("did not turn up: %v", g.dir)
@@ -38,7 +34,7 @@ func TestSnakeMovesTurnsAndDiesOnTheWall(t *testing.T) {
 	if !g.over {
 		t.Error("it went through the wall")
 	}
-	g.Key(keyAction)
+	g.Key(games.Action)
 	if g.over || g.started || len(g.body) != 3 {
 		t.Errorf("it did not start over: over %v, started %v, %d long", g.over, g.started, len(g.body))
 	}
@@ -46,7 +42,7 @@ func TestSnakeMovesTurnsAndDiesOnTheWall(t *testing.T) {
 
 func TestSnakeEatsAndGrows(t *testing.T) {
 	g := newSnake(1)
-	g.Key(keyAction)
+	g.Key(games.Action)
 	g.food = point{g.body[0].x + 1, g.body[0].y}
 	g.Step()
 	if g.score != 1 || len(g.body) != 4 {
@@ -66,7 +62,7 @@ func TestSnakeDiesOnItself(t *testing.T) {
 	g.dir, g.queued = point{0, -1}, point{0, -1}
 	g.food = point{0, 0}
 	g.started = true
-	g.Key(keyLeft) // into (4,5): free
+	g.Key(games.Left) // into (4,5): free
 	g.Step()
 	if g.over {
 		t.Fatal("died on an empty cell")
@@ -85,70 +81,9 @@ func TestSnakeDiesOnItself(t *testing.T) {
 	}
 }
 
-func TestGamePaneURL(t *testing.T) {
-	p := proto.Pane{URL: proto.GameURL("snake")}
-	if p.Game() != "snake" || !p.Browser() {
-		t.Errorf("game %q, browser %v", p.Game(), p.Browser())
-	}
-	if (&proto.Pane{URL: "https://example.com"}).Game() != "" || (&proto.Pane{}).Game() != "" {
-		t.Error("a page or a terminal plays a game")
-	}
-}
-
-// A game pane shows its game, takes the keys while it has the keyboard, and
-// is not a browser to the app: no page is made for it.
-func TestGamePaneRenders(t *testing.T) {
-	a := testApp(t)
-	a.st.Sessions[0].Panes[1] = proto.Pane{ID: "b", URL: proto.GameURL("snake"), Status: proto.Idle, Progress: -1}
-	tt := ui.NewTester(a.view, 1500, 800)
-	tt.Frame()
-	play := a.games["b"]
-	if play == nil {
-		t.Fatal("the pane has no game")
-	}
-	if a.webs["b"] != nil {
-		t.Error("a page was made for a game")
-	}
-	a.paneRef("b").Focus()
-	tt.Frame()
-	tt.Frame()
-	tt.Key(0, ui.KeyRight)
-	tt.Frame()
-	if sn := play.g.(*snake); !sn.started {
-		t.Error("an arrow did not begin the game")
-	}
-}
-
-// With no session to split, a game starts one that is only the game.
-func TestOpenGameWithoutSession(t *testing.T) {
-	a := testApp(t)
-	a.st.Sessions, a.selected = nil, ""
-	a.local().conn = connReady
-	got := make(chan proto.CreateParams, 1)
-	cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
-		var p proto.CreateParams
-		if err := json.Unmarshal(raw, &p); err != nil {
-			return nil, err
-		}
-		got <- p
-		return proto.Session{ID: "s2"}, nil
-	})
-	a.local().cl = cl
-	defer stop()
-	a.openGame("snake")
-	select {
-	case p := <-got:
-		if p.URL != proto.GameURL("snake") || p.Dir == "" || p.Split != "" {
-			t.Errorf("created %+v, want a session of the game, in a folder, splitting nothing", p)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("no session was created for the game")
-	}
-}
-
 func TestSnakeBonusesComeAndGo(t *testing.T) {
 	g := newSnake(1)
-	g.Key(keyAction)
+	g.Key(games.Action)
 	// One that is not taken goes when its time is up.
 	g.bonus = &bonus{at: point{0, 0}, kind: bonusCherry, ttl: 3}
 	for i := 0; i < 3; i++ {
@@ -159,7 +94,7 @@ func TestSnakeBonusesComeAndGo(t *testing.T) {
 	}
 	// One that is taken is worth its points, and the snake grows.
 	g = newSnake(1)
-	g.Key(keyAction)
+	g.Key(games.Action)
 	length := len(g.body)
 	g.bonus = &bonus{at: point{g.body[0].x + 1, g.body[0].y}, kind: bonusStar, ttl: 20}
 	g.Step()
@@ -168,7 +103,7 @@ func TestSnakeBonusesComeAndGo(t *testing.T) {
 	}
 	// A clock slows the game down for a while, and that ends.
 	g = newSnake(1)
-	g.Key(keyAction)
+	g.Key(games.Action)
 	fast := g.Interval()
 	g.bonus = &bonus{at: point{g.body[0].x + 1, g.body[0].y}, kind: bonusClock, ttl: 20}
 	g.Step()
@@ -186,7 +121,7 @@ func TestSnakeBonusesComeAndGo(t *testing.T) {
 // or the fruit.
 func TestSnakeBonusesShowUpOnFreeCells(t *testing.T) {
 	g := newSnake(7)
-	g.Key(keyAction)
+	g.Key(games.Action)
 	g.score = 1
 	seen := 0
 	for i := 0; i < 4000; i++ {
@@ -202,5 +137,39 @@ func TestSnakeBonusesShowUpOnFreeCells(t *testing.T) {
 	// 2 in a hundred: about 80 of 4000.
 	if seen < 40 || seen > 140 {
 		t.Errorf("%d bonuses in 4000 chances, want about 80", seen)
+	}
+}
+
+// Dying shakes the screen for a few frames, and a bonus taken flashes it;
+// both go as the frames do.
+func TestSnakeEffectsRunOut(t *testing.T) {
+	g := newSnake(1)
+	g.Key(games.Action)
+	if g.Animating() {
+		t.Fatal("a screen that is still is animating")
+	}
+	g.bonus = &bonus{at: point{g.body[0].x + 1, g.body[0].y}, kind: bonusCherry, ttl: 9}
+	g.Step()
+	if !g.Animating() || g.flash != flashFrames {
+		t.Errorf("a bonus taken did not flash: %d", g.flash)
+	}
+	for i := 0; i < flashFrames; i++ {
+		g.Frame()
+	}
+	if g.Animating() {
+		t.Error("the flash did not end")
+	}
+	g.Key(games.Up)
+	for i := 0; i < g.h+1 && !g.over; i++ {
+		g.Step()
+	}
+	if !g.over || g.shake != shakeFrames {
+		t.Fatalf("it did not die shaking: over %v, shake %d", g.over, g.shake)
+	}
+	for i := 0; i < shakeFrames; i++ {
+		g.Frame()
+	}
+	if g.Animating() {
+		t.Error("the shake did not end")
 	}
 }
