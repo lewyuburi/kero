@@ -34,6 +34,10 @@ const FlagHorizontalTabs = "horizontal-tabs"
 // any group. It starts disabled: sessions are always in a project.
 const FlagLooseSessions = "loose-sessions"
 
+// FlagMiddleClickClose closes a session with a click of the middle button on
+// its tab or its row in the sidebar. It starts disabled: Kero's own does not.
+const FlagMiddleClickClose = "middle-click-close"
+
 // retiredFlags are flags that were, which a configuration may still name:
 // they are ignored, not a problem.
 var retiredFlags = map[string]bool{"tab-groups": true}
@@ -43,6 +47,7 @@ var Flags = []Flag{
 	{FlagCustomSpacing, func(string) bool { return false }},
 	{FlagHorizontalTabs, func(string) bool { return false }},
 	{FlagLooseSessions, func(string) bool { return false }},
+	{FlagMiddleClickClose, func(string) bool { return false }},
 }
 
 // The states of a flag, as Advanced offers them: the default's, or a choice

@@ -2572,6 +2572,26 @@ func (msgs Messages) SetLooseSessionsDetail() string {
 	return Catalog.Format(msgs.locale, "setLooseSessionsDetail", nil)
 }
 
+// SetMiddleClickClose says "Middle-click closes tabs"
+// in the language the app shows.
+func SetMiddleClickClose() string { return In(i18n.Locale()).SetMiddleClickClose() }
+
+// SetMiddleClickClose says "Middle-click closes tabs"
+// in the language of msgs.
+func (msgs Messages) SetMiddleClickClose() string {
+	return Catalog.Format(msgs.locale, "setMiddleClickClose", nil)
+}
+
+// SetMiddleClickCloseDetail says "Close a session with a click of the middle button on its tab or its row in the sidebar, asking first if something run…"
+// in the language the app shows.
+func SetMiddleClickCloseDetail() string { return In(i18n.Locale()).SetMiddleClickCloseDetail() }
+
+// SetMiddleClickCloseDetail says "Close a session with a click of the middle button on its tab or its row in the sidebar, asking first if something run…"
+// in the language of msgs.
+func (msgs Messages) SetMiddleClickCloseDetail() string {
+	return Catalog.Format(msgs.locale, "setMiddleClickCloseDetail", nil)
+}
+
 // SessionNoProject says "No Project"
 // in the language the app shows.
 func SessionNoProject() string { return In(i18n.Locale()).SessionNoProject() }

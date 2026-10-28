@@ -1398,6 +1398,8 @@ func flagText(id string) (name, detail string) {
 		return locales.SetHorizontalTabs(), locales.SetHorizontalTabsDetail()
 	case settings.FlagLooseSessions:
 		return locales.SetLooseSessions(), locales.SetLooseSessionsDetail()
+	case settings.FlagMiddleClickClose:
+		return locales.SetMiddleClickClose(), locales.SetMiddleClickCloseDetail()
 	}
 	return id, ""
 }

@@ -478,6 +478,8 @@ func (rt *engine) pointerUp(button, clicks int) {
 			s.clickMods = s.pressMods
 		case 1:
 			s.rightClicks++
+		case 2:
+			s.middleClicks++
 		}
 	}
 	rt.setHover(rt.hitChain(rt.pointerX, rt.pointerY))
@@ -1123,6 +1125,26 @@ func (e *node) RightClicked() bool {
 	}
 	e.c.rt.consumed = true
 	return true
+}
+
+// MiddleClicked reports a click with the middle button, as a tab is closed
+// with.
+func (e *node) MiddleClicked() bool {
+	if !e.hasState() {
+		return false
+	}
+	e.flags |= flagClickable
+	if e.disabled() || e.st.middleClicks == 0 {
+		return false
+	}
+	e.c.rt.consumed = true
+	return true
+}
+
+// MiddlePressed reports whether the middle button is held down on the
+// element, so that what a press does for the primary button can leave it.
+func (e *node) MiddlePressed() bool {
+	return e.Pressed() && e.c.rt.pressButton == 2
 }
 
 // Hovered reports whether the pointer is over the element. While the

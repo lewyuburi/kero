@@ -587,8 +587,13 @@ func (a *App) sessionRow(c *ui.Context, pal *palette, s *proto.Session, n *int) 
 	if h := a.hostOf(s.ID); h.remote() && h.conn != connReady {
 		row.Opacity(0.55)
 	}
-	if (row.Pressed() || row.Clicked()) && !selected {
+	middle := a.set.Flag(settings.FlagMiddleClickClose)
+	if (row.Pressed() || row.Clicked()) && !(middle && row.MiddlePressed()) && !selected {
 		a.selectSession(s.ID)
+	}
+	if middle && row.MiddleClicked() {
+		id := s.ID
+		a.defer_(func() { a.closeSession(id, true) })
 	}
 	if row.DoubleClicked() {
 		a.startRename(s.ID)

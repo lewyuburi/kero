@@ -9,6 +9,7 @@ import (
 
 	"kero/internal/actions"
 	"kero/internal/proto"
+	"kero/internal/settings"
 
 	"kero/locales"
 )
@@ -229,8 +230,13 @@ func (a *App) tab(c *ui.Context, pal *palette, s *proto.Session, n *int, w float
 		bg = pal.rowHover
 	}
 	row.Background(row.AnimateColor("bg", bg, ui.Animation{Duration: 110 * time.Millisecond}))
-	if (row.Pressed() || row.Clicked()) && !selected {
+	middle := a.set.Flag(settings.FlagMiddleClickClose)
+	if (row.Pressed() || row.Clicked()) && !(middle && row.MiddlePressed()) && !selected {
 		a.selectSession(s.ID)
+	}
+	if middle && row.MiddleClicked() {
+		id := s.ID
+		a.defer_(func() { a.closeSession(id, true) })
 	}
 	if selected && a.revealedTab != s.ID {
 		// Chosen by a shortcut or a new session, it comes into view in the

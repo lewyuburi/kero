@@ -4655,6 +4655,30 @@ func (_handle Element) Menu(build func(m *Menu)) Element {
 	return wrapElement(_node.Menu(build))
 }
 
+// MiddleClicked reports a click with the middle button, as a tab is closed
+// with.
+func (_handle Element) MiddleClicked() bool {
+	_node := _handle.node()
+	if _node == nil {
+		return false
+	}
+	_ctx := _node.c
+	_ = _ctx
+	return _node.MiddleClicked()
+}
+
+// MiddlePressed reports whether the middle button is held down on the
+// element, so that what a press does for the primary button can leave it.
+func (_handle Element) MiddlePressed() bool {
+	_node := _handle.node()
+	if _node == nil {
+		return false
+	}
+	_ctx := _node.c
+	_ = _ctx
+	return _node.MiddlePressed()
+}
+
 func (_handle Element) MinHeight(v float32) Element {
 	_node := _handle.node()
 	if _node == nil {

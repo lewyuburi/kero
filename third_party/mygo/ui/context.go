@@ -531,7 +531,7 @@ type state struct {
 	// webView is the web view the element shows (WebView).
 	webView NativeWebView
 
-	clicks, rightClicks, doubleClicks int
+	clicks, rightClicks, middleClicks, doubleClicks int
 	// pressMods are the modifiers held as the pointer went down on the
 	// element, and clickMods those of its last click.
 	pressMods, clickMods Modifiers

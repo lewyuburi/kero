@@ -939,7 +939,7 @@ func (rt *engine) forgetInput() {
 		if s.seen != rt.frame || s.pass != rt.pass {
 			continue
 		}
-		s.clicks, s.rightClicks, s.doubleClicks = 0, 0, 0
+		s.clicks, s.rightClicks, s.middleClicks, s.doubleClicks = 0, 0, 0, 0
 		s.pressPending = false
 		s.dragX, s.dragY = 0, 0
 		s.released = false
