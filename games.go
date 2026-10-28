@@ -45,8 +45,7 @@ func (a *App) gameFor(p *proto.Pane) *gamePlay {
 	if a.games == nil {
 		a.games = map[string]*gamePlay{}
 	}
-	w, h := k.Canvas()
-	play := &gamePlay{g: k.New(), kind: k, cv: pixel.NewCanvas(w, h)}
+	play := &gamePlay{g: k.New(), kind: k, cv: pixel.NewCanvas(games.Width, games.Height)}
 	a.games[p.ID] = play
 	return play
 }

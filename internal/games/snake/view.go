@@ -11,35 +11,24 @@ import (
 func init() {
 	games.Register(games.Kind{
 		ID: "snake", Title: "Snake",
-		New:    func() games.Game { return New(time.Now().UnixNano()) },
-		Canvas: canvasSize,
-		Draw:   draw,
+		New:  func() games.Game { return New(time.Now().UnixNano()) },
+		Draw: draw,
 	})
 }
 
 // The snake's screen, drawn in a one-bit canvas: cells of Cell pixels in a
-// framed board that casts a dithered shadow.
-//
-// The board is 5 to 3, as the screen of a handheld is: 25 by 15 cells of 8
-// pixels is 200 by 120, half of Playdate's 400 by 240. Its size never
-// follows the pane's; the pane gives it the room it has, in proportion.
+// framed board that casts a dithered shadow. The board is 30 by 20 cells of 8
+// pixels, 240 by 160, in the middle of the area the game has under the band
+// of the score and the hint, with 4 pixels for its frame at each side and its
+// shadow below and to the right.
 const (
 	Cell = 8
-	Cols = 25
-	Rows = 15
-	// The board starts origin pixels in, which leaves its frame a pixel from
-	// the top and the left, where nothing needs room; the shadow the frame
-	// casts takes what is left at the right and the bottom.
-	origin = 5
-	edge   = 10
-	// Under the band of the score and the hint (games.HUDHeight), with the
-	// same room the frame has at the left.
-	top = games.HUDHeight + 4
+	Cols = 30
+	Rows = 20
+	// Where the board's top left is on the screen.
+	origin = (games.Width - Cols*Cell) / 2
+	top    = games.HUDHeight + (games.AreaHeight-Rows*Cell)/2
 )
-
-func canvasSize() (w, h int) {
-	return origin + Cols*Cell + edge, top + Rows*Cell + edge
-}
 
 //go:embed snake.sheet
 var sheetSource string

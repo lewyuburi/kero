@@ -47,18 +47,25 @@ type Animator interface {
 // FrameTime is the time of a frame of what Animators show: 30 a second.
 const FrameTime = time.Second / 30
 
-// HUDHeight is the band at the top of a screen where the pane draws the
-// score and the hint, which a game leaves free.
-const HUDHeight = 12
+// Every screen is the same size, 256 by 192 pixels, 4 to 3: the screen of
+// the handhelds that had one, and a shape that fits a pane of any. It is 32
+// by 24 tiles of 8 pixels, or 16 by 12 of 16, and a font of 6 pixels to a
+// character has 42 columns of text on it. A game draws in the area under the
+// band at the top, where the pane draws the score and the hint: Area.
+const (
+	Width, Height = 256, 192
+	// HUDHeight is that band.
+	HUDHeight = 16
+	// AreaHeight is what is left under it, 256 by 176: 32 by 22 tiles of 8.
+	AreaHeight = Height - HUDHeight
+)
 
 // A Kind is a game that can be played.
 type Kind struct {
 	ID, Title string
 	New       func() Game
-	// Canvas is the size of the screen in pixels, which keeps its
-	// proportions in any pane, and Draw paints the game on it.
-	Canvas func() (w, h int)
-	Draw   func(g Game, cv *pixel.Canvas)
+	// Draw paints the game on a screen of Width by Height.
+	Draw func(g Game, cv *pixel.Canvas)
 	// Font is the font of the score and the hint, "" for the usual.
 	Font string
 	// Theme is the colors of the screen, "" for the usual.

@@ -20,15 +20,18 @@ the window and is tested without one, and a view that draws it:
    a game that is stepped at 30 a second does the same on any machine.
    Add `games.Animator` for something that moves between steps, as a shake.
 2. The view is `Draw(g, canvas)`, and registers the game in `init` with
-   `games.Register(games.Kind{...})`: its name, its title, the size of its
-   screen in pixels and its `Draw`. Leave the top `games.HUDHeight` pixels
-   free: the pane draws the score and the hint there.
+   `games.Register(games.Kind{...})`: its name, its title and its `Draw`. Leave
+   the top `games.HUDHeight` pixels free: the pane draws the score and the hint
+   there.
 3. Add `_ "kero/internal/games/<name>"` to the imports in `games.go`.
 
-Keep the screen to the proportions of a handheld's, 5 to 3, as Snake's board is
-(25 by 15 cells of 8 pixels, half of Playdate's 400 by 240). The pane shows it
-as large as fits at a whole number of the display's pixels, and never changes
-its proportions.
+Every screen is the same: 256 by 192 pixels, 4 to 3, as the Master System's and
+the DS's were, which is 32 by 24 tiles of 8 pixels and 42 columns of text in the
+6-pixel font. A game draws in the area under the band at the top, 256 by 176.
+The pane shows the screen as large as fits at a whole number of the display's
+pixels (2x is 512 by 384, 3x 768 by 576), and never changes its proportions, so
+that a game has nothing to say of its size. Snake's board is 30 by 20 cells of 8
+pixels in the middle of that area.
 
 ## What is data
 
