@@ -184,6 +184,7 @@
   "pageNotifications": "通知",
   "pageKeyboard": "键盘",
   "pageAgents": "智能体",
+  "pageGames": "游戏",
   "pageAdvanced": "高级",
   "svcNotRunning": "未运行",
   "svcRunning": "已运行 {duration}（pid {pid}）· {sessions} 个会话，{panes} 个窗格",

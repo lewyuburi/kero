@@ -33,7 +33,7 @@ func settingsIndex() []searchEntry {
 		{"general", locales.SetSessionHistory(), "session-history ended sessions archived resume claude codex conversation"},
 		{"general", locales.SetGitStatus(), "git-status branch changes diff repository worktree"},
 		{"general", locales.SetNewSessionLoose(), "new-session-loose loose sessions project tab standalone plus"},
-		{"general", locales.SetGameScale(), "game-scale games screen fill whole integer pixels scale zoom"},
+		{"games", locales.SetGameScale(), "game-scale games screen fill whole integer pixels scale zoom"},
 		{"general", locales.SetDiffLayout(), "diff-layout diff unified split side by side changes"},
 		{"general", locales.SetOpenAtLogin(), "startup launch login items"},
 		{"general", locales.SetVersion(), "updates check for updates software update about"},
@@ -167,6 +167,7 @@ var pageWords = map[string]string{
 	"notifications": "alerts sound badge dock notify",
 	"keyboard":      "shortcuts keybindings keys hotkeys",
 	"agents":        "claude codex ai skill cli remote control",
+	"games":         "play snake screen scale pixels",
 	"hosts":         "remote ssh server machine tailscale wsl",
 	"advanced":      "config file daemon kerod log reset",
 }
@@ -204,7 +205,7 @@ func searchResults(query string, s settings.Settings) map[string][]string {
 	}
 	out := map[string][]string{}
 	for _, p := range settingsPages {
-		if matches(p.title(), terms) {
+		if pageShown(s, p.id) && matches(p.title(), terms) {
 			out[p.id] = []string{}
 		}
 	}

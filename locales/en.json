@@ -295,6 +295,7 @@
   "pageNotifications": "Notifications",
   "pageKeyboard": "Keyboard",
   "pageAgents": "Agents",
+  "pageGames": "Games",
   "pageAdvanced": "Advanced",
   "svcNotRunning": "Not running",
   "svcRunning": "Running (pid {pid}) for {duration} · {sessions, plural, one {# session} other {# sessions}}, {panes, plural, one {# pane} other {# panes}}",

@@ -184,6 +184,7 @@
   "pageNotifications": "通知",
   "pageKeyboard": "キーボード",
   "pageAgents": "エージェント",
+  "pageGames": "ゲーム",
   "pageAdvanced": "詳細",
   "svcNotRunning": "停止中",
   "svcRunning": "{duration}実行中（pid {pid}）· {sessions} 個のセッション、{panes} 個のペイン",

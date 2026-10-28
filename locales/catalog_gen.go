@@ -1898,6 +1898,16 @@ func (msgs Messages) PageAgents() string {
 	return Catalog.Format(msgs.locale, "pageAgents", nil)
 }
 
+// PageGames says "Games"
+// in the language the app shows.
+func PageGames() string { return In(i18n.Locale()).PageGames() }
+
+// PageGames says "Games"
+// in the language of msgs.
+func (msgs Messages) PageGames() string {
+	return Catalog.Format(msgs.locale, "pageGames", nil)
+}
+
 // PageAdvanced says "Advanced"
 // in the language the app shows.
 func PageAdvanced() string { return In(i18n.Locale()).PageAdvanced() }

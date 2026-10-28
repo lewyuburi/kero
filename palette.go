@@ -198,6 +198,9 @@ func (a *App) paletteItems() []paletteItem {
 			words: act.Title + " " + actionWords[id], run: func() { a.run(id, nil) }})
 	}
 	for _, page := range settingsPages {
+		if !pageShown(a.set, page.id) {
+			continue
+		}
 		id := page.id
 		cmds = append(cmds, paletteItem{title: locales.PaletteSettingsPage(page.title()), words: "settings preferences " + id + " " + pageWords[id], run: func() { a.openSettings(id) }})
 	}

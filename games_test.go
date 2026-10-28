@@ -9,6 +9,7 @@ import (
 
 	_ "kero/internal/games/snake"
 	"kero/internal/proto"
+	"kero/internal/settings"
 )
 
 func TestGamePaneURL(t *testing.T) {
@@ -105,5 +106,54 @@ func TestScreenRect(t *testing.T) {
 	}
 	if got := screenRect(ui.Rect{W: 700, H: 600}, 1, 256, 192, true); got.W != 512 {
 		t.Errorf("whole at 1 pixel to a DIP in 700 wide is %v wide, want 2x: 512", got.W)
+	}
+}
+
+// The games' settings are a page of their own, which the games flag offers:
+// with it disabled the page is not in Settings, the search does not find it
+// or its row, and the palette does not list it; enabled, all do, and the row
+// is not on General.
+func TestGamesPageFollowsFlag(t *testing.T) {
+	s := settings.Default()
+	if pageShown(s, "games") || !pageShown(s, "general") {
+		t.Error("the games page is shown with its flag disabled, or General is not")
+	}
+	if r := searchResults("game screen", s); len(r) != 0 {
+		t.Errorf("the search finds the games' settings with the flag disabled: %v", r)
+	}
+	if r := searchResults("games", s); r["games"] != nil {
+		t.Errorf("the search finds the page with the flag disabled: %v", r)
+	}
+	s.SetFlag(settings.FlagGames, settings.StateEnabled)
+	if !pageShown(s, "games") {
+		t.Error("the games page is not shown with its flag enabled")
+	}
+	if got := searchResults("game screen", s)["games"]; len(got) != 1 {
+		t.Errorf("the game screen is not found on Games: %v", searchResults("game screen", s))
+	}
+
+	a := testApp(t)
+	a.ss.page = "general"
+	tt := ui.NewTester(a.settingsView, 820, 640)
+	tt.Frame()
+	if tt.HasText("Games") {
+		t.Error("a Games page in Settings with the flag disabled")
+	}
+	a.set.SetFlag(settings.FlagGames, settings.StateEnabled)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if !tt.HasText("Games") {
+		t.Errorf("no Games page with the flag enabled; texts %q", tt.Texts())
+	}
+	if tt.HasText("Game screen") {
+		t.Error("the game screen is on General")
+	}
+	a.ss.page = "games"
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if !tt.HasText("Game screen") || !tt.HasText("Whole pixels") {
+		t.Errorf("the Games page lacks the screen's setting; texts %q", tt.Texts())
 	}
 }

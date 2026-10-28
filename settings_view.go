@@ -47,8 +47,15 @@ var settingsPages = []settingsPage{
 	{"notifications", locales.PageNotifications, glyph("f7-bell"), false},
 	{"keyboard", locales.PageKeyboard, glyph("f7-keyboard"), false},
 	{"agents", locales.PageAgents, glyph("f7-sparkles"), false},
+	{"games", locales.PageGames, glyph("f7-sparkles"), false},
 	{"hosts", locales.PageHosts, hostIcon, true},
 	{"advanced", locales.PageAdvanced, glyph("f7-slider-horizontal-3"), false},
+}
+
+// pageShown tells whether a page is in Settings: all are, but the ones a flag
+// offers, while it is enabled.
+func pageShown(s settings.Settings, id string) bool {
+	return id != "games" || s.Flag(settings.FlagGames)
 }
 
 // settingsState is what the Settings window keeps besides the settings.
@@ -208,7 +215,7 @@ func (a *App) settingsView(c *ui.Context) {
 			}
 			a.settingsSearch(c, pal)
 			for _, p := range settingsPages {
-				if found == nil || found[p.id] != nil {
+				if pageShown(a.set, p.id) && (found == nil || found[p.id] != nil) {
 					a.settingsNav(c, pal, p)
 				}
 			}
@@ -236,7 +243,7 @@ func (a *App) settingsView(c *ui.Context) {
 			card.Children(func() {
 				page := settingsPages[0]
 				for _, p := range settingsPages {
-					if p.id == a.ss.page {
+					if p.id == a.ss.page && pageShown(a.set, p.id) {
 						page = p
 					}
 				}
@@ -275,6 +282,8 @@ func (a *App) settingsView(c *ui.Context) {
 								a.keyboardPage(c, pal)
 							case "agents":
 								a.agentsPage(c, pal)
+							case "games":
+								a.gamesPage(c, pal)
 							case "hosts":
 								a.hostsPage(c, pal)
 							case "advanced":
@@ -321,7 +330,7 @@ func (a *App) searchSettings() map[string][]string {
 	}
 	if found[a.ss.page] == nil {
 		for _, p := range settingsPages {
-			if found[p.id] != nil {
+			if pageShown(a.set, p.id) && found[p.id] != nil {
 				a.ss.page = p.id
 				a.setRecording("")
 				break
@@ -486,18 +495,24 @@ func segmented(c *ui.Context, key string, value *string, ids, labels []string) {
 	seg.Track.OnChange(func() { *value = ids[i] })
 }
 
+// gamesPage is the settings of the games, which the games flag offers: how
+// the screen of a game fills its pane.
+func (a *App) gamesPage(c *ui.Context, pal *palette) {
+	s := &a.set
+	settingsGroup(c, pal, "", "", func() {
+		settingRow(c, pal, locales.SetGameScale(), locales.SetGameScaleDetail(), func() {
+			segmented(c, "gamescale", &s.GameScale, []string{settings.GameScaleWhole, settings.GameScaleFill},
+				[]string{locales.SetGameScaleWhole(), locales.SetGameScaleFill()})
+		})
+	})
+}
+
 func (a *App) generalPage(c *ui.Context, pal *palette) {
 	s := &a.set
 	settingsGroup(c, pal, locales.SetSessions(), locales.SetSessionsDetail(a.tip(strings.TrimSuffix(actionTitle("app.quitAll"), "…"), "app.quitAll")), func() {
 		settingRow(c, pal, locales.SetNewSessionsStartIn(), "", func() {
 			segmented(c, "newdir", &s.NewSessionDir, []string{"current", "project", "home"}, []string{locales.SetDirCurrent(), locales.SetDirProject(), locales.SetDirHome()})
 		})
-		if s.Flag(settings.FlagGames) {
-			settingRow(c, pal, locales.SetGameScale(), locales.SetGameScaleDetail(), func() {
-				segmented(c, "gamescale", &s.GameScale, []string{settings.GameScaleWhole, settings.GameScaleFill},
-					[]string{locales.SetGameScaleWhole(), locales.SetGameScaleFill()})
-			})
-		}
 		if looseOn(a.set) {
 			settingRow(c, pal, locales.SetNewSessionLoose(), locales.SetNewSessionLooseDetail(), func() {
 				toggle(c.Key("newloose"), &s.NewSessionLoose, pal)
