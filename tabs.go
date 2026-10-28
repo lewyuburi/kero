@@ -16,7 +16,7 @@ import (
 
 // tabBar is the sessions' tabs across the top of the window, where the
 // sidebar's list is without settings.FlagHorizontalTabs: each project a
-// capsule tinted in its color, as Dia's tab groups are, with its name and its
+// capsule on a dimmed ground, with its name and its
 // sessions' tabs in it, and at the right what the sidebar's footer holds. It
 // sits on the title bar's line, after the traffic lights on macOS.
 func (a *App) tabBar(c *ui.Context, pal *palette, bar ui.TitleBar) {
@@ -80,7 +80,7 @@ func (a *App) tabWidth(c *ui.Context, bar ui.TitleBar) float32 {
 	return min(max(room/float32(tabs)-2, tabMinW), tabMaxW)
 }
 
-// tabGroup is a project: a capsule tinted in its color, rounded, with no
+// tabGroup is a project: a capsule on a dimmed ground, rounded, with no
 // edge, holding its name, a hairline and its tabs. The chosen tab is lifted
 // in the card's color, lighter than the capsule, as the page it shows.
 func (a *App) tabGroup(c *ui.Context, pal *palette, g group, n *int, w float32) {
@@ -88,34 +88,33 @@ func (a *App) tabGroup(c *ui.Context, pal *palette, g group, n *int, w float32) 
 	if g.project.ID == "" && looseOn(a.set) {
 		// The sessions of no project are tabs with no group around them.
 		for _, s := range g.sessions {
-			a.tab(c, pal, s, n, w)
+			a.tab(c, pal, s, n, w, true)
 		}
 		return
 	}
-	col := a.projectColor(key)
-	tint := col.Fill.Alpha(0.2)
+	// No color of its own: a dimmed ground, a shade off the bar's.
+	tint := pal.text.Alpha(0.06)
 	if pal.dark {
-		tint = col.Fill.Alpha(0.3)
+		tint = pal.text.Alpha(0.08)
 	}
 	capsule := ui.Row(c.Key("tabgroup-"+key)).Height(tabBarH-8).Padding(0, 3).Gap(2).AlignItems(ui.Center).Radius(12).Shrink(0).Background(tint)
 	mark := a.reorderableGroup(capsule, g, true, true)
 	capsule.Children(func() {
-		a.tabLabel(c, pal, g, col)
+		a.tabLabel(c, pal, g)
 		dropMark(c, pal, mark, true)
 		shown := a.shownTabs(g)
 		if len(shown) > 0 {
 			ui.Box(c.Key("sep")).Size(1, 14).Margin(0, 3).Shrink(0).Background(pal.text.Alpha(0.14))
 		}
 		for _, s := range shown {
-			a.tab(c, pal, s, n, w)
+			a.tab(c, pal, s, n, w, false)
 		}
 	})
 }
 
-// tabLabel is a project's name in its group, after a dot of its color: a
-// click folds the project to the tab shown, and its menu is the sidebar
-// header's, with the color to choose.
-func (a *App) tabLabel(c *ui.Context, pal *palette, g group, col projectColor) {
+// tabLabel is a project's name in its group: a click folds the project to
+// the tab shown, and its menu is the sidebar header's.
+func (a *App) tabLabel(c *ui.Context, pal *palette, g group) {
 	id, key := g.project.ID, g.key()
 	collapsed := a.collapsed(g)
 	lbl := ui.Row(c.Key("tabproject-"+key)).Height(tabBarH-14).Padding(0, 8).Gap(6).AlignItems(ui.Center).Radius(9).Shrink(0)
@@ -127,10 +126,9 @@ func (a *App) tabLabel(c *ui.Context, pal *palette, g group, col projectColor) {
 		a.toggleProject(key)
 	}
 	pointerTooltip(c, lbl, "tip-tabproject-"+key, g.host.shortDir(g.project.Dir))
-	lbl.ContextMenu(func(m *ui.Menu) { a.projectMenu(m, g, collapsed, true) })
+	lbl.ContextMenu(func(m *ui.Menu) { a.projectMenu(m, g, collapsed, false) })
 	a.groupHandle(lbl, pal, g)
 	lbl.Children(func() {
-		ui.Box(c).Size(8, 8).Radius(4).Shrink(0).Background(col.Fill)
 		if renaming {
 			in := ui.TextInputBase(c.Key("rename"), &a.renameBuf).Width(120).FontSize(12.5).FontWeight(600).AutoFocus()
 			if in.Shortcut(0, ui.KeyEscape) {
@@ -217,11 +215,16 @@ func colorName(id string) string {
 // has nothing to tell; its name, dimmer while it is not the one shown; ⌘ and
 // its number while ⌘ is held, else a button that closes it as the pointer
 // is over the tab. The menu, rename and tip are the sidebar row's.
-func (a *App) tab(c *ui.Context, pal *palette, s *proto.Session, n *int, w float32) {
+func (a *App) tab(c *ui.Context, pal *palette, s *proto.Session, n *int, w float32, alone bool) {
 	*n++
 	index := *n
 	selected := s.ID == a.selected
-	row := ui.Row(c.Key("tab-"+s.ID)).Width(w).Height(tabBarH-14).Shrink(0).Padding(0, 8, 0, 10).Gap(8).AlignItems(ui.Center).Radius(9)
+	// Alone, with no group around it, a tab is as tall as a group.
+	height := float32(tabBarH - 14)
+	if alone {
+		height = tabBarH - 8
+	}
+	row := ui.Row(c.Key("tab-"+s.ID)).Width(w).Height(height).Shrink(0).Padding(0, 8, 0, 10).Gap(8).AlignItems(ui.Center).Radius(9)
 	hovered := row.Hovered()
 	// Room for the lift's edge in every tab, so that choosing one moves no text.
 	row.Border(1, ui.Transparent)
