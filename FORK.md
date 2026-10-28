@@ -20,7 +20,8 @@ Kero changes under them is settled once, in a merge.
 
 - **Layout:** `card-gap` and `pane-gap` (and the corners that follow them),
   `tab-layout` with the tab bar across the top (`tabs.go`), ⌥⌘B, and sessions in
-  no project (`loose-sessions`).
+  no project (`loose-sessions`, with `new-session-loose` to start them from the +,
+  New Session and the shortcut).
 - **Keys and hooks:** `keybind` sequences and key modes (`chords.go`), `pane.resize.*`;
   `on-status` hooks; `kero api` (kerod's methods, described and called).
 - **Browser:** Kero's own (snapshot, refs, cookies), with `press`, `scroll`,
