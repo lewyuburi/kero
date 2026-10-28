@@ -15,10 +15,13 @@ const (
 	// the frame casts takes what is left at the right and the bottom.
 	snakeOrigin = 5
 	snakeEdge   = 10
+	// Under the band of the score and the hint (hudHeight), with the same
+	// room the frame has at the left.
+	snakeTop = hudHeight + 4
 )
 
 func snakeCanvas() (w, h int) {
-	return snakeOrigin + snakeCols*snakeCell + snakeEdge, snakeOrigin + snakeRows*snakeCell + snakeEdge
+	return snakeOrigin + snakeCols*snakeCell + snakeEdge, snakeTop + snakeRows*snakeCell + snakeEdge
 }
 
 var (
@@ -90,7 +93,7 @@ var (
 func drawSnake(g game, cv *pixelCanvas) {
 	sn := g.(*snake)
 	bw, bh := sn.w*snakeCell, sn.h*snakeCell
-	ox, oy := snakeOrigin, snakeOrigin
+	ox, oy := snakeOrigin, snakeTop
 	cv.Clear()
 	// The board, with its shadow, and a dot at the center of each cell.
 	cv.Dither(ox-3, oy-3, bw+10, bh+10, 0.5, true)

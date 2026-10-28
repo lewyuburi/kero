@@ -57,3 +57,41 @@ func TestDitherKeepsOnePattern(t *testing.T) {
 		prev = count(l)
 	}
 }
+
+// Every glyph is 5 by 7, and the font has what a score and a hint say.
+func TestPixelFontIsWhole(t *testing.T) {
+	for r, g := range pixelGlyphs {
+		for j, row := range g {
+			if len(row) != glyphW {
+				t.Errorf("glyph %q row %d is %q: not %d wide", r, j, row, glyphW)
+			}
+		}
+	}
+	for _, r := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,-:!?/+·" {
+		if _, ok := pixelGlyphs[r]; !ok {
+			t.Errorf("no glyph for %q", r)
+		}
+	}
+	cv := newPixelCanvas(40, 10)
+	end := cv.Text(1, 1, "Hi 7")
+	if want := 1 + cv.TextWidth("Hi 7"); end != want || cv.TextWidth("Hi 7") != 4*glyphAdvance-1 {
+		t.Errorf("text ends at %d, width %d, want %d", end, cv.TextWidth("Hi 7"), want)
+	}
+	// A lower case letter is its capital's, and a rune the font lacks is a question mark.
+	a, b := newPixelCanvas(8, 8), newPixelCanvas(8, 8)
+	a.Text(0, 0, "h")
+	b.Text(0, 0, "H")
+	for i := range a.ink {
+		if a.ink[i] != b.ink[i] {
+			t.Fatal("h is not drawn as H")
+		}
+	}
+	c, d := newPixelCanvas(8, 8), newPixelCanvas(8, 8)
+	c.Text(0, 0, "é")
+	d.Text(0, 0, "?")
+	for i := range c.ink {
+		if c.ink[i] != d.ink[i] {
+			t.Fatal("a rune the font lacks is not a question mark")
+		}
+	}
+}

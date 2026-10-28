@@ -217,14 +217,14 @@ func (g *snake) placeFood() {
 }
 
 func (g *snake) Status() (score, hint string) {
-	score = itoa(g.score) + "  ·  best " + itoa(max(g.best, g.score))
+	score = itoa(g.score) + " · best " + itoa(max(g.best, g.score))
 	switch {
 	case g.over:
-		hint = "game over · space to play again"
+		hint = "game over - space"
 	case !g.started:
-		hint = "arrows or WASD to begin"
+		hint = "press an arrow"
 	case g.paused:
-		hint = "paused · space to go on"
+		hint = "paused - space"
 	case g.slow > 0:
 		hint = "slow"
 	}
