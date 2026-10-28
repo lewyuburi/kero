@@ -133,7 +133,7 @@ func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.P
 	}
 	body.Children(func() {
 		ui.Box(c.Key("screen")).Grow(1).MinWidth(0).MinHeight(0).AlignSelf(ui.Stretch).Draw(func(p *ui.Painter, r ui.Rect) {
-			drawScreen(p, r, play.bm, play.cv.W, play.cv.H)
+			p.ImageRegion(play.bm, ui.Rect{}, screenRect(r, p.Scale(), play.cv.W, play.cv.H, a.set.GameScale == settings.GameScaleWhole), ui.ImageOptions{})
 		})
 	})
 }
@@ -148,23 +148,28 @@ func (a *App) gamePaper(p *proto.Pane, dark bool) ui.Color {
 	return ui.RGB(theme.Paper.R, theme.Paper.G, theme.Paper.B)
 }
 
-// drawScreen shows a screen of w by h pixels in the middle of r, as large as
-// fits at a whole number of the display's pixels to a pixel of the screen:
-// each is then a square of whole pixels of the display, none wider than the
-// next, as on a handheld, and the screen's edges fall between pixels. Where
-// the display has more than one pixel to a DIP that lets the scale go in
-// steps smaller than a DIP, so that less of the room is given up.
-func drawScreen(p *ui.Painter, r ui.Rect, bm *ui.Bitmap, w, h int) {
-	dpr := max(p.Scale(), 1)
+// screenRect is where a screen of w by h pixels goes in the middle of r, in
+// proportion, as large as fits. Filling, the scale is whatever fits, snapped
+// down to the display's pixels so that the edges are crisp; whole, it is a
+// whole number of them to a pixel of the screen, so that each is a square
+// of whole pixels of the display, none wider than the next, as on a handheld.
+// dpr is how many pixels of the display a DIP is; where it is more than one
+// the whole scales go in steps smaller than a DIP.
+func screenRect(r ui.Rect, dpr float32, w, h int, whole bool) ui.Rect {
+	dpr = max(dpr, 1)
 	fit := min(r.W/float32(w), r.H/float32(h))
-	scale := max(float32(int(fit*dpr))/dpr, 1/dpr)
-	sw, sh := scale*float32(w), scale*float32(h)
-	dst := ui.Rect{
+	scale := fit
+	if whole {
+		scale = float32(int(fit*dpr)) / dpr
+	}
+	scale = max(scale, 1/dpr)
+	// In whole device pixels, so that the edges fall between them.
+	sw, sh := float32(int(scale*float32(w)*dpr))/dpr, float32(int(scale*float32(h)*dpr))/dpr
+	return ui.Rect{
 		X: r.X + float32(int((r.W-sw)*dpr/2))/dpr,
 		Y: r.Y + float32(int((r.H-sh)*dpr/2))/dpr,
 		W: sw, H: sh,
 	}
-	p.ImageRegion(bm, ui.Rect{}, dst, ui.ImageOptions{})
 }
 
 // stepGame advances a game by the time that has passed while it had the

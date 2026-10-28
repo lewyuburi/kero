@@ -43,6 +43,7 @@ kero config check             # report unknown keys and bad values
 | ----------------------- | --------- | ------------------------------------------------------------- |
 | `new-session-directory` | `current` | Where a new session starts: `current`, `project` or `home`    |
 | `new-session-loose`     | `false`   | With the `loose-sessions` flag, new sessions start in no project, except from a project's own + |
+| `game-scale`            | `whole`   | With the `games` flag, how a game's screen fills its pane, always in proportion: `whole` at whole pixels of the display, crisp but with room around, or `fill` as large as the pane allows |
 | `session-name`          | `focused` | What names a session you haven't: `focused`, `lead` or `folder` ([more](./sessions.md#how-an-unnamed-session-is-named)) |
 | `focus-follows-mouse`   | `false`   | Focus the pane the pointer moves into                         |
 | `confirm-close`         | `true`    | Ask before closing a pane that a program is running in        |

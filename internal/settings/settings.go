@@ -35,6 +35,7 @@ type Settings struct {
 
 	// Appearance
 	Appearance  string `json:"appearance"`  // "system", "light" or "dark"
+	GameScale   string `json:"gameScale"`   // how a game's screen fills its pane, with the games flag: GameScaleFill or GameScaleWhole
 	TabLayout   string `json:"tabLayout"`   // where the sessions' tabs are, once horizontal-tabs offers it: TabsVertical or TabsHorizontal
 	Language    string `json:"language"`    // "system", or one of Languages
 	Background  string `json:"background"`  // a wash, see Backgrounds
@@ -151,6 +152,7 @@ func Default() Settings {
 		QuitConfirm:     true,
 		AppIcon:         "dock-and-menubar",
 		Appearance:      "system",
+		GameScale:       GameScaleWhole,
 		TabLayout:       TabsVertical,
 		Language:        "system",
 		Background:      "rex",
@@ -190,6 +192,15 @@ func Default() Settings {
 const (
 	TabsVertical   = "vertical"
 	TabsHorizontal = "horizontal"
+)
+
+// How a game's screen fills its pane, always in proportion: only at a whole
+// number of the display's pixels to a pixel of the screen, which is crisp and
+// leaves room around, and what a new install has; or as large as the pane
+// allows, at any scale.
+const (
+	GameScaleWhole = "whole"
+	GameScaleFill  = "fill"
 )
 
 // The gap around the panels, in points: what a new install has, and the
@@ -392,6 +403,7 @@ func (s *Settings) normalize() {
 	oneOf(&s.NewSessionDir, d.NewSessionDir, "current", "project", "home")
 	oneOf(&s.Appearance, d.Appearance, "system", "light", "dark")
 	oneOf(&s.TabLayout, d.TabLayout, TabsVertical, TabsHorizontal)
+	oneOf(&s.GameScale, d.GameScale, GameScaleFill, GameScaleWhole)
 	oneOf(&s.Language, d.Language, append([]string{"system"}, Languages...)...)
 	oneOf(&s.Cursor, d.Cursor, "block", "bar", "underline")
 	oneOf(&s.Clipboard, d.Clipboard, "ask", "allow", "deny")

@@ -2642,6 +2642,46 @@ func (msgs Messages) SetGamesDetail() string {
 	return Catalog.Format(msgs.locale, "setGamesDetail", nil)
 }
 
+// SetGameScale says "Game screen"
+// in the language the app shows.
+func SetGameScale() string { return In(i18n.Locale()).SetGameScale() }
+
+// SetGameScale says "Game screen"
+// in the language of msgs.
+func (msgs Messages) SetGameScale() string {
+	return Catalog.Format(msgs.locale, "setGameScale", nil)
+}
+
+// SetGameScaleDetail says "Whole pixels: each game pixel is a whole number of screen pixels, crisp, with room left around. Fill: as large as the…"
+// in the language the app shows.
+func SetGameScaleDetail() string { return In(i18n.Locale()).SetGameScaleDetail() }
+
+// SetGameScaleDetail says "Whole pixels: each game pixel is a whole number of screen pixels, crisp, with room left around. Fill: as large as the…"
+// in the language of msgs.
+func (msgs Messages) SetGameScaleDetail() string {
+	return Catalog.Format(msgs.locale, "setGameScaleDetail", nil)
+}
+
+// SetGameScaleFill says "Fill the pane"
+// in the language the app shows.
+func SetGameScaleFill() string { return In(i18n.Locale()).SetGameScaleFill() }
+
+// SetGameScaleFill says "Fill the pane"
+// in the language of msgs.
+func (msgs Messages) SetGameScaleFill() string {
+	return Catalog.Format(msgs.locale, "setGameScaleFill", nil)
+}
+
+// SetGameScaleWhole says "Whole pixels"
+// in the language the app shows.
+func SetGameScaleWhole() string { return In(i18n.Locale()).SetGameScaleWhole() }
+
+// SetGameScaleWhole says "Whole pixels"
+// in the language of msgs.
+func (msgs Messages) SetGameScaleWhole() string {
+	return Catalog.Format(msgs.locale, "setGameScaleWhole", nil)
+}
+
 // SessionNoProject says "No Project"
 // in the language the app shows.
 func SessionNoProject() string { return In(i18n.Locale()).SessionNoProject() }

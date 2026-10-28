@@ -492,6 +492,12 @@ func (a *App) generalPage(c *ui.Context, pal *palette) {
 		settingRow(c, pal, locales.SetNewSessionsStartIn(), "", func() {
 			segmented(c, "newdir", &s.NewSessionDir, []string{"current", "project", "home"}, []string{locales.SetDirCurrent(), locales.SetDirProject(), locales.SetDirHome()})
 		})
+		if s.Flag(settings.FlagGames) {
+			settingRow(c, pal, locales.SetGameScale(), locales.SetGameScaleDetail(), func() {
+				segmented(c, "gamescale", &s.GameScale, []string{settings.GameScaleWhole, settings.GameScaleFill},
+					[]string{locales.SetGameScaleWhole(), locales.SetGameScaleFill()})
+			})
+		}
 		if looseOn(a.set) {
 			settingRow(c, pal, locales.SetNewSessionLoose(), locales.SetNewSessionLooseDetail(), func() {
 				toggle(c.Key("newloose"), &s.NewSessionLoose, pal)

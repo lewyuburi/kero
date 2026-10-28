@@ -33,6 +33,7 @@ func settingsIndex() []searchEntry {
 		{"general", locales.SetSessionHistory(), "session-history ended sessions archived resume claude codex conversation"},
 		{"general", locales.SetGitStatus(), "git-status branch changes diff repository worktree"},
 		{"general", locales.SetNewSessionLoose(), "new-session-loose loose sessions project tab standalone plus"},
+		{"general", locales.SetGameScale(), "game-scale games screen fill whole integer pixels scale zoom"},
 		{"general", locales.SetDiffLayout(), "diff-layout diff unified split side by side changes"},
 		{"general", locales.SetOpenAtLogin(), "startup launch login items"},
 		{"general", locales.SetVersion(), "updates check for updates software update about"},
@@ -176,6 +177,7 @@ func flagGated() map[string]string {
 	return map[string]string{
 		locales.SetTabLayout():       settings.FlagHorizontalTabs,
 		locales.SetNewSessionLoose(): settings.FlagLooseSessions,
+		locales.SetGameScale():       settings.FlagGames,
 		locales.SetCardGap():         settings.FlagCustomSpacing,
 		locales.SetPaneGapSame():     settings.FlagCustomSpacing,
 	}

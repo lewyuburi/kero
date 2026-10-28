@@ -486,3 +486,16 @@ func TestTargetFollowsSymlinks(t *testing.T) {
 		t.Errorf("target(file) = %s", got)
 	}
 }
+
+func TestGameScaleIsAChoice(t *testing.T) {
+	if got := Default().GameScale; got != GameScaleWhole {
+		t.Errorf("default game scale %q", got)
+	}
+	s, probs := parse("game-scale = fill")
+	if len(probs) != 0 || s.GameScale != GameScaleFill {
+		t.Errorf("game-scale = fill: %q, problems %q", s.GameScale, probs)
+	}
+	if s, probs := parse("game-scale = huge"); len(probs) != 1 || s.GameScale != GameScaleWhole {
+		t.Errorf("game-scale = huge: %q, problems %q", s.GameScale, probs)
+	}
+}
