@@ -15,8 +15,8 @@ func TestBlackIceIsInTheCatalogWithAnIcon(t *testing.T) {
 	if k.Hidden || k.Title == "" {
 		t.Errorf("kind %+v", k)
 	}
-	if k.Icon == nil || k.Icon.W != 24 || k.Icon.H != 24 {
-		t.Errorf("icon %+v, want 24 by 24", k.Icon)
+	if k.Icon == nil || k.Icon.W != 32 || k.Icon.H != 32 {
+		t.Errorf("icon is not 32 by 32: %v", k.Icon != nil)
 	}
 	if _, ok := k.New().(games.Pointed); !ok {
 		t.Error("it does not take the mouse")
@@ -40,8 +40,8 @@ func TestEverySpriteIsInTheSheet(t *testing.T) {
 		}
 	}
 	for _, name := range append(programSprites[:], "drone", "worm", "trojan") {
-		if img := sheet.Image(name); img.W != 16 || img.H != 16 {
-			t.Errorf("sprite %s is %dx%d, not 16x16", name, img.W, img.H)
+		if img := sheet.Image(name); img.W != spriteSize || img.H != spriteSize {
+			t.Errorf("sprite %s is %dx%d, not %dx%d", name, img.W, img.H, spriteSize, spriteSize)
 		}
 	}
 	// A walk's two frames are the same size, so that it does not jump.
@@ -153,8 +153,8 @@ func TestEveryCardSaysWhatItDoes(t *testing.T) {
 	for k := Kind(0); k < kinds; k++ {
 		name := roleSprites[k]
 		img := sheet.Image(name)
-		if img == nil || img.W != 7 || img.H != 7 {
-			t.Fatalf("card %d: role sprite %q is %+v, want 7 by 7", k, name, img)
+		if img == nil || img.W != 9 || img.H != 9 {
+			t.Fatalf("card %d: role sprite %q is missing or not 9 by 9", k, name)
 		}
 		if seen[name] {
 			t.Errorf("two cards share the role %q", name)
@@ -165,8 +165,8 @@ func TestEveryCardSaysWhatItDoes(t *testing.T) {
 		draw(newGame(1), cv)
 		x, y, w, h := cardRect(int(k))
 		inked := 0
-		for py := y + h - 14; py < y+h-7; py++ {
-			for px := x + w - 11; px < x+w-4; px++ {
+		for py := y + h - 14; py < y+h-5; py++ {
+			for px := x + w - 13; px < x+w-4; px++ {
 				if cv.Get(px, py) {
 					inked++
 				}

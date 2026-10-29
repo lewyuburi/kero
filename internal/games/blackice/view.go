@@ -69,9 +69,10 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 		x, y, w, h := cardRect(i)
 		k := Kind(i)
 		cv.Frame(x, y, w, h, 1)
-		cv.Draw(sheet.Image(programSprites[k]), x+3, y+(h-16)/2, pixel.Copy)
-		cv.Text(tiny, x+w-4-tiny.Width(itoa(k.Cost())), y+5, itoa(k.Cost()), pixel.Copy)
-		cv.Draw(sheet.Image(roleSprites[k]), x+w-11, y+h-14, pixel.Copy)
+		cv.Draw(sheet.Image(programSprites[k]), x+3, y+(h-spriteSize)/2, pixel.Copy)
+		cost := itoa(k.Cost()) + string(wattSign)
+		cv.Text(tiny, x+w-4-tiny.Width(cost), y+5, cost, pixel.Copy)
+		cv.Draw(sheet.Image(roleSprites[k]), x+w-13, y+h-14, pixel.Copy)
 		// How soon it is ready: a bar at the foot.
 		if g.tick < g.cards[i].ready {
 			left := g.cards[i].ready - g.tick
@@ -120,9 +121,9 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 			cv.Draw(sheet.Image(programSprites[d.kind]), x, y, pixel.Copy)
 			switch {
 			case d.kind == Mine && d.armed > 0:
-				cv.Dither(x, y, 16, 16, 0.5, false)
+				cv.Dither(x, y, spriteSize, spriteSize, 0.5, false)
 			case d.hp < programs[d.kind].hp/2:
-				cv.Dither(x, y, 16, 16, 0.3, false)
+				cv.Dither(x, y, spriteSize, spriteSize, 0.3, false)
 			}
 		}
 	}
@@ -136,7 +137,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	if g.selected >= 0 && g.cells[hr][hc] == nil && !g.over && !g.won {
 		x, y := sectorX+hc*TileW+spriteOff, sectorY+hr*TileH+spriteOff
 		cv.Draw(sheet.Image(programSprites[g.selected]), x, y, pixel.Copy)
-		cv.Dither(x, y, 16, 16, 0.5, false)
+		cv.Dither(x, y, spriteSize, spriteSize, 0.5, false)
 	}
 	bracket(cv, sectorX+hc*TileW, sectorY+hr*TileH, TileW, TileH)
 
@@ -147,25 +148,25 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 		if g.hoverC >= 0 && g.cells[g.hoverR][g.hoverC] == nil {
 			x, y := sectorX+g.hoverC*TileW+spriteOff, sectorY+g.hoverR*TileH+spriteOff
 			cv.Draw(img, x, y, pixel.Copy)
-			cv.Dither(x, y, 16, 16, 0.25, false)
+			cv.Dither(x, y, spriteSize, spriteSize, 0.25, false)
 			bracket(cv, sectorX+g.hoverC*TileW, sectorY+g.hoverR*TileH, TileW, TileH)
 		} else {
-			x, y := g.dragX-8, g.dragY-8
+			x, y := g.dragX-spriteSize/2, g.dragY-spriteSize/2
 			cv.Draw(img, x, y, pixel.Copy)
-			cv.Dither(x, y, 16, 16, 0.5, false)
+			cv.Dither(x, y, spriteSize, spriteSize, 0.5, false)
 		}
 	}
 
 	// Malware, in the frame of its walk, slowed ones frosted.
 	for _, e := range g.enemies {
-		x := sectorX + int(e.x*TileW) - 2
+		x := sectorX + int(e.x*TileW) - 4
 		y := sectorY + e.lane*TileH + spriteOff
 		cv.Draw(sheet.Image(frames(e.kind, g.tick+e.lane*3)), x, y, pixel.Copy)
 		if e.slow > 0 {
-			cv.Dither(x, y, 16, 16, 0.4, false)
+			cv.Dither(x, y, spriteSize, spriteSize, 0.4, false)
 		}
 		if e.hp < malware[e.kind].hp/2 {
-			cv.Dither(x, y, 16, 16, 0.2, false)
+			cv.Dither(x, y, spriteSize, spriteSize, 0.2, false)
 		}
 	}
 	for _, b := range g.bolts {
@@ -173,7 +174,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 		if b.cryo {
 			name = "cryobolt"
 		}
-		cv.Draw(sheet.Image(name), sectorX+int(b.x*TileW), sectorY+b.lane*TileH+TileH/2-1, pixel.Copy)
+		cv.Draw(sheet.Image(name), sectorX+int(b.x*TileW), sectorY+b.lane*TileH+TileH/2-2, pixel.Copy)
 	}
 	for _, s := range g.sparks {
 		// A spark about to go blinks, and all of them bob a little.
@@ -185,19 +186,19 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 
 	// Under the sector: the core, a chip for each that is left, and the waves.
 	for i := 0; i < startCore; i++ {
-		x, y := sectorX+i*10, infoY
+		x, y := sectorX+i*13, infoY
 		cv.Draw(sheet.Image("core"), x, y, pixel.Copy)
 		if i >= g.core {
-			cv.Dither(x, y, 8, 8, 0.7, false)
+			cv.Dither(x, y, 10, 10, 0.7, false)
 		}
 	}
-	barX, barY, barW := sectorX+40, infoY+1, Cols*TileW-40
-	cv.Frame(barX, barY, barW, 6, 1)
+	barX, barY, barW := sectorX+48, infoY+1, Cols*TileW-48
+	cv.Frame(barX, barY, barW, 8, 1)
 	total := firstWave + waves*waveEvery
-	cv.Rect(barX+1, barY+1, (barW-2)*min(g.tick, total)/total, 4, true)
+	cv.Rect(barX+1, barY+1, (barW-2)*min(g.tick, total)/total, 6, true)
 	for w := 0; w <= waves; w++ {
 		mx := barX + 1 + (barW-2)*min(firstWave+w*waveEvery, total)/total
-		cv.Set(mx, barY+7, true)
+		cv.Set(mx, barY+9, true)
 	}
 
 	if g.flash > 0 && g.flash%2 == 0 {

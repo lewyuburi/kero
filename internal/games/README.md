@@ -32,7 +32,7 @@ the window and is tested without one, and a view that draws it:
    the top `games.HUDHeight` pixels free: the pane draws the score and the hint
    there.
 3. Add `_ "kero/internal/games/<name>"` to the imports in `games.go`. Give the
-   `Kind` an `Icon`, 24 by 24 pixels, for its tile in the gallery.
+   `Kind` an `Icon`, 32 by 32 pixels, for its tile in the gallery.
 
 The mouse: a game that implements `games.Pointed` is told of the pointer in
 pixels of its screen, whatever the scale it is shown at: `PointerMove`,
@@ -44,8 +44,8 @@ Every screen is the same: 320 by 240 pixels, 4 to 3, which is 40 by 30 tiles of
 under the band at the top, 320 by 224. The pane shows the screen as large as
 fits (settings.GameScale: at whole pixels of the display where that gives up
 little, 2x is 640 by 480 and 3x 960 by 720), and never changes its proportions,
-so that a game has nothing to say of its size. Snake's board is 38 by 26 cells
-of 8 pixels in the middle of that area.
+so that a game has nothing to say of its size. Snake's board is 30 by 21 cells
+of 10 pixels in the middle of that area.
 
 ## What is data
 

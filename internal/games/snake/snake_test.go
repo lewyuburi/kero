@@ -173,3 +173,28 @@ func TestSnakeEffectsRunOut(t *testing.T) {
 		t.Error("the shake did not end")
 	}
 }
+
+// The sprites of the snake are all there, cell-sized: a head and a tail for
+// each way it can go, and what it eats.
+func TestSnakeSpritesAreWhole(t *testing.T) {
+	names := []string{"body", "body2", "apple", "cherry", "star", "clock"}
+	for _, d := range []string{"right", "down", "left", "up"} {
+		names = append(names, "head-"+d, "tail-"+d)
+		if direction(map[string]point{"right": {1, 0}, "down": {0, 1}, "left": {-1, 0}, "up": {0, -1}}[d]) != d {
+			t.Errorf("direction %s is not named so", d)
+		}
+	}
+	for _, n := range names {
+		img := sheet.Image(n)
+		if img == nil || img.W != Cell || img.H != Cell {
+			t.Errorf("sprite %q is missing or not %d by %d", n, Cell, Cell)
+		}
+	}
+	if k, ok := games.Lookup("snake"); !ok || k.Icon == nil || k.Icon.W != 32 || k.Icon.H != 32 {
+		t.Error("the snake's icon is not 32 by 32")
+	}
+	// The board fits the screen.
+	if w, h := origin+Cols*Cell+7, top+Rows*Cell+7; w > games.Width || h > games.Height {
+		t.Errorf("the board with its frame and shadow is %dx%d, on a screen of %dx%d", w, h, games.Width, games.Height)
+	}
+}

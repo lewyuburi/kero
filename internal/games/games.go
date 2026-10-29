@@ -102,7 +102,7 @@ type Kind struct {
 	Font string
 	// Theme is the colors of the screen, "" for the usual.
 	Theme string
-	// Icon is the game's picture in the gallery, 24 by 24 pixels, nil for a
+	// Icon is the game's picture in the gallery, 32 by 32 pixels, nil for a
 	// question mark; Hidden keeps a game out of the gallery, as the gallery is.
 	Icon   *pixel.Image
 	Hidden bool

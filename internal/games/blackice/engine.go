@@ -18,15 +18,17 @@ import (
 const (
 	Cols, Rows   = 9, 5
 	TileW, TileH = 28, 28
-	// A sprite is 16 by 16 and a spark 8 by 8, in the middle of a tile.
-	spriteOff = (TileW - 16) / 2
-	sparkOff  = (TileW - 8) / 2
+	// A sprite is 24 by 24 and a spark 10 by 10, in the middle of a tile.
+	spriteSize = 24
+	spriteOff  = (TileW - spriteSize) / 2
+	sparkSize  = 10
+	sparkOff   = (TileW - sparkSize) / 2
 	// The sector's top left, under the band of the score and the hint; the
 	// cards' row under it, near the pointer that plays in the sector; and
 	// under them the core and the waves.
 	sectorX, sectorY = (games.Width - Cols*TileW) / 2, games.HUDHeight + 5
 	cardsY           = sectorY + Rows*TileH + 8
-	cardW, cardH     = 48, 28
+	cardW, cardH     = 48, 32
 	cardGap          = 3
 	infoY            = cardsY + cardH + 4
 )
@@ -63,6 +65,13 @@ var programs = [kinds]struct {
 	Mine:   {"MINE", 25, 30 * perSec, 1, 0, "mine"},
 	Cryo:   {"CRYO", 75, 5 * perSec, 12, 42, "cryo"},
 }
+
+// What the watts are written with: a bolt, which the fonts have a glyph for; and
+// what a figure's width of nothing is, for them to blink.
+const (
+	wattSign    = '⚡'
+	blankFigure = '\u2007'
+)
 
 // Name is the card's name.
 func (k Kind) Name() string { return programs[k].name }
@@ -295,10 +304,11 @@ func (g *game) wave() int {
 }
 
 func (g *game) Status() (score, hint string) {
-	watts := strconv.Itoa(g.watts) + "W"
+	watts := strconv.Itoa(g.watts) + string(wattSign)
 	if g.wattsBlink > 0 && (g.wattsBlink/3)%2 == 1 {
-		// Off, as the watts blink when they change.
-		watts = strings.Repeat(" ", len(watts))
+		// Off, as the watts blink when they change: spaces as wide as the
+		// figures, so that what is beside them does not move.
+		watts = strings.Map(func(rune) rune { return blankFigure }, watts)
 	}
 	score = watts + "  WAVE " + strconv.Itoa(max(g.wave(), 1)) + "/" + strconv.Itoa(waves)
 	switch {
@@ -362,11 +372,11 @@ func (g *game) collect(i int) {
 }
 
 // sparkAt is the spark under a point of the screen, -1 for none: a spark is
-// 8 pixels, and is taken from a little further.
+// 10 pixels, and is taken from a little further.
 func (g *game) sparkAt(px, py int) int {
 	for i := len(g.sparks) - 1; i >= 0; i-- {
 		s := g.sparks[i]
-		if float64(px) >= s.x-4 && float64(px) < s.x+12 && float64(py) >= s.y-4 && float64(py) < s.y+12 {
+		if float64(px) >= s.x-4 && float64(px) < s.x+sparkSize+4 && float64(py) >= s.y-4 && float64(py) < s.y+sparkSize+4 {
 			return i
 		}
 	}
@@ -376,7 +386,7 @@ func (g *game) sparkAt(px, py int) int {
 // sparkIn is a spark on a tile, -1 for none.
 func (g *game) sparkIn(c, r int) int {
 	for i, s := range g.sparks {
-		cx, cy := int(s.x)+4-sectorX, int(s.y)+4-sectorY
+		cx, cy := int(s.x)+sparkSize/2-sectorX, int(s.y)+sparkSize/2-sectorY
 		if cx >= c*TileW && cx < (c+1)*TileW && cy >= r*TileH && cy < (r+1)*TileH {
 			return i
 		}

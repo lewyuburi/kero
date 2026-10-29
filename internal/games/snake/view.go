@@ -18,14 +18,14 @@ func init() {
 }
 
 // The snake's screen, drawn in a one-bit canvas: cells of Cell pixels in a
-// framed board that casts a dithered shadow. The board is 38 by 26 cells of 8
-// pixels, 304 by 208, in the middle of the area the game has under the band
+// framed board that casts a dithered shadow. The board is 30 by 21 cells of 10
+// pixels, 300 by 210, in the middle of the area the game has under the band
 // of the score and the hint, with 4 pixels for its frame at each side and its
 // shadow below and to the right.
 const (
-	Cell = 8
-	Cols = 38
-	Rows = 26
+	Cell = 10
+	Cols = 30
+	Rows = 21
 	// Where the board's top left is on the screen.
 	origin = (games.Width - Cols*Cell) / 2
 	top    = games.HUDHeight + (games.AreaHeight-Rows*Cell)/2
@@ -47,7 +47,7 @@ func draw(g games.Game, cv *pixel.Canvas) {
 	cv.Frame(ox-4, oy-4, bw+8, bh+8, 2)
 	for y := 0; y < sn.h; y++ {
 		for x := 0; x < sn.w; x++ {
-			cv.Set(ox+x*Cell+3, oy+y*Cell+3, true)
+			cv.Set(ox+x*Cell+Cell/2-1, oy+y*Cell+Cell/2-1, true)
 		}
 	}
 	cell := func(p point) (int, int) { return ox + p.x*Cell, oy + p.y*Cell }
@@ -63,25 +63,14 @@ func draw(g games.Game, cv *pixel.Canvas) {
 		x, y := cell(sn.body[i])
 		switch {
 		case i == 0:
-			cv.Draw(sheet.Image("body"), x, y, pixel.Copy)
-			// Eyes, toward where it goes.
-			eyes := map[point][][2]int{
-				{1, 0}:  {{5, 2}, {5, 5}},
-				{-1, 0}: {{2, 2}, {2, 5}},
-				{0, -1}: {{2, 2}, {5, 2}},
-				{0, 1}:  {{2, 5}, {5, 5}},
-			}[sn.dir]
-			for _, e := range eyes {
-				cv.Set(x+e[0], y+e[1], false)
-			}
+			cv.Draw(sheet.Image("head-"+direction(sn.dir)), x, y, pixel.Copy)
 		case i == n-1 && n > 3:
-			cv.Draw(sheet.Image("tail"), x, y, pixel.Copy)
+			// The tail points away from the body.
+			cv.Draw(sheet.Image("tail-"+direction(point{sn.body[i].x - sn.body[i-1].x, sn.body[i].y - sn.body[i-1].y})), x, y, pixel.Copy)
+		case i%2 == 0:
+			cv.Draw(sheet.Image("body2"), x, y, pixel.Copy)
 		default:
 			cv.Draw(sheet.Image("body"), x, y, pixel.Copy)
-			// Scales: a paper dot on every other segment.
-			if i%2 == 0 {
-				cv.Rect(x+3, y+3, 2, 2, false)
-			}
 		}
 	}
 	if sn.over {
@@ -93,4 +82,17 @@ func draw(g games.Game, cv *pixel.Canvas) {
 		cv.Invert(ox, oy, bw, bh)
 	}
 	cv.SetShift(pixel.ShakeOffset(sn.shake, 1))
+}
+
+// direction names a step of the snake, for the sprites that look that way.
+func direction(d point) string {
+	switch d {
+	case point{-1, 0}:
+		return "left"
+	case point{0, -1}:
+		return "up"
+	case point{0, 1}:
+		return "down"
+	}
+	return "right"
 }
