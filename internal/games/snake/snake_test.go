@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"kero/internal/games"
+	"kero/internal/pixel"
 )
 
 func TestSnakeMovesTurnsAndDiesOnTheWall(t *testing.T) {
@@ -186,9 +187,12 @@ func TestSnakeSpritesAreWhole(t *testing.T) {
 	}
 	for _, n := range names {
 		img := sheet.Image(n)
-		if img == nil || img.W != Cell || img.H != Cell {
-			t.Errorf("sprite %q is missing or not %d by %d", n, Cell, Cell)
+		if img == nil || img.W != sprite || img.H != sprite {
+			t.Errorf("sprite %q is missing or not %d by %d", n, sprite, sprite)
 		}
+	}
+	if sprite != Cell-2 {
+		t.Errorf("a sprite is %d in a cell of %d: no pixel of room all round", sprite, Cell)
 	}
 	if k, ok := games.Lookup("snake"); !ok || k.Icon == nil || k.Icon.W != 32 || k.Icon.H != 32 {
 		t.Error("the snake's icon is not 32 by 32")
@@ -196,5 +200,31 @@ func TestSnakeSpritesAreWhole(t *testing.T) {
 	// The board fits the screen.
 	if w, h := origin+Cols*Cell+7, top+Rows*Cell+7; w > games.Width || h > games.Height {
 		t.Errorf("the board with its frame and shadow is %dx%d, on a screen of %dx%d", w, h, games.Width, games.Height)
+	}
+}
+
+// Drawn, the snake leaves a pixel of room in each cell round what it is, and its
+// segments are joined into one band.
+func TestSnakeLeavesRoomAndIsJoined(t *testing.T) {
+	g := newSnake(1)
+	g.food = point{0, 0}
+	g.bonus = nil
+	cv := pixel.NewCanvas(games.Width, games.Height)
+	draw(g, cv)
+	// Three segments in a row on the middle line: between the first and the
+	// second there is ink across the gap of the cells' edges, and there is a pixel
+	// of paper above and below the band, in the cells.
+	head, second := g.body[0], g.body[1]
+	hx, hy := origin+head.x*Cell, top+head.y*Cell
+	sx := origin + second.x*Cell
+	for dy := pad; dy < Cell-pad; dy++ {
+		if !cv.Get(hx-1, hy+dy) || !cv.Get(hx, hy+dy) || !cv.Get(sx+Cell-1, hy+dy) {
+			t.Errorf("the band is broken at row %d between head and body", dy)
+		}
+	}
+	// Room: the cell's first and last rows, over and under the band, are not ink
+	// where the band runs (the dot of the board is on another row).
+	if cv.Get(hx+Cell/2, hy) || cv.Get(hx+Cell/2, hy+Cell-1) {
+		t.Error("the snake fills the cell, with no pixel of room")
 	}
 }

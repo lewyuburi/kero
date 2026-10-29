@@ -18,7 +18,9 @@ func init() {
 }
 
 // The snake's screen, drawn in a one-bit canvas: cells of Cell pixels in a
-// framed board that casts a dithered shadow. The board is 30 by 21 cells of 10
+// framed board that casts a dithered shadow. What is in a cell is Cell-2
+// pixels, so that there is a pixel of room all round it, and the body is a band
+// of that width, its segments joined. The board is 30 by 21 cells of 10
 // pixels, 300 by 210, in the middle of the area the game has under the band
 // of the score and the hint, with 4 pixels for its frame at each side and its
 // shadow below and to the right.
@@ -26,6 +28,9 @@ const (
 	Cell = 10
 	Cols = 30
 	Rows = 21
+	// What is in a cell, and the room round it.
+	pad    = 1
+	sprite = Cell - 2*pad
 	// Where the board's top left is on the screen.
 	origin = (games.Width - Cols*Cell) / 2
 	top    = games.HUDHeight + (games.AreaHeight-Rows*Cell)/2
@@ -50,7 +55,8 @@ func draw(g games.Game, cv *pixel.Canvas) {
 			cv.Set(ox+x*Cell+Cell/2-1, oy+y*Cell+Cell/2-1, true)
 		}
 	}
-	cell := func(p point) (int, int) { return ox + p.x*Cell, oy + p.y*Cell }
+	// What is in a cell is a pixel in from its edges.
+	cell := func(p point) (int, int) { return ox + p.x*Cell + pad, oy + p.y*Cell + pad }
 	fx, fy := cell(sn.food)
 	cv.Draw(sheet.Image("apple"), fx, fy, pixel.Copy)
 	// A bonus that is about to go blinks.
@@ -65,12 +71,23 @@ func draw(g games.Game, cv *pixel.Canvas) {
 		case i == 0:
 			cv.Draw(sheet.Image("head-"+direction(sn.dir)), x, y, pixel.Copy)
 		case i == n-1 && n > 3:
-			// The tail points away from the body.
-			cv.Draw(sheet.Image("tail-"+direction(point{sn.body[i].x - sn.body[i-1].x, sn.body[i].y - sn.body[i-1].y})), x, y, pixel.Copy)
+			// The tail narrows, away from the body.
+			prev := sn.body[i-1]
+			cv.Draw(sheet.Image("tail-"+direction(point{sn.body[i].x - prev.x, sn.body[i].y - prev.y})), x, y, pixel.Copy)
 		case i%2 == 0:
 			cv.Draw(sheet.Image("body2"), x, y, pixel.Copy)
 		default:
 			cv.Draw(sheet.Image("body"), x, y, pixel.Copy)
+		}
+		if i > 0 {
+			// A band between this segment and the one before it, to join them.
+			px, py := cell(sn.body[i-1])
+			switch {
+			case px == x:
+				cv.Rect(x, min(y, py)+sprite, sprite, pad*2, true)
+			case py == y:
+				cv.Rect(min(x, px)+sprite, y, pad*2, sprite, true)
+			}
 		}
 	}
 	if sn.over {
