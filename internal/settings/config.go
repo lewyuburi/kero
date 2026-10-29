@@ -137,7 +137,7 @@ var keys = []key{
 	choiceKey("macos-show-app-icon", "where Kero's icon shows; closing the window keeps Kero running in the menu bar while it shows there. Windows and Linux always show it in the notification area",
 		func(s *Settings) *string { return &s.AppIcon }, AppIcons...),
 
-	choiceKey("game-scale", "with the games flag, how a game's screen fills its pane, in proportion: only at whole pixels of the display, crisp but leaving room around, as large as the pane allows but whole where that gives up little (snap), or as large as the pane allows at any scale", func(s *Settings) *string { return &s.GameScale }, GameScaleWhole, GameScaleSnap, GameScaleFill),
+	choiceKey("game-scale", "with the games flag, how a game's screen fills its pane, in proportion: as large as the pane allows but whole pixels of the display where that gives up little (snap), only at whole pixels, crisp but leaving room around, or as large as the pane allows at any scale", func(s *Settings) *string { return &s.GameScale }, GameScaleSnap, GameScaleWhole, GameScaleFill),
 	choiceKey("tab-layout", "where the sessions' tabs are: down the side, or across the top of the window; the horizontal-tabs flag offers the choice", func(s *Settings) *string { return &s.TabLayout }, TabsVertical, TabsHorizontal),
 	choiceKey("window-theme", "the app's appearance", func(s *Settings) *string { return &s.Appearance }, "system", "light", "dark"),
 	choiceKey("language", "the app's language; system follows the system's", func(s *Settings) *string { return &s.Language }, append([]string{"system"}, Languages...)...),

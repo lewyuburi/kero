@@ -488,17 +488,16 @@ func TestTargetFollowsSymlinks(t *testing.T) {
 }
 
 func TestGameScaleIsAChoice(t *testing.T) {
-	if got := Default().GameScale; got != GameScaleWhole {
+	if got := Default().GameScale; got != GameScaleSnap {
 		t.Errorf("default game scale %q", got)
 	}
-	s, probs := parse("game-scale = fill")
-	if len(probs) != 0 || s.GameScale != GameScaleFill {
-		t.Errorf("game-scale = fill: %q, problems %q", s.GameScale, probs)
+	for _, want := range []string{GameScaleWhole, GameScaleSnap, GameScaleFill} {
+		s, probs := parse("game-scale = " + want)
+		if len(probs) != 0 || s.GameScale != want {
+			t.Errorf("game-scale = %s: %q, problems %q", want, s.GameScale, probs)
+		}
 	}
-	if s, probs := parse("game-scale = snap"); len(probs) != 0 || s.GameScale != GameScaleSnap {
-		t.Errorf("game-scale = snap: %q, problems %q", s.GameScale, probs)
-	}
-	if s, probs := parse("game-scale = huge"); len(probs) != 1 || s.GameScale != GameScaleWhole {
+	if s, probs := parse("game-scale = huge"); len(probs) != 1 || s.GameScale != GameScaleSnap {
 		t.Errorf("game-scale = huge: %q, problems %q", s.GameScale, probs)
 	}
 }
