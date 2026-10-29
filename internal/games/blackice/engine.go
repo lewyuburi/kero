@@ -14,17 +14,20 @@ import (
 	"kero/internal/games"
 )
 
-// The sector, in tiles, and where everything is on the screen (256 by 192).
+// The sector, in tiles, and where everything is on the screen (320 by 240).
 const (
 	Cols, Rows   = 9, 5
-	TileW, TileH = 24, 24
+	TileW, TileH = 28, 28
+	// A sprite is 16 by 16 and a spark 8 by 8, in the middle of a tile.
+	spriteOff = (TileW - 16) / 2
+	sparkOff  = (TileW - 8) / 2
 	// The sector's top left, under the band of the score and the hint; the
 	// cards' row under it, near the pointer that plays in the sector; and
 	// under them the core and the waves.
 	sectorX, sectorY = (games.Width - Cols*TileW) / 2, games.HUDHeight + 5
 	cardsY           = sectorY + Rows*TileH + 8
-	cardW, cardH     = 40, 24
-	cardGap          = 4
+	cardW, cardH     = 48, 28
+	cardGap          = 3
 	infoY            = cardsY + cardH + 4
 )
 
@@ -512,7 +515,7 @@ func (g *game) Step() {
 	if g.tick >= g.nextSky {
 		g.nextSky = g.tick + skySparkEvery
 		g.sparks = append(g.sparks, spark{
-			x: float64(sectorX + g.rng.Intn(Cols)*TileW + 8), y: float64(sectorY + g.rng.Intn(Rows)*TileH + 8),
+			x: float64(sectorX + g.rng.Intn(Cols)*TileW + sparkOff), y: float64(sectorY + g.rng.Intn(Rows)*TileH + sparkOff),
 			ttl: sparkLife, value: sparkValue})
 	}
 	for g.next < len(g.spawns) && g.spawns[g.next].at <= g.tick {
@@ -557,7 +560,7 @@ func (g *game) stepDefenders() {
 			case Dynamo:
 				if d.cd--; d.cd <= 0 {
 					d.cd = programs[Dynamo].every
-					g.sparks = append(g.sparks, spark{x: float64(sectorX + c*TileW + 8), y: float64(sectorY + r*TileH + 8), ttl: sparkLife, value: sparkValue})
+					g.sparks = append(g.sparks, spark{x: float64(sectorX + c*TileW + sparkOff), y: float64(sectorY + r*TileH + sparkOff), ttl: sparkLife, value: sparkValue})
 				}
 			case Pulse, Cryo:
 				if d.cd > 0 {

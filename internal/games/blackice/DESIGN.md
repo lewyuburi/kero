@@ -9,10 +9,10 @@ sprites; the mechanics are the genre's.
 
 ## The screen
 
-256 by 192, as every game. Under the band of the score and the hint (16 pixels):
-a row of five **cards** (40 by 24), and the **sector**, 9 columns by 5 rows of
-tiles of 24 pixels, 216 by 120. Under it, the core, three chips, and the progress
-of the waves.
+320 by 240, as every game. Under the band of the score and the hint (16 pixels):
+the **sector**, 9 columns by 5 rows of tiles of 28 pixels, 252 by 140, and under
+it a row of five **cards** (48 by 28), near the pointer that plays in the sector.
+Under them, the core, three chips, and the progress of the waves.
 
 ## Play
 

@@ -39,13 +39,13 @@ pixels of its screen, whatever the scale it is shown at: `PointerMove`,
 `PointerDown`, `PointerUp` (after a Down, always) and `PointerLeave`. A game
 that, rather than being played, leads to another implements `games.Chooser`.
 
-Every screen is the same: 256 by 192 pixels, 4 to 3, as the Master System's and
-the DS's were, which is 32 by 24 tiles of 8 pixels and 42 columns of text in the
-6-pixel font. A game draws in the area under the band at the top, 256 by 176.
-The pane shows the screen as large as fits at a whole number of the display's
-pixels (2x is 512 by 384, 3x 768 by 576), and never changes its proportions, so
-that a game has nothing to say of its size. Snake's board is 30 by 20 cells of 8
-pixels in the middle of that area.
+Every screen is the same: 320 by 240 pixels, 4 to 3, which is 40 by 30 tiles of
+8 pixels and 53 columns of text in the 6-pixel font. A game draws in the area
+under the band at the top, 320 by 224. The pane shows the screen as large as
+fits (settings.GameScale: at whole pixels of the display where that gives up
+little, 2x is 640 by 480 and 3x 960 by 720), and never changes its proportions,
+so that a game has nothing to say of its size. Snake's board is 38 by 26 cells
+of 8 pixels in the middle of that area.
 
 ## What is data
 

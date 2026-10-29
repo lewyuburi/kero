@@ -20,20 +20,20 @@ func init() {
 	})
 }
 
-// The tiles: columns of them, 52 by 60 pixels with 8 between, in the middle of
-// the area under the band at the top. Eight to a page.
+// The tiles: columns of them, 68 by 64 pixels with 10 between, in the middle
+// of the area under the band at the top. Twelve to a page.
 const (
-	cols, rows   = 4, 2
+	cols, rows   = 4, 3
 	perPage      = cols * rows
-	tileW, tileH = 52, 60
-	gap          = 8
+	tileW, tileH = 68, 64
+	gap          = 10
 )
 
 // originX and originY are where the first tile's top left is: the tiles in
 // the middle of the area.
 const (
 	originX = (games.Width - (cols*tileW + (cols-1)*gap)) / 2
-	originY = games.HUDHeight + (games.AreaHeight-(rows*tileH+(rows-1)*gap))/2 - 4
+	originY = games.HUDHeight + (games.AreaHeight-(rows*tileH+(rows-1)*gap))/2
 )
 
 type gallery struct {
@@ -152,8 +152,8 @@ func draw(g games.Game, cv *pixel.Canvas) {
 		} else {
 			cv.Text(font, x+(w-font.Width("?"))/2, y+16, "?", pixel.Copy)
 		}
-		title := fit(font, k.Title, w-8)
-		cv.Text(font, x+(w-font.Width(title))/2, y+h-14, title, pixel.Copy)
+		tf, title := fitTitle(k.Title, w-8)
+		cv.Text(tf, x+(w-tf.Width(title))/2, y+h-6-tf.Height, title, pixel.Copy)
 		if i == ga.sel {
 			// The tile chosen is the other way about, as a handheld's menu does.
 			cv.Invert(x, y, w, h)
@@ -177,11 +177,18 @@ func draw(g games.Game, cv *pixel.Canvas) {
 	}
 }
 
-// fit is a title cut to the room it has.
-func fit(f *pixel.Font, s string, room int) string {
+// fitTitle is a title, in the usual font if it fits in the room, else in the
+// small one, else cut, so that a name is read whole whenever it can be.
+func fitTitle(s string, room int) (*pixel.Font, string) {
+	for _, name := range []string{"sans5x7", "tiny3x5"} {
+		if f := pixel.FontNamed(name); f.Width(s) <= room {
+			return f, s
+		}
+	}
+	f := pixel.FontNamed("tiny3x5")
 	r := []rune(s)
 	for len(r) > 1 && f.Width(string(r)) > room {
 		r = r[:len(r)-1]
 	}
-	return string(r)
+	return f, string(r)
 }

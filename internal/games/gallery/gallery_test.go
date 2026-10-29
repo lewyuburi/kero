@@ -123,23 +123,58 @@ func TestGalleryMouseHoversAndClicks(t *testing.T) {
 }
 
 func TestGalleryPages(t *testing.T) {
-	g := newGallery(kinds(10))
-	for i := 0; i < 8; i++ {
+	g := newGallery(kinds(perPage + 2))
+	for i := 0; i < perPage; i++ {
 		g.Key(games.Right)
 	}
-	if g.sel != 8 {
-		t.Fatalf("selection %d", g.sel)
+	if g.sel != perPage {
+		t.Fatalf("selection %d, want %d", g.sel, perPage)
 	}
-	// The second page shows the ninth game where the first tile is.
-	x, y, w, h := tileRect(8)
-	if g.tileAt(x+w/2, y+h/2) != 8 {
+	// The second page shows the game after the last of the first where the
+	// first tile is.
+	x, y, w, h := tileRect(perPage)
+	if g.tileAt(x+w/2, y+h/2) != perPage {
 		t.Errorf("the first tile of the second page is %d", g.tileAt(x+w/2, y+h/2))
+	}
+	// Of the first page, none can be clicked while the second is shown.
+	if xa, ya, wa, ha := tileRect(1); g.tileAt(xa+wa/2, ya+ha/2) != perPage+1 {
+		t.Errorf("the second tile of the second page is %d", g.tileAt(xa+wa/2, ya+ha/2))
 	}
 	// It draws, on every page, without leaving the screen.
 	cv := pixel.NewCanvas(games.Width, games.Height)
 	draw(g, cv)
 	g.sel = 0
 	draw(g, cv)
+}
+
+// A title is read whole when it can be: in the usual font if it fits in a
+// tile, else in the small one, and only cut when neither does.
+func TestTitlesAreReadWhole(t *testing.T) {
+	room := tileW - 8
+	for _, title := range []string{"Snake", "Black Ice", "Plants", "Tetris"} {
+		f, got := fitTitle(title, room)
+		if got != title {
+			t.Errorf("%q is cut to %q in a tile %d wide", title, got, room)
+		}
+		if f.Width(got) > room {
+			t.Errorf("%q does not fit: %d wide in %d", got, f.Width(got), room)
+		}
+	}
+	f, got := fitTitle("Black Ice", room)
+	if f.Name != "sans5x7" {
+		t.Errorf("Black Ice, which fits in the usual font, is in %s", f.Name)
+	}
+	// One that does not fit in the usual font is in the small one.
+	long := "Black Ice Zone"
+	f, got = fitTitle(long, room)
+	if f.Name != "tiny3x5" || got != long {
+		t.Errorf("%q is %q in %s: want the small font, whole", long, got, f.Name)
+	}
+	// And one that fits in neither is cut, and still fits.
+	f, got = fitTitle("A Very Long Name Of A Game", room)
+	if got == "A Very Long Name Of A Game" || f.Width(got) > room || len(got) < 5 {
+		t.Errorf("a very long title is %q (%d wide)", got, f.Width(got))
+	}
 }
 
 func TestTilesFitTheScreenInTheArea(t *testing.T) {

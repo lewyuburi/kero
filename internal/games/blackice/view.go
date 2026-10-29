@@ -69,9 +69,9 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 		x, y, w, h := cardRect(i)
 		k := Kind(i)
 		cv.Frame(x, y, w, h, 1)
-		cv.Draw(sheet.Image(programSprites[k]), x+2, y+4, pixel.Copy)
-		cv.Text(tiny, x+w-3-tiny.Width(itoa(k.Cost())), y+4, itoa(k.Cost()), pixel.Copy)
-		cv.Draw(sheet.Image(roleSprites[k]), x+w-10, y+12, pixel.Copy)
+		cv.Draw(sheet.Image(programSprites[k]), x+3, y+(h-16)/2, pixel.Copy)
+		cv.Text(tiny, x+w-4-tiny.Width(itoa(k.Cost())), y+5, itoa(k.Cost()), pixel.Copy)
+		cv.Draw(sheet.Image(roleSprites[k]), x+w-11, y+h-14, pixel.Copy)
 		// How soon it is ready: a bar at the foot.
 		if g.tick < g.cards[i].ready {
 			left := g.cards[i].ready - g.tick
@@ -116,7 +116,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 			if d == nil {
 				continue
 			}
-			x, y := sectorX+c*TileW+4, sectorY+r*TileH+4
+			x, y := sectorX+c*TileW+spriteOff, sectorY+r*TileH+spriteOff
 			cv.Draw(sheet.Image(programSprites[d.kind]), x, y, pixel.Copy)
 			switch {
 			case d.kind == Mine && d.armed > 0:
@@ -134,7 +134,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 		hc, hr = g.curC, g.curR
 	}
 	if g.selected >= 0 && g.cells[hr][hc] == nil && !g.over && !g.won {
-		x, y := sectorX+hc*TileW+4, sectorY+hr*TileH+4
+		x, y := sectorX+hc*TileW+spriteOff, sectorY+hr*TileH+spriteOff
 		cv.Draw(sheet.Image(programSprites[g.selected]), x, y, pixel.Copy)
 		cv.Dither(x, y, 16, 16, 0.5, false)
 	}
@@ -145,7 +145,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	if g.dragging && g.downCard >= 0 {
 		img := sheet.Image(programSprites[g.downCard])
 		if g.hoverC >= 0 && g.cells[g.hoverR][g.hoverC] == nil {
-			x, y := sectorX+g.hoverC*TileW+4, sectorY+g.hoverR*TileH+4
+			x, y := sectorX+g.hoverC*TileW+spriteOff, sectorY+g.hoverR*TileH+spriteOff
 			cv.Draw(img, x, y, pixel.Copy)
 			cv.Dither(x, y, 16, 16, 0.25, false)
 			bracket(cv, sectorX+g.hoverC*TileW, sectorY+g.hoverR*TileH, TileW, TileH)
@@ -159,7 +159,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	// Malware, in the frame of its walk, slowed ones frosted.
 	for _, e := range g.enemies {
 		x := sectorX + int(e.x*TileW) - 2
-		y := sectorY + e.lane*TileH + 4
+		y := sectorY + e.lane*TileH + spriteOff
 		cv.Draw(sheet.Image(frames(e.kind, g.tick+e.lane*3)), x, y, pixel.Copy)
 		if e.slow > 0 {
 			cv.Dither(x, y, 16, 16, 0.4, false)

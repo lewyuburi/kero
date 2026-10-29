@@ -79,16 +79,16 @@ type Animator interface {
 // FrameTime is the time of a frame of what Animators show: 30 a second.
 const FrameTime = time.Second / 30
 
-// Every screen is the same size, 256 by 192 pixels, 4 to 3: the screen of
-// the handhelds that had one, and a shape that fits a pane of any. It is 32
-// by 24 tiles of 8 pixels, or 16 by 12 of 16, and a font of 6 pixels to a
-// character has 42 columns of text on it. A game draws in the area under the
+// Every screen is the same size, 320 by 240 pixels, 4 to 3: the shape of the
+// screens that had one, and one that fits a pane of any. It is 40 by 30 tiles
+// of 8 pixels, or 20 by 15 of 16, and a font of 6 pixels to a character has 53
+// columns of text on it. A game draws in the area under the
 // band at the top, where the pane draws the score and the hint: Area.
 const (
-	Width, Height = 256, 192
+	Width, Height = 320, 240
 	// HUDHeight is that band.
 	HUDHeight = 16
-	// AreaHeight is what is left under it, 256 by 176: 32 by 22 tiles of 8.
+	// AreaHeight is what is left under it, 320 by 224: 40 by 28 tiles of 8.
 	AreaHeight = Height - HUDHeight
 )
 

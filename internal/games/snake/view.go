@@ -18,14 +18,14 @@ func init() {
 }
 
 // The snake's screen, drawn in a one-bit canvas: cells of Cell pixels in a
-// framed board that casts a dithered shadow. The board is 30 by 20 cells of 8
-// pixels, 240 by 160, in the middle of the area the game has under the band
+// framed board that casts a dithered shadow. The board is 38 by 26 cells of 8
+// pixels, 304 by 208, in the middle of the area the game has under the band
 // of the score and the hint, with 4 pixels for its frame at each side and its
 // shadow below and to the right.
 const (
 	Cell = 8
-	Cols = 30
-	Rows = 20
+	Cols = 38
+	Rows = 26
 	// Where the board's top left is on the screen.
 	origin = (games.Width - Cols*Cell) / 2
 	top    = games.HUDHeight + (games.AreaHeight-Rows*Cell)/2

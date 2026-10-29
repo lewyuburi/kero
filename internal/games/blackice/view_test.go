@@ -163,10 +163,10 @@ func TestEveryCardSaysWhatItDoes(t *testing.T) {
 		// It is on the card, in its corner, and not on the picture or the cost.
 		cv := pixel.NewCanvas(games.Width, games.Height)
 		draw(newGame(1), cv)
-		x, y, w, _ := cardRect(int(k))
+		x, y, w, h := cardRect(int(k))
 		inked := 0
-		for py := y + 12; py < y+19; py++ {
-			for px := x + w - 10; px < x+w-3; px++ {
+		for py := y + h - 14; py < y+h-7; py++ {
+			for px := x + w - 11; px < x+w-4; px++ {
 				if cv.Get(px, py) {
 					inked++
 				}
