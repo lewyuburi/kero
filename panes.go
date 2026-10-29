@@ -583,6 +583,18 @@ func (a *App) paneControls(c *ui.Context, pal *palette, s *proto.Session, p *pro
 		if !show {
 			return
 		}
+		if p.Game() != "" && p.Game() != galleryID {
+			sess, pane := s.ID, p.ID
+			iconButton(c, "games", chevronLeftIcon, locales.PageGames()+" (Esc)", pal, func() {
+				a.defer_(func() {
+					if s := a.session(sess); s != nil {
+						if p := s.PaneByID(pane); p != nil {
+							a.switchGame(p, galleryID)
+						}
+					}
+				})
+			})
+		}
 		iconButton(c, "split-r", splitRightIcon, a.tip(locales.ActionSplitRight(), "pane.split.right"), pal, func() { a.splitPane(s, p.ID, "right") })
 		iconButton(c, "split-d", splitDownIcon, a.tip(locales.ActionSplitDown(), "pane.split.down"), pal, func() { a.splitPane(s, p.ID, "down") })
 		if multi {

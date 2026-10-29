@@ -60,6 +60,13 @@ type Pointed interface {
 	Pointer(p Pointer)
 }
 
+// A Chooser is a game that, rather than being played, leads to another: the
+// gallery. The pane shows the game it names in its place.
+type Chooser interface {
+	// Chosen is the ID of the game chosen, once: "" until one is.
+	Chosen() string
+}
+
 // An Animator is a game with something moving on its screen between steps,
 // as a shake: while Animating, the pane asks for a frame in each Frame's
 // time, and Frame lets one go by.
@@ -94,6 +101,10 @@ type Kind struct {
 	Font string
 	// Theme is the colors of the screen, "" for the usual.
 	Theme string
+	// Icon is the game's picture in the gallery, 24 by 24 pixels, nil for a
+	// question mark; Hidden keeps a game out of the gallery, as the gallery is.
+	Icon   *pixel.Image
+	Hidden bool
 }
 
 var kinds []Kind

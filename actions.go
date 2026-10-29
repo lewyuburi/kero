@@ -90,6 +90,13 @@ func (a *App) run(id string, args map[string]string) {
 		a.splitPane(s, "", "down")
 	case "pane.browser":
 		a.openBrowser(args["url"])
+	case "pane.game":
+		// A game by name, or the gallery of them with none.
+		if id := args["game"]; id != "" {
+			a.openGame(id)
+		} else {
+			a.openGame(galleryID)
+		}
 	case "browser.address":
 		a.focusAddress()
 	case "pane.zoom":

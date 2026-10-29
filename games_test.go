@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"kero/internal/pixel"
 	"kero/internal/proto"
 	"kero/internal/settings"
+	"kero/locales"
 )
 
 func TestGamePaneURL(t *testing.T) {
@@ -223,7 +225,7 @@ func (g *pointerGame) Pointer(p games.Pointer)  { g.events = append(g.events, p)
 var testPointerGame = &pointerGame{}
 
 func init() {
-	games.Register(games.Kind{ID: "test-pointer", Title: "Test",
+	games.Register(games.Kind{ID: "test-pointer", Title: "Test", Hidden: true,
 		New:  func() games.Game { return testPointerGame },
 		Draw: func(games.Game, *pixel.Canvas) {}})
 }
@@ -280,5 +282,195 @@ func TestPointerReachesTheGame(t *testing.T) {
 		if last := testPointerGame.events[len(testPointerGame.events)-1]; last.Kind != games.PointerLeave {
 			t.Errorf("%s: the last event is %+v, want a leave", mode, last)
 		}
+	}
+}
+
+// The player of the gallery chooses a game and gets it in the same pane,
+// whose new address the daemon is told.
+func TestGalleryOpensTheGameChosen(t *testing.T) {
+	a := testApp(t)
+	a.local().conn = connReady
+	got := make(chan proto.PageParams, 1)
+	cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
+		var p proto.PageParams
+		if err := json.Unmarshal(raw, &p); err != nil {
+			return nil, err
+		}
+		if method == "pane.page" {
+			got <- p
+		}
+		return true, nil
+	})
+	a.local().cl = cl
+	defer stop()
+	a.st.Sessions[0].Panes[1] = proto.Pane{ID: "b", URL: proto.GameURL("gallery"), Status: proto.Idle, Progress: -1}
+	tt := ui.NewTester(a.view, 1400, 700)
+	for i := 0; i < 3; i++ {
+		tt.Frame()
+	}
+	a.paneRef("b").Focus()
+	tt.Frame()
+	tt.Key(0, ui.KeyEnter)
+	tt.Frame()
+	tt.Frame()
+	select {
+	case p := <-got:
+		if p.ID != "b" || p.URL != proto.GameURL("snake") {
+			t.Errorf("the daemon was told %+v, want pane b at the snake", p)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("the daemon was not told of the game chosen")
+	}
+	if pane := a.st.Sessions[0].PaneByID("b"); pane.Game() != "snake" {
+		t.Errorf("the pane plays %q", pane.Game())
+	}
+	if play := a.games["b"]; play == nil || play.kind.ID != "snake" {
+		t.Errorf("the pane did not take the game: %+v", play)
+	}
+}
+
+// The palette has one entry for games, Games, with the flag; and a game is
+// opened by name, without the gallery, by the action pane.game.
+func TestGamesInThePaletteAndByName(t *testing.T) {
+	a := testApp(t)
+	if items := a.gameItems(); len(items) != 0 {
+		t.Errorf("games in the palette with the flag disabled: %d", len(items))
+	}
+	a.set.SetFlag(settings.FlagGames, settings.StateEnabled)
+	items := a.gameItems()
+	if len(items) != 1 || items[0].title != "Games" {
+		t.Fatalf("palette entries %+v, want one, Games", items)
+	}
+	for _, word := range []string{"snake", "gallery", "play"} {
+		if !strings.Contains(items[0].words, word) {
+			t.Errorf("Games is not found by %q: %q", word, items[0].words)
+		}
+	}
+
+	a.local().conn = connReady
+	got := make(chan proto.CreateParams, 2)
+	cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
+		var p proto.CreateParams
+		if err := json.Unmarshal(raw, &p); err != nil {
+			return nil, err
+		}
+		got <- p
+		return proto.Session{ID: "s1"}, nil
+	})
+	a.local().cl = cl
+	defer stop()
+	for args, want := range map[string]string{"": proto.GameURL("gallery"), "snake": proto.GameURL("snake")} {
+		a.run("pane.game", map[string]string{"game": args})
+		select {
+		case p := <-got:
+			if p.URL != want {
+				t.Errorf("pane.game %q opened %q, want %q", args, p.URL, want)
+			}
+		case <-time.After(time.Second):
+			t.Fatalf("pane.game %q opened nothing", args)
+		}
+	}
+}
+
+// Escape goes back from a game to the gallery, in the same pane, whose address
+// the daemon is told; in the gallery it does nothing.
+func TestEscapeGoesBackToTheGallery(t *testing.T) {
+	a := testApp(t)
+	a.local().conn = connReady
+	got := make(chan proto.PageParams, 2)
+	cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
+		var p proto.PageParams
+		if err := json.Unmarshal(raw, &p); err != nil {
+			return nil, err
+		}
+		if method == "pane.page" {
+			got <- p
+		}
+		return true, nil
+	})
+	a.local().cl = cl
+	defer stop()
+	a.st.Sessions[0].Panes[1] = proto.Pane{ID: "b", URL: proto.GameURL("snake"), Status: proto.Idle, Progress: -1}
+	tt := ui.NewTester(a.view, 1400, 700)
+	for i := 0; i < 3; i++ {
+		tt.Frame()
+	}
+	a.paneRef("b").Focus()
+	tt.Frame()
+	tt.Key(0, ui.KeyEscape)
+	tt.Frame()
+	tt.Frame()
+	select {
+	case p := <-got:
+		if p.ID != "b" || p.URL != proto.GameURL("gallery") {
+			t.Errorf("the daemon was told %+v, want pane b at the gallery", p)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Escape did not go back to the gallery")
+	}
+	if play := a.games["b"]; play == nil || play.kind.ID != "gallery" {
+		t.Errorf("the pane did not take the gallery: %+v", play)
+	}
+	// In the gallery, Escape is nothing.
+	tt.Key(0, ui.KeyEscape)
+	tt.Frame()
+	select {
+	case p := <-got:
+		t.Errorf("Escape in the gallery went somewhere: %+v", p)
+	case <-time.After(150 * time.Millisecond):
+	}
+}
+
+// A game's header has a button back to the gallery, which the gallery's does
+// not, and it goes there.
+func TestBackButtonInAGamesHeader(t *testing.T) {
+	a := testApp(t)
+	a.local().conn = connReady
+	got := make(chan proto.PageParams, 1)
+	cl, stop := projectClient(t, func(method string, raw json.RawMessage) (any, error) {
+		var p proto.PageParams
+		if err := json.Unmarshal(raw, &p); err != nil {
+			return nil, err
+		}
+		if method == "pane.page" {
+			got <- p
+		}
+		return true, nil
+	})
+	a.local().cl = cl
+	defer stop()
+	label := locales.PageGames() + " (Esc)"
+	for _, url := range []string{proto.GameURL("gallery"), proto.GameURL("snake")} {
+		a.st.Sessions[0].Panes[1] = proto.Pane{ID: "b", URL: url, Status: proto.Idle, Progress: -1}
+		delete(a.games, "b")
+		var box ui.Rect
+		tt := ui.NewTester(func(c *ui.Context) {
+			a.view(c)
+			box = a.paneRef("card-b").Bounds(c)
+		}, 1400, 700)
+		tt.Frame()
+		tt.Move(box.X+box.W/2, box.Y+20) // over the header: its buttons show
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+		if url == proto.GameURL("gallery") {
+			if tt.HasText(label) {
+				t.Error("the gallery has a button back to itself")
+			}
+			continue
+		}
+		if err := tt.Click(label); err != nil {
+			t.Fatalf("no back button in a game's header: %v; texts %q", err, tt.Texts())
+		}
+		tt.Frame()
+		tt.Frame()
+	}
+	select {
+	case p := <-got:
+		if p.URL != proto.GameURL("gallery") {
+			t.Errorf("the button went to %q", p.URL)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("the button did not go back")
 	}
 }

@@ -174,7 +174,6 @@
     }
   },
   "newSessionIn": "New Session in {project}",
-  "newGame": "New Game: {game}",
   "sessionRename": "Rename",
   "sessionMarkRead": "Mark as Read",
   "sessionMoveToProject": "Move to Project",

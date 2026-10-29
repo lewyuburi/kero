@@ -2,12 +2,14 @@ package main
 
 import (
 	"image"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 
 	"kero/internal/games"
-	_ "kero/internal/games/snake" // the games there are: each registers itself
+	_ "kero/internal/games/gallery" // the games there are: each registers itself
+	_ "kero/internal/games/snake"
 	"kero/internal/pixel"
 	"kero/internal/proto"
 	"kero/internal/settings"
@@ -40,7 +42,7 @@ type gamePlay struct {
 // gameFor is the game a pane plays, made as it is first shown; nil for a
 // name no game has.
 func (a *App) gameFor(p *proto.Pane) *gamePlay {
-	if play := a.games[p.ID]; play != nil {
+	if play := a.games[p.ID]; play != nil && play.kind.ID == p.Game() {
 		return play
 	}
 	k, ok := games.Lookup(p.Game())
@@ -72,17 +74,22 @@ func (a *App) openGame(id string) {
 	a.split(s, proto.CreateParams{Split: a.focusOf(s), Direction: "right", URL: proto.GameURL(id)})
 }
 
-// gameItems are the palette's entries for starting a game, with the flag.
+// galleryID is the game that shows the others.
+const galleryID = "gallery"
+
+// gameItems are the palette's entries for games, with the flag: one, Games,
+// which opens the gallery. A game is opened by name, without it, by the
+// action pane.game (kero do pane.game game=snake) or a pane's address
+// (kero split --url kero-game://snake).
 func (a *App) gameItems() []paletteItem {
 	if !a.set.Flag(settings.FlagGames) {
 		return nil
 	}
-	var items []paletteItem
+	words := "game games play gallery"
 	for _, k := range games.Kinds() {
-		id := k.ID
-		items = append(items, paletteItem{title: locales.NewGame(k.Title), words: "game play " + id, run: func() { a.openGame(id) }})
+		words += " " + k.ID + " " + strings.ToLower(k.Title)
 	}
-	return items
+	return []paletteItem{{title: locales.PageGames(), words: words, run: func() { a.openGame(galleryID) }}}
 }
 
 // gameKeys are the keys a game takes.
@@ -120,6 +127,13 @@ func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.P
 			play.g.Key(k.game)
 		}
 	}
+	// Escape goes back to the gallery from a game, as the button in the header
+	// does.
+	if play.kind.ID != galleryID && body.Shortcut(0, ui.KeyEscape) {
+		a.switchGame(p, galleryID)
+		c.Invalidate()
+		return
+	}
 	a.stepGame(c, play, focused)
 	body.Children(func() {
 		screen := ui.Box(c.Key("screen")).Grow(1).MinWidth(0).MinHeight(0).AlignSelf(ui.Stretch).Draw(func(p *ui.Painter, r ui.Rect) {
@@ -131,6 +145,13 @@ func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.P
 			pointGame(screen, play, pg)
 		}
 	})
+	if ch, ok := play.g.(games.Chooser); ok {
+		if id := ch.Chosen(); id != "" {
+			a.switchGame(p, id)
+			c.Invalidate()
+			return
+		}
+	}
 	score, hint := play.g.Status()
 	play.kind.Draw(play.g, play.cv)
 	// The score at the left and the hint at the right, in the screen's font,
@@ -189,6 +210,15 @@ func pointGame(screen ui.Element, play *gamePlay, pg games.Pointed) {
 		play.pressed = false
 		pg.Pointer(games.Pointer{Kind: games.PointerUp, X: play.px, Y: play.py})
 	}
+}
+
+// switchGame shows another game in a pane, the one the gallery's player
+// chose: the daemon is told the pane's new address, as a browser's is when
+// the person goes to a page.
+func (a *App) switchGame(p *proto.Pane, id string) {
+	p.URL = proto.GameURL(id)
+	delete(a.games, p.ID)
+	a.call(p.ID, "pane.page", proto.PageParams{ID: p.ID, URL: p.URL}, nil)
 }
 
 // gamePaper is the paper of a game pane's card: the screen's, so that the

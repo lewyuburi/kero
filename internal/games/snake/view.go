@@ -13,6 +13,7 @@ func init() {
 		ID: "snake", Title: "Snake",
 		New:  func() games.Game { return New(time.Now().UnixNano()) },
 		Draw: draw,
+		Icon: sheet.Image("icon"),
 	})
 }
 

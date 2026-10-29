@@ -119,7 +119,6 @@
   "sidebarCloseAllSessions": "すべてのセッションを閉じる",
   "sidebarNeedsYou": "{count} 件が対応待ち",
   "newSessionIn": "{project} で新規セッション",
-  "newGame": "新規ゲーム: {game}",
   "sessionRename": "名前を変更",
   "sessionMarkRead": "既読にする",
   "sessionMoveToProject": "プロジェクトへ移動",

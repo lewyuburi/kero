@@ -1,14 +1,21 @@
 # Games
 
-A game pane plays one of the games here (the `games` flag offers them in the
+A game pane plays one of the games here (the `games` flag puts Games in the
 command palette). The app knows none by name: the pane in `games.go` asks this
 package for the catalog, and draws what a game says on a screen of pixels.
 
 ```
-internal/pixel          the screen: canvas, images and modes, fonts, sheets, tilemaps, themes
-internal/games          the interface a game keeps, and the catalog
-internal/games/snake    a game: engine, view, sprites
+internal/pixel            the screen: canvas, images and modes, fonts, sheets, tilemaps, themes
+internal/games            the interface a game keeps, and the catalog
+internal/games/gallery    the game that shows the others: Games in the palette opens it
+internal/games/snake      a game: engine, view, sprites
 ```
+
+Games in the palette is the gallery, which has a tile for each game, with the
+arrows or the mouse, and puts the one chosen in its pane. A game opens without
+the gallery by name: `kero do pane.game game=snake`, or `kero split --url
+kero-game://snake`; `pane.game` with no game is the gallery. From a game,
+Escape, or the button in its header, goes back to the gallery.
 
 ## A new game
 
@@ -23,11 +30,13 @@ the window and is tested without one, and a view that draws it:
    `games.Register(games.Kind{...})`: its name, its title and its `Draw`. Leave
    the top `games.HUDHeight` pixels free: the pane draws the score and the hint
    there.
-3. Add `_ "kero/internal/games/<name>"` to the imports in `games.go`.
+3. Add `_ "kero/internal/games/<name>"` to the imports in `games.go`. Give the
+   `Kind` an `Icon`, 24 by 24 pixels, for its tile in the gallery.
 
 The mouse: a game that implements `games.Pointed` is told of the pointer in
 pixels of its screen, whatever the scale it is shown at: `PointerMove`,
-`PointerDown`, `PointerUp` (after a Down, always) and `PointerLeave`.
+`PointerDown`, `PointerUp` (after a Down, always) and `PointerLeave`. A game
+that, rather than being played, leads to another implements `games.Chooser`.
 
 Every screen is the same: 256 by 192 pixels, 4 to 3, as the Master System's and
 the DS's were, which is 32 by 24 tiles of 8 pixels and 42 columns of text in the

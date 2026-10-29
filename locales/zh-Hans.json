@@ -119,7 +119,6 @@
   "sidebarCloseAllSessions": "关闭所有会话",
   "sidebarNeedsYou": "{count} 个需要你",
   "newSessionIn": "在 {project} 中新建会话",
-  "newGame": "新建游戏：{game}",
   "sessionRename": "重命名",
   "sessionMarkRead": "标记为已读",
   "sessionMoveToProject": "移到项目",
