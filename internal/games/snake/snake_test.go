@@ -197,8 +197,8 @@ func TestSnakeSpritesAreWhole(t *testing.T) {
 			t.Errorf("sprite %q is missing or not %d by %d", n, want, want)
 		}
 	}
-	if sprite != Cell-2 {
-		t.Errorf("a sprite is %d in a cell of %d: no pixel of room all round", sprite, Cell)
+	if sprite != Cell-2*pad || pad < 2 {
+		t.Errorf("a sprite is %d in a cell of %d: not slim, with room each side", sprite, Cell)
 	}
 	if k, ok := games.Lookup("snake"); !ok || k.Icon == nil || k.Icon.W != 32 || k.Icon.H != 32 {
 		t.Error("the snake's icon is not 32 by 32")
@@ -209,28 +209,41 @@ func TestSnakeSpritesAreWhole(t *testing.T) {
 	}
 }
 
-// Drawn, the snake leaves a pixel of room in each cell round what it is, and its
-// segments are joined into one band.
+// Drawn, the snake leaves room in each cell round what it is, and its segments
+// are joined by a piece of the body: a tube, with its sides in ink and a light
+// texture inside, that is not the board of a chess nor nothing.
 func TestSnakeLeavesRoomAndIsJoined(t *testing.T) {
 	g := newSnake(1)
 	g.food = point{0, 0}
 	g.bonus = nil
 	cv := pixel.NewCanvas(games.Width, games.Height)
 	draw(g, cv)
-	// Three segments in a row on the middle line: between the first and the
-	// second there is ink across the gap of the cells' edges, and there is a pixel
-	// of paper above and below the band, in the cells.
 	head, second := g.body[0], g.body[1]
-	hx, hy := origin+head.x*Cell, top+head.y*Cell
+	hy := top + head.y*Cell
 	sx := origin + second.x*Cell
-	for dy := pad; dy < Cell-pad; dy++ {
-		if !cv.Get(hx-1, hy+dy) || !cv.Get(hx, hy+dy) || !cv.Get(sx+Cell-1, hy+dy) {
-			t.Errorf("the band is broken at row %d between head and body", dy)
+	// The gap between the two sprites, which the join fills.
+	gapFrom, gapTo := sx+Cell-pad, sx+Cell+pad
+	inked, paper := 0, 0
+	for x := gapFrom; x < gapTo; x++ {
+		if !cv.Get(x, hy+pad) || !cv.Get(x, hy+Cell-pad-1) {
+			t.Errorf("the join has no side in ink at x %d", x)
+		}
+		for y := hy + pad + 1; y < hy+Cell-pad-1; y++ {
+			if cv.Get(x, y) {
+				inked++
+			} else {
+				paper++
+			}
 		}
 	}
-	// Room: the cell's first and last rows, over and under the band, are not ink
-	// where the band runs (the dot of the board is on another row).
-	if cv.Get(hx+Cell/2, hy) || cv.Get(hx+Cell/2, hy+Cell-1) {
-		t.Error("the snake fills the cell, with no pixel of room")
+	if inked == 0 || paper < 2*inked {
+		t.Errorf("the inside of the join is %d ink and %d paper: not light, or not textured", inked, paper)
+	}
+	// Room: the rows of the cell over and under the snake are not ink where the
+	// body runs (the dot of the board is on another row).
+	for dy := 0; dy < pad; dy++ {
+		if cv.Get(sx+Cell/2, hy+dy) || cv.Get(sx+Cell/2, hy+Cell-1-dy) {
+			t.Errorf("the snake is in the %d pixels of room of its cell", pad)
+		}
 	}
 }

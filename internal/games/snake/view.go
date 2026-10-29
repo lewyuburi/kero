@@ -18,9 +18,9 @@ func init() {
 }
 
 // The snake's screen, drawn in a one-bit canvas: cells of Cell pixels in a
-// framed board that casts a dithered shadow. The snake is Cell-2 pixels in its
-// cell, so that there is a pixel of room all round it, and its body is a band of
-// that width, its segments joined; what it eats fills the cell. The board is
+// framed board that casts a dithered shadow. The snake is slim: Cell-6 pixels in
+// its cell, three of room each side, and its body is a band of that width, its
+// segments joined; what it eats fills the cell. The board is
 // 19 by 13 cells of 16 pixels, 304 by 208, in the middle of the area the game
 // has under the band of the score and the hint, with 4 pixels for its frame at
 // each side and its shadow below and to the right. The cells are large enough
@@ -30,7 +30,7 @@ const (
 	Cols = 19
 	Rows = 13
 	// What is in a cell, and the room round it.
-	pad    = 1
+	pad    = 3
 	sprite = Cell - 2*pad
 	// Where the board's top left is on the screen.
 	origin = (games.Width - Cols*Cell) / 2
@@ -87,9 +87,9 @@ func draw(g games.Game, cv *pixel.Canvas) {
 			px, py := cell(sn.body[i-1])
 			switch {
 			case px == x:
-				cv.Rect(x, min(y, py)+sprite, sprite, pad*2, true)
+				join(cv, x, min(y, py)+sprite, sprite, pad*2, false)
 			case py == y:
-				cv.Rect(min(x, px)+sprite, y, pad*2, sprite, true)
+				join(cv, min(x, px)+sprite, y, pad*2, sprite, true)
 			}
 		}
 	}
@@ -116,3 +116,23 @@ func direction(d point) string {
 	}
 	return "right"
 }
+
+// join draws the band between two segments as a piece of the body: its sides are
+// ink, as the segments' borders are, and it has the light texture of the body
+// inside, so that the body is one tube. across says the band runs left to right, between segments side by
+// side.
+func join(cv *pixel.Canvas, x, y, w, h int, across bool) {
+	cv.Rect(x, y, w, h, false)
+	if across {
+		cv.Rect(x, y, w, 1, true)
+		cv.Rect(x, y+h-1, w, 1, true)
+		cv.Dither(x, y+1, w, h-2, bodyShade, true)
+		return
+	}
+	cv.Rect(x, y, 1, h, true)
+	cv.Rect(x+w-1, y, 1, h, true)
+	cv.Dither(x+1, y, w-2, h, bodyShade, true)
+}
+
+// bodyShade is how much of the inside of the body is ink: one pixel in four.
+const bodyShade = 0.25
