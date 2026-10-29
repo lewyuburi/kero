@@ -18,10 +18,11 @@ import (
 const (
 	Cols, Rows   = 9, 5
 	TileW, TileH = 28, 28
-	// A sprite is 24 by 24 and a spark 10 by 10, in the middle of a tile.
+	// A sprite is 24 by 24 and a spark 14 by 14, a chip with a border that stands
+	// out of whatever is under it, in the middle of a tile.
 	spriteSize = 24
 	spriteOff  = (TileW - spriteSize) / 2
-	sparkSize  = 10
+	sparkSize  = 14
 	sparkOff   = (TileW - sparkSize) / 2
 	// The sector's top left, under the band of the score and the hint; the
 	// cards' row under it, near the pointer that plays in the sector; and
@@ -449,7 +450,7 @@ func tileAt(px, py int) (c, r int) {
 
 // Pointer: over a card or a tile it hovers; a click that goes down and up on a
 // card chooses it (or puts it down again), on a tile places the card in hand
-// there, and on a spark takes it. A card can also be dragged to a tile, which
+// there, and on a spark, or on the tile it is in, takes it. A card can also be dragged to a tile, which
 // places it where it is dropped; dropped off the sector, or let go of off the
 // screen, it is not placed. Any click begins the game.
 func (g *game) Pointer(p games.Pointer) {
@@ -470,14 +471,25 @@ func (g *game) Pointer(p games.Pointer) {
 		g.downCard, g.downSpark, g.dragging = -1, false, false
 	case games.PointerDown:
 		g.downCard = g.cardAt(p.X, p.Y)
-		g.downSpark = g.sparkAt(p.X, p.Y) >= 0
 		g.downX, g.downY, g.dragX, g.dragY, g.dragging = p.X, p.Y, p.X, p.Y, false
+		g.downSpark = g.sparkAt(p.X, p.Y) >= 0
+		if c, r := tileAt(p.X, p.Y); c >= 0 && g.sparkIn(c, r) >= 0 {
+			g.downSpark = true
+		}
 		if g.over || g.won {
 			return
 		}
-		// A spark is taken as the button goes down: it is quick to lose.
-		if i := g.sparkAt(p.X, p.Y); i >= 0 && !g.paused {
-			g.collect(i)
+		// Sparks are taken as the button goes down, as it is quick to lose them: the
+		// one that is under it, or those in the tile it is on, wherever in it.
+		if !g.paused {
+			if i := g.sparkAt(p.X, p.Y); i >= 0 {
+				g.collect(i)
+			}
+			if c, r := tileAt(p.X, p.Y); c >= 0 {
+				for i := g.sparkIn(c, r); i >= 0; i = g.sparkIn(c, r) {
+					g.collect(i)
+				}
+			}
 		}
 	case games.PointerUp:
 		if g.over || g.won {

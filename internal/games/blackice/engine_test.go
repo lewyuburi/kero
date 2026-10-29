@@ -714,3 +714,52 @@ func TestCardTooltipShowsAfterAMoment(t *testing.T) {
 		t.Error("the tooltip is there while dragging")
 	}
 }
+
+// A click anywhere on the tile a spark is in takes it, not only on the spark;
+// all those in the tile go together; and a click that took them does not also
+// place a card there.
+func TestClickOnTheTileTakesItsSparks(t *testing.T) {
+	g := begun()
+	g.nextSky = 1 << 30
+	x, y := centerOf(3, 2)
+	// The spark is in the tile's corner, far from where the click is.
+	sx, sy := sectorX+3*TileW+sparkOff-4, sectorY+2*TileH+sparkOff-4
+	g.sparks = []spark{{x: float64(sx), y: float64(sy), ttl: 100, value: 25}, {x: float64(sx + 3), y: float64(sy + 2), ttl: 100, value: 25}}
+	cornerX, cornerY := sectorX+3*TileW+TileW-2, sectorY+2*TileH+TileH-2
+	if g.sparkAt(cornerX, cornerY) >= 0 {
+		t.Fatal("the click is on the spark itself: the test shows nothing")
+	}
+	w := g.watts
+	g.Pointer(games.Pointer{Kind: games.PointerDown, X: cornerX, Y: cornerY})
+	if g.watts != w+50 || len(g.sparks) != 0 {
+		t.Errorf("a click on the tile took %d watts of its sparks, %d are left", g.watts-w, len(g.sparks))
+	}
+	// A spark in another tile is not taken.
+	g.sparks = []spark{{x: float64(sectorX + 5*TileW + sparkOff), y: float64(sectorY + 1*TileH + sparkOff), ttl: 100, value: 25}}
+	g.Pointer(games.Pointer{Kind: games.PointerDown, X: x, Y: y})
+	if len(g.sparks) != 1 {
+		t.Error("a click on a tile took a spark from another")
+	}
+	// With a card in hand, the click that takes a spark does not place it.
+	g.selected = int(Pulse)
+	g.sparks = []spark{{x: float64(sx), y: float64(sy), ttl: 100, value: 25}}
+	g.Pointer(games.Pointer{Kind: games.PointerDown, X: cornerX, Y: cornerY})
+	g.Pointer(games.Pointer{Kind: games.PointerUp, X: cornerX, Y: cornerY})
+	if g.cells[2][3] != nil || len(g.sparks) != 0 {
+		t.Errorf("the click that took the spark placed a card (%v) or left it (%d)", g.cells[2][3] != nil, len(g.sparks))
+	}
+	// And the next click on that tile places it.
+	g.Pointer(games.Pointer{Kind: games.PointerDown, X: x, Y: y})
+	g.Pointer(games.Pointer{Kind: games.PointerUp, X: x, Y: y})
+	if g.cells[2][3] == nil {
+		t.Error("with no spark in the tile, a click did not place the card")
+	}
+	// Paused, nothing is taken.
+	g = begun()
+	g.paused = true
+	g.sparks = []spark{{x: float64(sx), y: float64(sy), ttl: 100, value: 25}}
+	g.Pointer(games.Pointer{Kind: games.PointerDown, X: cornerX, Y: cornerY})
+	if len(g.sparks) != 1 {
+		t.Error("a spark was taken while paused")
+	}
+}
