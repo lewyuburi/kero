@@ -7,7 +7,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"kero/internal/games"
 	_ "kero/internal/games/snake"
+	"kero/internal/pixel"
 	"kero/internal/proto"
 	"kero/internal/settings"
 )
@@ -178,6 +180,105 @@ func TestScreenRectSnap(t *testing.T) {
 		got := screenRect(r, 1, 256, 192, settings.GameScaleSnap)
 		if d := got.W/got.H - 256.0/192; d > 0.02 || d < -0.02 {
 			t.Errorf("room %v: snap is %vx%v, not 4:3", r, got.W, got.H)
+		}
+	}
+}
+
+func TestScreenPoint(t *testing.T) {
+	// A screen of 256 by 192 shown at 2x, 40 in and 10 down in its box.
+	rel := ui.Rect{X: 40, Y: 10, W: 512, H: 384}
+	for _, tc := range []struct {
+		x, y   float32
+		px, py int
+		ok     bool
+	}{
+		{40, 10, 0, 0, true},
+		{41.9, 11.9, 0, 0, true},
+		{42, 12, 1, 1, true},
+		{40 + 511, 10 + 383, 255, 191, true},
+		{39, 10, 0, 0, false},   // left of it
+		{40, 9, 0, 0, false},    // above
+		{552, 100, 0, 0, false}, // its right edge is outside
+		{100, 394, 0, 0, false},
+	} {
+		px, py, ok := screenPoint(tc.x, tc.y, rel, 256, 192)
+		if ok != tc.ok || (ok && (px != tc.px || py != tc.py)) {
+			t.Errorf("point %v,%v: pixel %d,%d ok %v, want %d,%d %v", tc.x, tc.y, px, py, ok, tc.px, tc.py, tc.ok)
+		}
+	}
+	if _, _, ok := screenPoint(5, 5, ui.Rect{}, 256, 192); ok {
+		t.Error("a screen not yet drawn has a point")
+	}
+}
+
+// pointerGame is a game that keeps the pointers it is told of.
+type pointerGame struct{ events []games.Pointer }
+
+func (g *pointerGame) Interval() time.Duration  { return 0 }
+func (g *pointerGame) Step()                    {}
+func (g *pointerGame) Key(games.Key)            {}
+func (g *pointerGame) Status() (string, string) { return "", "" }
+func (g *pointerGame) Pointer(p games.Pointer)  { g.events = append(g.events, p) }
+
+var testPointerGame = &pointerGame{}
+
+func init() {
+	games.Register(games.Kind{ID: "test-pointer", Title: "Test",
+		New:  func() games.Game { return testPointerGame },
+		Draw: func(games.Game, *pixel.Canvas) {}})
+}
+
+// The mouse reaches a game in pixels of its screen, whatever the scale: that
+// it moved, went down, came up, left.
+func TestPointerReachesTheGame(t *testing.T) {
+	for _, mode := range []string{settings.GameScaleWhole, settings.GameScaleFill} {
+		a := testApp(t)
+		a.set.GameScale = mode
+		testPointerGame.events = nil
+		a.st.Sessions[0].Panes[1] = proto.Pane{ID: "b", URL: proto.GameURL("test-pointer"), Status: proto.Idle, Progress: -1}
+		var box ui.Rect
+		tt := ui.NewTester(func(c *ui.Context) {
+			a.view(c)
+			box = a.paneRef("b").Bounds(c)
+		}, 1400, 800)
+		for i := 0; i < 3; i++ {
+			tt.Frame()
+		}
+		play := a.games["b"]
+		if play == nil || play.rel.W == 0 {
+			t.Fatalf("%s: the screen was not drawn: %+v", mode, play)
+		}
+		// The window coordinates of a pixel of the screen: its middle.
+		at := func(px, py int) (float32, float32) {
+			sx, sy := play.rel.W/float32(play.cv.W), play.rel.H/float32(play.cv.H)
+			return box.X + 8 + play.rel.X + (float32(px)+0.5)*sx, box.Y + play.rel.Y + (float32(py)+0.5)*sy
+		}
+		x, y := at(100, 50)
+		tt.Move(x, y)
+		tt.Frame()
+		tt.Press(x, y)
+		tt.Frame()
+		tt.Release(x, y)
+		tt.Frame()
+		ev := testPointerGame.events
+		want := []games.Pointer{
+			{Kind: games.PointerMove, X: 100, Y: 50},
+			{Kind: games.PointerDown, X: 100, Y: 50},
+			{Kind: games.PointerUp, X: 100, Y: 50},
+		}
+		if len(ev) < len(want) {
+			t.Fatalf("%s: events %+v, want %+v", mode, ev, want)
+		}
+		for i, w := range want {
+			if ev[i] != w {
+				t.Errorf("%s: event %d is %+v, want %+v", mode, i, ev[i], w)
+			}
+		}
+		// Off the screen, in the pane's paper, it leaves.
+		tt.Move(box.X+box.W-2, box.Y+box.H-2)
+		tt.Frame()
+		if last := testPointerGame.events[len(testPointerGame.events)-1]; last.Kind != games.PointerLeave {
+			t.Errorf("%s: the last event is %+v, want a leave", mode, last)
 		}
 	}
 }

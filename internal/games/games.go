@@ -36,6 +36,30 @@ type Game interface {
 	Status() (score, hint string)
 }
 
+// PointerKind is what the pointer did.
+type PointerKind int
+
+const (
+	PointerMove  PointerKind = iota // it moved over the screen
+	PointerDown                     // a button went down on it
+	PointerUp                       // and came up
+	PointerLeave                    // it left the screen
+)
+
+// A Pointer is the mouse on the screen of a game: where, in pixels of the
+// screen (not the window's), and what it did. A game does not know the scale
+// the screen is shown at.
+type Pointer struct {
+	Kind PointerKind
+	X, Y int
+}
+
+// A Pointed game takes the mouse. Pointers come between its steps, and a Down
+// is followed by an Up, or a Leave, at the end of a drag.
+type Pointed interface {
+	Pointer(p Pointer)
+}
+
 // An Animator is a game with something moving on its screen between steps,
 // as a shake: while Animating, the pane asks for a frame in each Frame's
 // time, and Frame lets one go by.

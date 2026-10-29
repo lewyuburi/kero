@@ -30,6 +30,11 @@ type gamePlay struct {
 	last    time.Time // when it last stepped
 	running bool      // it was stepping in the last frame
 	focused bool
+	// The screen's place in its box, as it was drawn, and what the pointer
+	// was doing on it: the game is told of what changes.
+	rel            ui.Rect
+	hover, pressed bool
+	px, py         int
 }
 
 // gameFor is the game a pane plays, made as it is first shown; nil for a
@@ -116,6 +121,16 @@ func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.P
 		}
 	}
 	a.stepGame(c, play, focused)
+	body.Children(func() {
+		screen := ui.Box(c.Key("screen")).Grow(1).MinWidth(0).MinHeight(0).AlignSelf(ui.Stretch).Draw(func(p *ui.Painter, r ui.Rect) {
+			dst := screenRect(r, p.Scale(), play.cv.W, play.cv.H, a.set.GameScale)
+			play.rel = ui.Rect{X: dst.X - r.X, Y: dst.Y - r.Y, W: dst.W, H: dst.H}
+			p.ImageRegion(play.bm, ui.Rect{}, dst, ui.ImageOptions{})
+		})
+		if pg, ok := play.g.(games.Pointed); ok {
+			pointGame(screen, play, pg)
+		}
+	})
 	score, hint := play.g.Status()
 	play.kind.Draw(play.g, play.cv)
 	// The score at the left and the hint at the right, in the screen's font,
@@ -131,11 +146,49 @@ func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.P
 	} else {
 		play.bm.Update(play.img)
 	}
-	body.Children(func() {
-		ui.Box(c.Key("screen")).Grow(1).MinWidth(0).MinHeight(0).AlignSelf(ui.Stretch).Draw(func(p *ui.Painter, r ui.Rect) {
-			p.ImageRegion(play.bm, ui.Rect{}, screenRect(r, p.Scale(), play.cv.W, play.cv.H, a.set.GameScale), ui.ImageOptions{})
-		})
-	})
+}
+
+// screenPoint is the pixel of a screen of w by h that a point of its box is
+// on, given where the screen is in the box; false off the screen.
+func screenPoint(x, y float32, rel ui.Rect, w, h int) (px, py int, ok bool) {
+	if rel.W <= 0 || rel.H <= 0 {
+		return 0, 0, false
+	}
+	fx, fy := (x-rel.X)*float32(w)/rel.W, (y-rel.Y)*float32(h)/rel.H
+	if fx < 0 || fy < 0 || fx >= float32(w) || fy >= float32(h) {
+		return 0, 0, false
+	}
+	return int(fx), int(fy), true
+}
+
+// pointGame tells a game of the pointer on its screen, in pixels of the
+// screen: that it moved, went down, came up, or left.
+func pointGame(screen ui.Element, play *gamePlay, pg games.Pointed) {
+	x, y, in := screen.PointerPosition()
+	px, py, on := screenPoint(x, y, play.rel, play.cv.W, play.cv.H)
+	on = on && in
+	switch {
+	case on && (!play.hover || px != play.px || py != play.py):
+		pg.Pointer(games.Pointer{Kind: games.PointerMove, X: px, Y: py})
+	case !on && play.hover:
+		if play.pressed {
+			pg.Pointer(games.Pointer{Kind: games.PointerUp, X: play.px, Y: play.py})
+			play.pressed = false
+		}
+		pg.Pointer(games.Pointer{Kind: games.PointerLeave, X: play.px, Y: play.py})
+	}
+	if on {
+		play.px, play.py = px, py
+	}
+	play.hover = on
+	switch down := screen.Pressed(); {
+	case down && !play.pressed && on:
+		play.pressed = true
+		pg.Pointer(games.Pointer{Kind: games.PointerDown, X: px, Y: py})
+	case !down && play.pressed:
+		play.pressed = false
+		pg.Pointer(games.Pointer{Kind: games.PointerUp, X: play.px, Y: play.py})
+	}
 }
 
 // gamePaper is the paper of a game pane's card: the screen's, so that the

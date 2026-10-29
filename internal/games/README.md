@@ -25,6 +25,10 @@ the window and is tested without one, and a view that draws it:
    there.
 3. Add `_ "kero/internal/games/<name>"` to the imports in `games.go`.
 
+The mouse: a game that implements `games.Pointed` is told of the pointer in
+pixels of its screen, whatever the scale it is shown at: `PointerMove`,
+`PointerDown`, `PointerUp` (after a Down, always) and `PointerLeave`.
+
 Every screen is the same: 256 by 192 pixels, 4 to 3, as the Master System's and
 the DS's were, which is 32 by 24 tiles of 8 pixels and 42 columns of text in the
 6-pixel font. A game draws in the area under the band at the top, 256 by 176.
