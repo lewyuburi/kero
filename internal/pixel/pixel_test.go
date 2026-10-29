@@ -333,3 +333,27 @@ func TestTooltipFitsAndSaysItsLines(t *testing.T) {
 		t.Errorf("only %d of the box's %d inside pixels are paper", blank, (w-2)*(h-2))
 	}
 }
+
+// The bolt that the watts are written with is in both fonts, and the space of a
+// figure, which the watts blink with, is as wide as a figure.
+func TestFontsHaveTheBoltAndAFigureSpace(t *testing.T) {
+	for _, name := range []string{"sans5x7", "tiny3x5"} {
+		f := FontNamed(name)
+		if f.glyphs['⚡'] == nil {
+			t.Errorf("%s has no bolt", name)
+		}
+		if f.glyphs[' '] == nil || f.glyphs[' '].W != f.glyphs['0'].W {
+			t.Errorf("%s: a figure space is not as wide as a figure", name)
+		}
+		// Blank: nothing of it is drawn.
+		cv := NewCanvas(20, 10)
+		cv.Text(f, 1, 1, "  ", Copy)
+		if count(cv) != 0 {
+			t.Errorf("%s: a figure space has ink", name)
+		}
+		cv.Text(f, 1, 1, "⚡", Copy)
+		if count(cv) < 6 {
+			t.Errorf("%s: the bolt has %d inked pixels", name, count(cv))
+		}
+	}
+}
