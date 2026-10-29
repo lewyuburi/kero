@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -41,11 +46,64 @@ func openTextFile(path string) {
 	}
 }
 
-// ownControls tells that Kero draws the window controls itself: on
-// Windows and Linux the top-right card's header holds minimize, maximize
-// and close, beside Kero's own buttons, where the system's, at the
-// window's edge, would straddle the card. macOS keeps its traffic lights.
+// ownControls tells that Kero draws the window frame itself, without the
+// system's buttons: on Windows and Linux. macOS keeps its traffic lights.
+// Whether those buttons are drawn is windowButtons: Omarchy's chrome flag
+// hides them.
 var ownControls = runtime.GOOS != "darwin"
+
+// omarchy is this machine: Omarchy's compositor rounds the window and
+// closes, minimizes and maximizes it, so Kero does not draw those buttons
+// and its panels take that corner.
+var omarchy = omarchyOS()
+
+// systemRounding is Hyprland's decoration:rounding, in layout pixels.
+// systemRoundingOK is false when this is not Omarchy or hyprctl did not
+// answer, and the panels then keep Kero's own curve.
+var systemRounding, systemRoundingOK = hyprRounding()
+
+// omarchyOS reports whether this is Omarchy, from the OS identity.
+func omarchyOS() bool {
+	if runtime.GOOS != "linux" {
+		return false
+	}
+	b, err := os.ReadFile("/etc/os-release")
+	if err != nil {
+		return false
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		if line == "ID=omarchy" {
+			return true
+		}
+	}
+	return false
+}
+
+// hyprRounding reads the compositor's corner. Anywhere but Omarchy it
+// reports nothing, and the panels keep their own radius.
+func hyprRounding() (float32, bool) {
+	if !omarchy {
+		return 0, false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "hyprctl", "getoption", "decoration:rounding").Output()
+	if err != nil {
+		return 0, false
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "int:") {
+			continue
+		}
+		n, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(line, "int:")))
+		if err != nil || n < 0 {
+			return 0, false
+		}
+		return float32(n), true
+	}
+	return 0, false
+}
 
 // framed sets a window's frame: the title bar hidden, under the traffic
 // lights on macOS and without its buttons elsewhere (ownControls), which
@@ -71,7 +129,8 @@ func framed(mid float32, o mygo.WindowOptions) mygo.WindowOptions {
 // windowRadius is the corner of the window the cards sit in, as the system
 // rounds it. On macOS it is 16, measured on a window like Kero's (hidden
 // inset title bar); Windows 11 and GNOME draw 8 and 12 by their documentation,
-// and neither was measured here.
+// and neither was measured here. Omarchy's chrome flag uses the
+// compositor's own corner (systemRounding) for the panels instead.
 var windowRadius = func() float32 {
 	switch runtime.GOOS {
 	case "darwin":
@@ -105,16 +164,22 @@ var (
 )
 
 // windowControls are a window's minimize, maximize and close buttons, as
-// Kero draws them (ownControls), at the right of a header.
-func windowControls(c *ui.Context, pal *palette, w *mygo.Window) {
-	if !ownControls || w == nil {
+// Kero draws them (ownControls), at the right of a bar. draw is
+// windowButtons: off on macOS, and on Omarchy while its chrome flag is on.
+// A view built without a window, as the tests do, still lays them out.
+func windowControls(c *ui.Context, pal *palette, w *mygo.Window, draw bool) {
+	if !draw {
 		return
 	}
 	ui.Row(c.Key("window-controls")).Gap(2).AlignItems(ui.Center).Shrink(0).Margin(0, 0, 0, 6).Children(func() {
-		iconButton(c, "minimize", minimizeIcon, locales.WindowMinimize(), pal, w.Minimize)
+		iconButton(c, "minimize", minimizeIcon, locales.WindowMinimize(), pal, func() {
+			if w != nil {
+				w.Minimize()
+			}
+		})
 		// The system's maximize button for the pointer, which brings
 		// Windows 11's snap layouts as it rests there: no tooltip over them.
-		maximized := w.IsMaximized()
+		maximized := w != nil && w.IsMaximized()
 		label, svg := locales.WindowMaximize(), maximizeIcon
 		if maximized {
 			label, svg = locales.WindowRestore(), restoreIcon
@@ -126,7 +191,7 @@ func windowControls(c *ui.Context, pal *palette, w *mygo.Window) {
 			m.Background(pal.rowHover).TextColor(pal.text)
 		}
 		m.Children(func() { ui.Icon(c, svg).Size(16, 16) })
-		if m.Clicked() {
+		if m.Clicked() && w != nil {
 			if maximized {
 				w.Unmaximize()
 			} else {
@@ -138,7 +203,7 @@ func windowControls(c *ui.Context, pal *palette, w *mygo.Window) {
 			b.Background(pal.danger).TextColor(ui.RGB(255, 255, 255))
 		}
 		b.Children(func() { ui.Icon(c, closeIcon).Size(16, 16) })
-		if b.Clicked() {
+		if b.Clicked() && w != nil {
 			w.Close()
 		}
 	})

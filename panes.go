@@ -231,7 +231,7 @@ func (a *App) dragDivider(c *ui.Context, pal *palette, s *proto.Session, l *prot
 // touches another pane the pane gap's (paneRadius), square with none. With
 // no panel gap they are all square.
 func (a *App) paneCorners(top, left, right, bottom bool) [4]float32 {
-	outer := cardRadius(a.chrome.gap)
+	outer := cardRadius(a.set, a.chrome.gap)
 	inner := paneRadius(paneGapOf(a.set), outer)
 	pick := func(edge bool, outer float32) float32 {
 		if edge {
@@ -243,10 +243,11 @@ func (a *App) paneCorners(top, left, right, bottom bool) [4]float32 {
 }
 
 // paneCard is a pane: a card with a header and the terminal. top, left,
-// right and bottom tell that it touches the window's edges (not another
-// pane), where the header drags
-// the window, keeps clear of the traffic lights on macOS, and holds the
-// window controls elsewhere (windowControls).
+// right and bottom tell that it touches the group's edges (not another
+// pane), where the header drags the window and, on macOS, keeps clear of
+// the traffic lights. The window's controls sit in the pane at the top
+// right, or, with the window-bar flag, on the bar above the panels, or
+// on the tab bar when the tabs run across the top.
 func (a *App) paneCard(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, p *proto.Pane, top, left, right, bottom, multi bool) {
 	focused := p.ID == a.focusOf(s)
 	bg := pal.card
@@ -474,20 +475,16 @@ func (a *App) movePane(sid, pane, target string, zone dropZone) {
 // paneHeader builds a pane's header, and reports whether its title is
 // being dragged.
 func (a *App) paneHeader(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, p *proto.Pane, top, left, right, multi, focused, hovered bool) (dragging bool) {
-	pad := float32(16)
-	if top && left {
-		// With the sidebar hidden, the header at the window's top left
-		// starts after the traffic lights and the sidebar's buttons,
-		// which come here.
-		pad = a.chrome.headerPad
-	}
+	// With the sidebar hidden on macOS, the header at the window's top
+	// left starts after the traffic lights and the sidebar's buttons.
+	pad := a.headerInset(top, left)
 	h := ui.Row(c.Key("hdr")).Height(headerH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, pad).Gap(8)
 	if h.Pressed() && !focused {
 		a.setFocus(s, p.ID)
 		a.paneRef(p.ID).Focus()
 	}
 	h.Children(func() {
-		if top && left {
+		if top && left && !windowBarOn(a.set) {
 			a.sidebarButtons(c, pal, bar, shown)
 		}
 		// The title is the pane's handle: dragged, it takes the pane to
@@ -560,20 +557,26 @@ func (a *App) paneHeader(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 		}
 		a.paneChips(c, pal, p, !multi)
 		a.paneControls(c, pal, s, p, (hovered || focused && multi) && !dragging, multi)
-		if top && right && !tabsHorizontal(a.set) {
-			windowControls(c, pal, a.win)
+		if top && right && !tabsHorizontal(a.set) && !windowBarOn(a.set) {
+			windowControls(c, pal, a.win, windowButtons(a.set))
 		}
 	})
 	return dragging
 }
 
-// sidebarButtons are the sidebar's buttons, which the header at the
+// sidebarButtons are the sidebar's buttons, which a pane header at the
 // window's top left holds while the sidebar hides.
 func (a *App) sidebarButtons(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32) {
+	a.sidebarButtonsAt(c, pal, shown, a.chrome.buttonsLeft(bar))
+}
+
+// sidebarButtonsAt places those buttons at left in the parent's
+// coordinates, where they stay put in the window as the sidebar hides.
+func (a *App) sidebarButtonsAt(c *ui.Context, pal *palette, shown, left float32) {
 	if shown >= 0.5 {
 		return
 	}
-	ui.Row(c).Absolute().Left(a.chrome.buttonsLeft(bar)).Top(0).Bottom(0).AlignItems(ui.Center).Gap(2).Opacity(1 - 2*shown).Children(func() {
+	ui.Row(c).Absolute().Left(left).Top(0).Bottom(0).AlignItems(ui.Center).Gap(2).Opacity(1 - 2*shown).Children(func() {
 		iconButton(c, "show-sidebar", sidebarIcon, a.tip(locales.SidebarShow(), "sidebar.toggle"), pal, a.toggleSidebar)
 		iconButton(c, "new-session-2", plusIcon, a.tip(locales.ActionNewSession(), "session.new"), pal, func() { a.newSession("") })
 	})

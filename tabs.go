@@ -43,7 +43,7 @@ func (a *App) tabBar(c *ui.Context, pal *palette, bar ui.TitleBar) {
 		ui.Row(c).Shrink(0).Gap(2).AlignItems(ui.Center).Children(func() {
 			a.footerStatus(c, pal)
 			a.footerButtons(c, pal)
-			windowControls(c, pal, a.win)
+			windowControls(c, pal, a.win, windowButtons(a.set))
 		})
 	})
 }

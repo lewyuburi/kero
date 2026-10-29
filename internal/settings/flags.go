@@ -47,6 +47,20 @@ const FlagTabReorder = "tab-reorder"
 // starts disabled: Kero has none.
 const FlagGames = "games"
 
+// FlagWindowBar puts minimize, maximize and close on a bar above the
+// panels when the tabs run down the side, on Linux and Windows, so a pane
+// does not carry them. With it disabled those buttons stay in the pane at
+// the window's top right, as Kero's own. It starts disabled. macOS keeps
+// its traffic lights either way.
+const FlagWindowBar = "window-bar"
+
+// FlagOmarchyChrome matches a panel's corner to Hyprland's rounding and
+// hides Kero's minimize, maximize and close, on Omarchy. The compositor
+// rounds the window and has its own buttons. With it disabled the panels
+// keep Kero's curve and Kero draws its buttons. It starts disabled, and
+// does nothing anywhere but Omarchy.
+const FlagOmarchyChrome = "omarchy-chrome"
+
 // retiredFlags are flags that were, which a configuration may still name:
 // they are ignored, not a problem.
 var retiredFlags = map[string]bool{"tab-groups": true}
@@ -59,6 +73,8 @@ var Flags = []Flag{
 	{FlagMiddleClickClose, func(string) bool { return false }},
 	{FlagTabReorder, func(string) bool { return false }},
 	{FlagGames, func(string) bool { return false }},
+	{FlagWindowBar, func(string) bool { return false }},
+	{FlagOmarchyChrome, func(string) bool { return false }},
 }
 
 // The states of a flag, as Advanced offers them: the default's, or a choice

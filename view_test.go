@@ -272,10 +272,120 @@ func TestHeaderPadBelowTopLeft(t *testing.T) {
 	if below.Y <= top.Y {
 		t.Fatalf("pane b is not under a: %v, %v", top, below)
 	}
-	if below.X >= top.X {
+	if windowBarOn(a.set) {
+		// The window's controls and the sidebar's buttons sit on the bar
+		// above the panels, so neither header clears them.
+		if abs32(below.X-top.X) > 1 {
+			t.Errorf("titles start at %v and %v; the top one still makes room beside it", below.X, top.X)
+		}
+	} else if below.X >= top.X {
 		t.Errorf("the title under the top left's starts at %v, as far in as the top left's %v", below.X, top.X)
 	}
 	shot(t, tt, "header-pad-below")
+}
+
+// On Linux and Windows the window's controls sit on the bar above the
+// panels, on the sidebar's line, and a pane, the changes panel and the
+// empty card do not carry a second set. With the tabs across the top the
+// tab bar keeps that one set.
+func TestWindowControlsAbovePanels(t *testing.T) {
+	a := testApp(t)
+	if !windowButtons(a.set) {
+		t.Skip("this desktop draws no window buttons")
+	}
+	tt := ui.NewTester(a.view, 1100, 640)
+	settle := func() {
+		tt.Frame()
+		tt.Advance(time.Second)
+		tt.Frame()
+	}
+	settle()
+	// The flag starts disabled: the controls stay in the top pane, as Kero's own.
+	min, ok1 := tt.Find(locales.WindowMinimize())
+	fish, ok := tt.Find("fish")
+	if !ok1 || !ok {
+		t.Fatalf("flag off: minimize %v fish %v; texts %q", ok1, ok, tt.Texts())
+	}
+	if fish.Y >= min.Y+min.H {
+		t.Errorf("flag off: controls %v sit above the pane %v", min, fish)
+	}
+	a.set.SetFlag(settings.FlagWindowBar, settings.StateEnabled)
+	settle()
+	one := func(where string) (ui.Rect, ui.Rect) {
+		t.Helper()
+		n := 0
+		for _, s := range tt.Texts() {
+			if s == locales.WindowMinimize() {
+				n++
+			}
+		}
+		if n != 1 {
+			t.Errorf("%s: %d minimize buttons, want 1; texts %q", where, n, tt.Texts())
+		}
+		min, ok1 := tt.Find(locales.WindowMinimize())
+		hide, ok2 := tt.Find(a.tip(locales.SidebarHide(), "sidebar.toggle"))
+		if !ok1 || !ok2 {
+			t.Fatalf("%s: minimize %v, hide sidebar %v", where, ok1, ok2)
+		}
+		if abs32((min.Y+min.H/2)-(hide.Y+hide.H/2)) > 1 {
+			t.Errorf("%s: minimize %v is off the sidebar bar's line %v", where, min, hide)
+		}
+		return min, hide
+	}
+	min, _ = one("vertical")
+	fish, ok = tt.Find("fish")
+	zsh, ok2 := tt.Find("zsh")
+	if !ok || !ok2 {
+		t.Fatalf("no pane titles; texts %q", tt.Texts())
+	}
+	if fish.Y < min.Y+min.H || zsh.Y < min.Y+min.H {
+		t.Errorf("controls %v sit in a pane header: fish %v zsh %v", min, fish, zsh)
+	}
+	if min.X < 800 {
+		t.Errorf("minimize at x %v, want it at the window's right", min.X)
+	}
+	shot(t, tt, "window-bar")
+
+	a.prefs.Side = sideChanges
+	settle()
+	min, _ = one("changes")
+	changes, ok := tt.Find(locales.SideChanges())
+	if !ok || changes.Y < min.Y+min.H {
+		t.Errorf("controls %v are inside the changes panel %v", min, changes)
+	}
+
+	a.prefs.Side = ""
+	a.st.Sessions = nil
+	a.selected = ""
+	settle()
+	min, _ = one("empty")
+	title, ok := tt.Find("Kero")
+	if !ok || title.Y < min.Y+min.H {
+		t.Errorf("controls %v are inside the empty card %v", min, title)
+	}
+
+	a = testApp(t)
+	a.set.SetFlag(settings.FlagHorizontalTabs, settings.StateEnabled)
+	a.set.TabLayout = settings.TabsHorizontal
+	tt = ui.NewTester(a.view, 1100, 640)
+	settle()
+	n := 0
+	for _, s := range tt.Texts() {
+		if s == locales.WindowMinimize() {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("horizontal: %d minimize buttons, want 1; texts %q", n, tt.Texts())
+	}
+	min, ok = tt.Find(locales.WindowMinimize())
+	fish, ok2 = tt.Find("fish")
+	if !ok || !ok2 {
+		t.Fatalf("horizontal: minimize %v fish %v; texts %q", ok, ok2, tt.Texts())
+	}
+	if min.Y+min.H > tabBarH || fish.Y < min.Y+min.H {
+		t.Errorf("horizontal: controls %v are not on the tab bar above the pane %v", min, fish)
+	}
 }
 
 // The window moves from the panes' headers and the gaps around them, and
@@ -579,16 +689,72 @@ find:
 }
 
 // The cards' corners: the default gap keeps the 14 they always had, none
-// squares them, and a wide gap does not square them.
+// squares them. A wide gap follows the formula, which lands on minRadius
+// where the window's own corner is the macOS one. The flags start off, so
+// Omarchy keeps that curve too. Its chrome flag takes the compositor's
+// corner wherever a card stands in from the edge, and stays square with
+// no gap.
 func TestCardRadius(t *testing.T) {
+	off := settings.Settings{}
 	for gap, want := range map[float32]float32{0: 0, 8: defaultRadius, 4: (windowRadius + defaultRadius) / 2} {
-		if got := cardRadius(gap); got != want {
+		if got := cardRadius(off, gap); got != want {
 			t.Errorf("cardRadius(%v) = %v, want %v", gap, got, want)
 		}
 	}
-	if got := cardRadius(100); got != minRadius {
-		t.Errorf("cardRadius(100) = %v, want %v", got, float32(minRadius))
+	if windowRadius == 16 {
+		if got := cardRadius(off, 100); got != minRadius {
+			t.Errorf("cardRadius(100) = %v, want %v", got, float32(minRadius))
+		}
 	}
+	if !omarchy || !systemRoundingOK {
+		return
+	}
+	if got := cardRadius(off, 8); got == systemRounding && systemRounding != defaultRadius {
+		t.Errorf("flag off: cardRadius(8) = %v, the system's corner", got)
+	}
+	on := settings.Settings{}
+	on.SetFlag(settings.FlagOmarchyChrome, settings.StateEnabled)
+	if got := cardRadius(on, 0); got != 0 {
+		t.Errorf("cardRadius(0) = %v, want square", got)
+	}
+	for _, gap := range []float32{4, 8, 100} {
+		if got := cardRadius(on, gap); got != systemRounding {
+			t.Errorf("cardRadius(%v) = %v, want the system's %v", gap, got, systemRounding)
+		}
+	}
+}
+
+// On Omarchy, with its chrome flag, the panels use the compositor's corner
+// and the window draws no minimize, maximize or close. The flag starts off.
+func TestOmarchyWindow(t *testing.T) {
+	if !omarchy {
+		t.Skip("not Omarchy")
+	}
+	if !systemRoundingOK {
+		t.Fatal("Omarchy did not report a window radius")
+	}
+	a := testApp(t)
+	if !windowButtons(a.set) {
+		t.Fatal("with the flag off Omarchy hides the window buttons")
+	}
+	if got := cardRadius(a.set, 8); got == systemRounding && systemRounding != defaultRadius {
+		t.Fatalf("with the flag off the panels take the system's corner %v", got)
+	}
+	a.set.SetFlag(settings.FlagOmarchyChrome, settings.StateEnabled)
+	if cardRadius(a.set, 0) != 0 || cardRadius(a.set, 8) != systemRounding {
+		t.Fatalf("corners: flat %v, gapped %v, system %v", cardRadius(a.set, 0), cardRadius(a.set, 8), systemRounding)
+	}
+	if windowButtons(a.set) {
+		t.Fatal("Omarchy chrome still draws window buttons")
+	}
+	tt := ui.NewTester(a.view, 1100, 640)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if tt.HasText(locales.WindowMinimize()) || tt.HasText(locales.WindowMaximize()) {
+		t.Errorf("window buttons on Omarchy; texts %q", tt.Texts())
+	}
+	shot(t, tt, "omarchy-window")
 }
 
 // A header keeps its height whatever the gap, and its middle is the bar's
@@ -877,12 +1043,13 @@ func TestPaneCorners(t *testing.T) {
 	// the left of two panes side by side: a window corner at the top left
 	// and bottom left, a neighbor on the right
 	got := a.paneCorners(true, true, false, true)
-	want := [4]float32{14, 0, 0, 14}
+	outer := cardRadius(a.set, a.chrome.gap)
+	want := [4]float32{outer, 0, 0, outer}
 	if got != want {
 		t.Errorf("left pane's corners %v, want %v", got, want)
 	}
 	got = a.paneCorners(true, true, true, true)
-	if want := [4]float32{14, 14, 14, 14}; got != want {
+	if want := [4]float32{outer, outer, outer, outer}; got != want {
 		t.Errorf("a lone pane's corners %v, want %v", got, want)
 	}
 }
@@ -1030,7 +1197,7 @@ func TestProjectColor(t *testing.T) {
 // until it is enabled.
 func TestTabFlags(t *testing.T) {
 	s := settings.Default()
-	for _, id := range []string{settings.FlagHorizontalTabs, settings.FlagCustomSpacing} {
+	for _, id := range []string{settings.FlagHorizontalTabs, settings.FlagCustomSpacing, settings.FlagWindowBar, settings.FlagOmarchyChrome} {
 		if s.Flag(id) {
 			t.Errorf("%s is enabled by default", id)
 		}
@@ -1392,7 +1559,7 @@ func TestLooseSessionsInTabs(t *testing.T) {
 func TestFlagsPage(t *testing.T) {
 	a := testApp(t)
 	a.ss.page = "advanced"
-	tt := ui.NewTester(a.settingsView, 820, 760)
+	tt := ui.NewTester(a.settingsView, 820, 980)
 	frame := func(name string) {
 		tt.Frame()
 		tt.Advance(time.Second)

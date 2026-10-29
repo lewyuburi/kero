@@ -297,22 +297,18 @@ func (a *App) paneBrowser(c *ui.Context, pal *palette, bar ui.TitleBar, shown fl
 
 // browserBar is a browser pane's header: back, forward, reload and the
 // address bar, which the pane is dragged by, then the pane's buttons. As
-// a terminal's header, it drags the window where it is empty, and keeps
-// clear of the traffic lights and the sidebar's buttons.
+// a terminal's header, it drags the window where it is empty, and on
+// macOS keeps clear of the traffic lights and the sidebar's buttons.
 func (a *App) browserBar(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32, s *proto.Session, p *proto.Pane, e *webEntry, top, left, right, multi, focused, hovered bool) (ui.Element, bool) {
-	pad := float32(16)
-	if top && left {
-		pad = a.chrome.headerPad
-	}
 	// The first button's icon starts where a header's title does.
-	h := ui.Row(c.Key("hdr")).Height(headerH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, pad-6).Gap(2)
+	h := ui.Row(c.Key("hdr")).Height(headerH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, a.headerInset(top, left)-6).Gap(2)
 	if h.Pressed() && !focused {
 		a.setFocus(s, p.ID)
 		a.paneRef(p.ID).Focus()
 	}
 	dragging := false
 	h.Children(func() {
-		if top && left {
+		if top && left && !windowBarOn(a.set) {
 			a.sidebarButtons(c, pal, bar, shown)
 		}
 		navButton(c, "back", chevronLeftIcon, locales.BrowserBack(), e.back, pal, func() { e.view.Page().GoBack() })
@@ -344,8 +340,8 @@ func (a *App) browserBar(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 		}
 		// The room past the address bar takes the buttons as they show.
 		a.paneControls(c, pal, s, p, (hovered || focused && multi) && !dragging, multi)
-		if top && right && !tabsHorizontal(a.set) {
-			windowControls(c, pal, a.win)
+		if top && right && !tabsHorizontal(a.set) && !windowBarOn(a.set) {
+			windowControls(c, pal, a.win, windowButtons(a.set))
 		}
 	})
 	return h, dragging

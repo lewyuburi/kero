@@ -74,6 +74,25 @@ func tabsHorizontal(s settings.Settings) bool {
 	return s.Flag(settings.FlagHorizontalTabs) && s.TabLayout == settings.TabsHorizontal
 }
 
+// omarchyChrome matches the panels to Omarchy and hides Kero's window
+// buttons. It is the flag, and only on Omarchy.
+func omarchyChrome(s settings.Settings) bool {
+	return omarchy && s.Flag(settings.FlagOmarchyChrome)
+}
+
+// windowButtons tells that Kero draws minimize, maximize and close.
+// macOS keeps the traffic lights. Omarchy's chrome flag hides them too:
+// the compositor has its own.
+func windowButtons(s settings.Settings) bool {
+	return ownControls && !omarchyChrome(s)
+}
+
+// windowBarOn is the strip above the panels: vertical tabs, on Linux and
+// Windows, with its flag. The panels under it carry no window controls.
+func windowBarOn(s settings.Settings) bool {
+	return windowButtons(s) && !tabsHorizontal(s) && s.Flag(settings.FlagWindowBar)
+}
+
 // cardTop is the space between the bar of tabs and the cards: half the gap
 // at the cards' sides, less the room the bar leaves under its tabs. The
 // bar and the cards are one band, which the full gap would split.
@@ -108,10 +127,17 @@ func paneRadius(gap, outer float32) float32 {
 // cardRadius rounds a card's corners: none with no gap, where the cards
 // fill the window and an edge sets them apart (card); from there it moves
 // from the window's own to defaultRadius at the default gap, and on past
-// it, as a wider gap asks of a corner that is farther in.
-func cardRadius(gap float32) float32 {
+// it, as a wider gap asks of a corner that is farther in. With Omarchy's
+// chrome flag, a card that stands in from the edge takes the compositor's
+// corner, sharp when that corner is. With no gap the card is the window,
+// which the compositor already rounds, so the card stays square. With the
+// flag off the curve is Kero's own, on Omarchy as anywhere else.
+func cardRadius(s settings.Settings, gap float32) float32 {
 	if gap == 0 {
 		return 0
+	}
+	if omarchyChrome(s) && systemRoundingOK {
+		return systemRounding
 	}
 	t := gap / settings.DefaultCardGap
 	return max(windowRadius+(defaultRadius-windowRadius)*t, minRadius)
@@ -130,16 +156,29 @@ type chrome struct {
 	headerPad float32 // the left padding of the header at the left edge
 }
 
-// buttonsLeft places the sidebar's buttons that the header holds while
-// the sidebar hides, in the header's coordinates, so that they stay where
+// buttonsLeft places the sidebar's buttons that a pane header holds while
+// the sidebar hides, in that header's coordinates, so that they stay where
 // they are in the window, after the traffic lights, as the card slides.
+// On Linux and Windows the bar above the panels holds them instead.
 func (ch chrome) buttonsLeft(bar ui.TitleBar) float32 {
 	return lead(bar, ch.gap) - (ch.sideW + ch.mainPad)
 }
 
-// lead is where the sidebar's buttons start in the window, with the sidebar
-// shown or not: after the traffic lights on macOS; elsewhere inside the
-// card's edge, which they come over as the sidebar hides.
+// headerInset is the left padding of a pane header at the window's top
+// left. It clears the traffic lights on macOS, and the sidebar's buttons
+// wherever they sit in that header. With the window bar, those buttons
+// and the window's controls are above the panels, and the title starts
+// where any header's does.
+func (a *App) headerInset(top, left bool) float32 {
+	if top && left && !windowBarOn(a.set) {
+		return a.chrome.headerPad
+	}
+	return 16
+}
+
+// lead is where the sidebar's buttons start in the window, shown or not:
+// after the traffic lights on macOS; elsewhere a gap in from the window,
+// on the bar above the panels when that bar is shown.
 func lead(bar ui.TitleBar, gap float32) float32 {
 	if ownControls {
 		return bar.Left + gap + leadGap
@@ -229,11 +268,24 @@ func (a *App) view(c *ui.Context) {
 				sideLine(c, pal, shown)
 			}
 		})
-		// The gaps around the cards move the window too.
-		main := ui.Column(c).Grow(1).MinWidth(0).Padding(a.chrome.gap, a.chrome.gap, a.chrome.gap, a.chrome.mainPad).DragWindow()
+		// The gaps around the cards move the window too. With the window-bar
+		// flag, a bar above the panels holds the window's controls, as tall
+		// as the sidebar's, and the panels are one group under it. Off, the
+		// controls stay in the pane at the top right.
+		main := ui.Column(c).Grow(1).MinWidth(0)
+		if !windowBarOn(a.set) {
+			main = main.Padding(a.chrome.gap, a.chrome.gap, a.chrome.gap, a.chrome.mainPad).DragWindow()
+		}
 		main.Children(func() {
 			if shown > 0.01 {
 				a.resizeHandle(c, pal)
+			}
+			if windowBarOn(a.set) {
+				a.windowBar(c, pal, bar, shown)
+				ui.Column(c.Key("panels")).Grow(1).MinWidth(0).Padding(a.chrome.gap, a.chrome.gap, a.chrome.gap, a.chrome.mainPad).DragWindow().Children(func() {
+					a.card(c, pal, bar, shown)
+				})
+				return
 			}
 			a.card(c, pal, bar, shown)
 		})
@@ -270,6 +322,23 @@ func (a *App) view(c *ui.Context) {
 		}
 		c.Invalidate()
 	}
+}
+
+// windowBar is the strip above the panels on Linux and Windows, where the
+// window's controls live. It lines up with the sidebar's bar. The panels
+// under it are one group (view) and do not carry those controls. It clips
+// the sidebar's buttons until it reaches them, as a pane's card did.
+func (a *App) windowBar(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32) {
+	row := ui.Row(c.Key("window-bar")).Height(topBar(a.chrome.gap)).Shrink(0).AlignItems(ui.Center).
+		Padding(0, 10, 0, 0).Clip().DragWindow()
+	row.Children(func() {
+		if a.chrome.gap == 0 {
+			ui.Box(c.Key("window-bar-line")).Absolute().Left(0).Right(0).Bottom(0).Height(1).PassThrough().Background(hairline(pal))
+		}
+		a.sidebarButtonsAt(c, pal, shown, lead(bar, a.chrome.gap)-a.chrome.sideW)
+		ui.Spacer(c)
+		windowControls(c, pal, a.win, true)
+	})
 }
 
 // resizeHandle is the sidebar's edge, which a drag moves.
@@ -364,9 +433,9 @@ func kbd(c *ui.Context, pal *palette, keys string) {
 
 func (a *App) sidebar(c *ui.Context, pal *palette, bar ui.TitleBar) {
 	ui.Row(c).Height(topBar(a.chrome.gap)).Shrink(0).AlignItems(ui.Center).Padding(0, 12, 0, lead(bar, a.chrome.gap)).Gap(2).DragWindow().Children(func() {
-		// After the traffic lights on macOS, at the right; elsewhere the
-		// window controls are at the right, and the buttons at the left,
-		// where they stay as the sidebar hides (chrome.buttonsLeft).
+		// After the traffic lights on macOS, at the right. Elsewhere the
+		// buttons stay at the left: the window's controls are on the bar
+		// above the panels, and these come onto it as the sidebar hides.
 		if runtime.GOOS == "darwin" {
 			ui.Spacer(c)
 		}
@@ -956,20 +1025,16 @@ func (a *App) card(c *ui.Context, pal *palette, bar ui.TitleBar, shown float32) 
 		return
 	}
 	// No session: one card, for what the app has to say.
-	card := edged(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(a.chrome.gap)).Background(pal.card), pal, a.chrome.gap).Clip()
+	card := edged(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(a.set, a.chrome.gap)).Background(pal.card), pal, a.chrome.gap).Clip()
 	card.Children(func() {
-		left := a.chrome.headerPad
-		ui.Row(c).Height(headerH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, left).DragWindow().Children(func() {
-			if shown < 0.5 {
-				ui.Row(c).Absolute().Left(a.chrome.buttonsLeft(bar)).Top(0).Bottom(0).AlignItems(ui.Center).Gap(2).Opacity(1 - 2*shown).Children(func() {
-					iconButton(c, "show-sidebar", sidebarIcon, a.tip(locales.SidebarShow(), "sidebar.toggle"), pal, a.toggleSidebar)
-					iconButton(c, "new-session-2", plusIcon, a.tip(locales.ActionNewSession(), "session.new"), pal, func() { a.newSession("") })
-				})
+		ui.Row(c).Height(headerH).Shrink(0).AlignItems(ui.Center).Padding(0, 10, 0, a.headerInset(true, true)).DragWindow().Children(func() {
+			if !windowBarOn(a.set) {
+				a.sidebarButtons(c, pal, bar, shown)
 			}
 			ui.Text(c, "Kero").FontSize(14).FontWeight(600).TextColor(pal.text)
 			ui.Spacer(c)
-			if !tabsHorizontal(a.set) {
-				windowControls(c, pal, a.win)
+			if !tabsHorizontal(a.set) && !windowBarOn(a.set) {
+				windowControls(c, pal, a.win, windowButtons(a.set))
 			}
 		})
 		ui.Column(c).Grow(1).MinHeight(0).Children(func() {

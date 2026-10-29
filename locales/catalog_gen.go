@@ -2852,6 +2852,46 @@ func (msgs Messages) SetCustomSpacingDetail() string {
 	return Catalog.Format(msgs.locale, "setCustomSpacingDetail", nil)
 }
 
+// SetWindowBar says "Window controls above the panels"
+// in the language the app shows.
+func SetWindowBar() string { return In(i18n.Locale()).SetWindowBar() }
+
+// SetWindowBar says "Window controls above the panels"
+// in the language of msgs.
+func (msgs Messages) SetWindowBar() string {
+	return Catalog.Format(msgs.locale, "setWindowBar", nil)
+}
+
+// SetWindowBarDetail says "On Linux and Windows, with the tabs down the side, put minimize, maximize and close on a bar above the panels, so a p…"
+// in the language the app shows.
+func SetWindowBarDetail() string { return In(i18n.Locale()).SetWindowBarDetail() }
+
+// SetWindowBarDetail says "On Linux and Windows, with the tabs down the side, put minimize, maximize and close on a bar above the panels, so a p…"
+// in the language of msgs.
+func (msgs Messages) SetWindowBarDetail() string {
+	return Catalog.Format(msgs.locale, "setWindowBarDetail", nil)
+}
+
+// SetOmarchyChrome says "Omarchy window"
+// in the language the app shows.
+func SetOmarchyChrome() string { return In(i18n.Locale()).SetOmarchyChrome() }
+
+// SetOmarchyChrome says "Omarchy window"
+// in the language of msgs.
+func (msgs Messages) SetOmarchyChrome() string {
+	return Catalog.Format(msgs.locale, "setOmarchyChrome", nil)
+}
+
+// SetOmarchyChromeDetail says "On Omarchy, round the panels to the compositor's corner and hide Kero's minimize, maximize and close. The desktop rou…"
+// in the language the app shows.
+func SetOmarchyChromeDetail() string { return In(i18n.Locale()).SetOmarchyChromeDetail() }
+
+// SetOmarchyChromeDetail says "On Omarchy, round the panels to the compositor's corner and hide Kero's minimize, maximize and close. The desktop rou…"
+// in the language of msgs.
+func (msgs Messages) SetOmarchyChromeDetail() string {
+	return Catalog.Format(msgs.locale, "setOmarchyChromeDetail", nil)
+}
+
 // SetFlags says "Experimental flags"
 // in the language the app shows.
 func SetFlags() string { return In(i18n.Locale()).SetFlags() }

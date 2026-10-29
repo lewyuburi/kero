@@ -93,6 +93,8 @@ func settingsIndex() []searchEntry {
 		{"advanced", locales.SetCustomSpacing(), "custom-spacing flag panel spacing gap layout"},
 		{"advanced", locales.SetLooseSessions(), "loose-sessions flag session project folder repository home no project ungrouped terminal tools"},
 		{"advanced", locales.SetHorizontalTabs(), "horizontal-tabs flag tabs top bar layout vertical sidebar groups project color tint dia chrome"},
+		{"advanced", locales.SetWindowBar(), "window-bar flag window controls minimize maximize close above panels linux windows vertical tabs"},
+		{"advanced", locales.SetOmarchyChrome(), "omarchy-chrome flag omarchy hyprland rounding radius corner window buttons hide panels"},
 		{"advanced", "kerod", "daemon background service restart sessions"},
 		{"advanced", locales.SetLog(), "kerod log debug"},
 		{"advanced", locales.SetFolder(), "data directory finder"},

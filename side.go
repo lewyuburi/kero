@@ -144,11 +144,11 @@ func (a *App) sideEdge(c *ui.Context, pal *palette, row float32) {
 	}
 }
 
-// sidePanel is the panel's card: its header, then its view. top and right
-// tell that it touches the window's top and right edges, where its header
-// drags the window and holds the window's controls (windowControls).
+// sidePanel is the panel's card: its header, then its view. right tells
+// that it touches the window's right edge, where the header holds the
+// window's controls, unless the window-bar flag put them above the panels.
 func (a *App) sidePanel(c *ui.Context, pal *palette, s *proto.Session, width float32, right bool) {
-	card := ui.Column(c.Key("side")).Width(width).Shrink(0).MinHeight(0).Radius(14).Clip().Background(pal.card).
+	card := ui.Column(c.Key("side")).Width(width).Shrink(0).MinHeight(0).Radius(cardRadius(a.set, a.chrome.gap)).Clip().Background(pal.card).
 		Focusable().Bind(a.paneRef("side-card"))
 	raised(card, pal)
 	a.side.focused = card.FocusWithin()
@@ -162,8 +162,8 @@ func (a *App) sidePanel(c *ui.Context, pal *palette, s *proto.Session, width flo
 			}
 			ui.Box(c.Key("drag")).Grow(1).AlignSelf(ui.Stretch).DragWindow()
 			iconButton(c, "close-side", closeIcon, a.tip(locales.SideClose(), "changes.toggle"), pal, func() { a.defer_(func() { a.toggleSide(a.prefs.Side) }) })
-			if right {
-				windowControls(c, pal, a.win)
+			if right && !windowBarOn(a.set) {
+				windowControls(c, pal, a.win, windowButtons(a.set))
 			}
 		})
 		ui.Column(c.Key("body")).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {

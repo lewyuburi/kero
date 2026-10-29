@@ -202,11 +202,11 @@ func (a *App) settingsView(c *ui.Context) {
 	row := ui.Row(c).Fill().AlignItems(ui.Stretch)
 	backdrop(c, pal, row, a.set)
 	row.Children(func() {
-		// Under the traffic lights on macOS; elsewhere the search starts
-		// the sidebar, centered on barMid as the page's title and the
-		// window controls are.
+		// Under the traffic lights on macOS, and where Kero draws no window
+		// buttons. Elsewhere the search starts the sidebar, centered on
+		// barMid as the page's title and the window controls are.
 		top := topBar(gapOf(a.set))
-		if ownControls {
+		if windowButtons(a.set) {
 			top = barMid(gapOf(a.set)) - (controlH+2)/2
 		}
 		ui.Column(c).Width(212).Shrink(0).Padding(top, 10, 12, 10).Gap(2).DragWindow().Children(func() {
@@ -239,7 +239,7 @@ func (a *App) settingsView(c *ui.Context) {
 		})
 		gap := gapOf(a.set)
 		ui.Column(c).Grow(1).MinWidth(0).Padding(gap, gap, gap, 0).Children(func() {
-			card := edged(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(gap)).Background(pal.card), pal, gap).Clip()
+			card := edged(ui.Column(c).Grow(1).MinHeight(0).Radius(cardRadius(a.set, gap)).Background(pal.card), pal, gap).Clip()
 			card.Children(func() {
 				page := settingsPages[0]
 				for _, p := range settingsPages {
@@ -303,7 +303,7 @@ func (a *App) settingsView(c *ui.Context) {
 							})
 						}
 						ui.Spacer(c)
-						windowControls(c, pal, a.setWin)
+						windowControls(c, pal, a.setWin, windowButtons(a.set))
 					})
 				})
 			})
@@ -1439,6 +1439,10 @@ func flagText(id string) (name, detail string) {
 		return locales.SetTabReorder(), locales.SetTabReorderDetail()
 	case settings.FlagGames:
 		return locales.SetGames(), locales.SetGamesDetail()
+	case settings.FlagWindowBar:
+		return locales.SetWindowBar(), locales.SetWindowBarDetail()
+	case settings.FlagOmarchyChrome:
+		return locales.SetOmarchyChrome(), locales.SetOmarchyChromeDetail()
 	}
 	return id, ""
 }
