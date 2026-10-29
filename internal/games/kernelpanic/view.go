@@ -115,10 +115,20 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	// between the conduits, and a mark where they end at the core.
 	cv.Frame(sectorX-3, sectorY-3, Cols*TileW+6, Rows*TileH+6, 2)
 	for r := 0; r < Rows; r++ {
-		// A conduit that is not in play has a faint shade and no dots: only those in
-		// play have the dots of their tiles, so that they are what the eye goes to.
 		if !g.lanes[r] {
-			cv.Dither(sectorX, sectorY+r*TileH+1, Cols*TileW, TileH-1, closedShade, true)
+			// Out of play: a dot in every other tile, which is what the tiles of the
+			// conduits in play have, less of, so that it is there and does not call.
+			for c := 0; c < Cols; c += 2 {
+				cv.Set(sectorX+c*TileW+TileW/2, sectorY+r*TileH+TileH/2, true)
+			}
+		} else {
+			// In play: framed where it meets a conduit out of play.
+			if r > 0 && !g.lanes[r-1] {
+				cv.Rect(sectorX, sectorY+r*TileH, Cols*TileW, 1, true)
+			}
+			if r < Rows-1 && !g.lanes[r+1] {
+				cv.Rect(sectorX, sectorY+(r+1)*TileH-1, Cols*TileW, 1, true)
+			}
 		}
 		for c := 0; c < Cols && g.lanes[r]; c++ {
 			cv.Set(sectorX+c*TileW+TileW/2, sectorY+r*TileH+TileH/2, true)
@@ -383,9 +393,9 @@ func drawReward(g *game, cv *pixel.Canvas) {
 	}
 }
 
-// closedShade is how much of a place that is not in play, or not the player's yet,
-// is shaded: a little, so that it is there without calling for the eye.
-const closedShade = 0.09
+// closedShade is how much of a place that is not the player's yet is shaded: one
+// pixel in sixteen, so that it is there without calling for the eye.
+const closedShade = 0.0625
 
 // dashed draws a ring of dots, one pixel in two, round a rectangle: a place that is
 // there, and not yet filled.

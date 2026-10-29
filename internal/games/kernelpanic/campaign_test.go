@@ -445,3 +445,47 @@ func TestTheGameKeepsProgressInAFile(t *testing.T) {
 		t.Errorf("the classic sector marked something: %+v", c.prog)
 	}
 }
+
+// A conduit out of play is quiet, and the one in play stands out by a frame: it is
+// the one with dots in all its tiles, and lines along its sides.
+func TestClosedConduitsAreQuietAndTheOneInPlayIsFramed(t *testing.T) {
+	g, _ := freshCampaign(nil)
+	g.startLevel(0)
+	cv := pixel.NewCanvas(games.Width, games.Height)
+	draw(g, cv)
+	density := func(r int) (n int) {
+		for y := sectorY + r*TileH + 2; y < sectorY+(r+1)*TileH-2; y++ {
+			for x := sectorX; x < sectorX+Cols*TileW; x++ {
+				if cv.Get(x, y) {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	for _, r := range []int{0, 1, 3, 4} {
+		if n := density(r); n > Cols/2+2 { // a dot in every other tile, and no more
+			t.Errorf("conduit %d, out of play, has %d inked pixels: not quiet", r, n)
+		}
+	}
+	if n := density(2); n < Cols-1 {
+		t.Errorf("the conduit in play has %d inked pixels: its tiles have no dots", n)
+	}
+	// Lines along both sides of the one in play, and not along a conduit out of play.
+	for x := sectorX; x < sectorX+Cols*TileW; x += 17 {
+		if !cv.Get(x, sectorY+2*TileH) || !cv.Get(x, sectorY+3*TileH-1) {
+			t.Fatalf("the conduit in play is not framed at x %d", x)
+		}
+		if cv.Get(x, sectorY+TileH+TileH/2+3) {
+			t.Errorf("something is drawn in a conduit out of play at x %d", x)
+		}
+	}
+	// With every conduit in play, no extra lines are drawn inside the sector's own.
+	full, _ := freshCampaign(map[string]int{"1-1": 3, "1-2": 3, "1-3": 3, "1-4": 3})
+	full.startLevel(4)
+	c2 := pixel.NewCanvas(games.Width, games.Height)
+	draw(full, c2)
+	if c2.Get(sectorX+5, sectorY+1) {
+		t.Error("a line inside the top of a sector with every conduit in play")
+	}
+}
