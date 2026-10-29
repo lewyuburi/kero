@@ -78,10 +78,13 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	for i := 0; i < int(kinds); i++ {
 		x, y, w, h := cardRect(i)
 		k := Kind(i)
-		cv.Frame(x, y, w, h, 1)
+		if g.open[k] {
+			cv.Frame(x, y, w, h, 1)
+		}
 		if !g.open[k] {
-			// A program the player has not got yet: its place, with a lock.
-			cv.Dither(x+1, y+1, w-2, h-2, 0.25, true)
+			// A program the player has not got yet: its place, dotted, with a lock.
+			cv.Dither(x+1, y+1, w-2, h-2, closedShade, true)
+			dashed(cv, x, y, w, h)
 			cv.Rect(x+(w-14)/2, y+(h-14)/2, 14, 14, false)
 			cv.Draw(sheet.Image("lock"), x+(w-12)/2, y+(h-12)/2, pixel.Copy)
 			continue
@@ -112,9 +115,10 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	// between the conduits, and a mark where they end at the core.
 	cv.Frame(sectorX-3, sectorY-3, Cols*TileW+6, Rows*TileH+6, 2)
 	for r := 0; r < Rows; r++ {
+		// A conduit that is not in play has a faint shade and no dots: only those in
+		// play have the dots of their tiles, so that they are what the eye goes to.
 		if !g.lanes[r] {
-			// A conduit that is not in play is shaded over.
-			cv.Dither(sectorX, sectorY+r*TileH+1, Cols*TileW, TileH-1, 0.22, true)
+			cv.Dither(sectorX, sectorY+r*TileH+1, Cols*TileW, TileH-1, closedShade, true)
 		}
 		for c := 0; c < Cols && g.lanes[r]; c++ {
 			cv.Set(sectorX+c*TileW+TileW/2, sectorY+r*TileH+TileH/2, true)
@@ -283,14 +287,19 @@ func drawMenu(g *game, cv *pixel.Canvas) {
 	sans := pixel.FontNamed("sans5x7")
 	for i := range campaign {
 		x, y, w, h := nodeRect(i)
-		cv.Frame(x, y, w, h, 1)
-		if g.prog.open(i) {
-			cv.Text(sans, x+(w-sans.Width(campaign[i].ID))/2, y+8, campaign[i].ID, pixel.Copy)
-		} else {
-			cv.Dither(x+1, y+1, w-2, h-2, 0.25, true)
-			cv.Rect(x+(w-14)/2, y+5, 14, 14, false)
-			cv.Draw(sheet.Image("lock"), x+(w-12)/2, y+6, pixel.Copy)
+		if !g.prog.open(i) {
+			// A sector that is not open: dotted, with a lock and nothing more.
+			cv.Dither(x+1, y+1, w-2, h-2, closedShade, true)
+			dashed(cv, x, y, w, h)
+			cv.Rect(x+(w-14)/2, y+(h-14)/2, 14, 14, false)
+			cv.Draw(sheet.Image("lock"), x+(w-12)/2, y+(h-12)/2, pixel.Copy)
+			if i == g.menuSel {
+				dashed(cv, x-2, y-2, w+4, h+4)
+			}
+			continue
 		}
+		cv.Frame(x, y, w, h, 1)
+		cv.Text(sans, x+(w-sans.Width(campaign[i].ID))/2, y+8, campaign[i].ID, pixel.Copy)
 		// The mark: a chip for each earned, and the others hollow.
 		earned := g.prog.Chips[campaign[i].ID]
 		for c := 0; c < startCore; c++ {
@@ -334,7 +343,6 @@ func drawMenu(g *game, cv *pixel.Canvas) {
 		if g.prog.unlocked(k) {
 			cv.Draw(sheet.Image(programSprites[k]), px, py, pixel.Copy)
 		} else {
-			cv.Dither(px, py, spriteSize, spriteSize, 0.2, true)
 			cv.Draw(sheet.Image("lock"), px+6, py+6, pixel.Copy)
 		}
 	}
@@ -372,5 +380,22 @@ func drawReward(g *game, cv *pixel.Canvas) {
 	for _, p := range [][2]int{{-22, -6}, {22, -8}, {-16, 14}, {18, 16}} {
 		cv.Rect(cx0+p[0]-2, cy0+p[1], 5, 1, true)
 		cv.Rect(cx0+p[0], cy0+p[1]-2, 1, 5, true)
+	}
+}
+
+// closedShade is how much of a place that is not in play, or not the player's yet,
+// is shaded: a little, so that it is there without calling for the eye.
+const closedShade = 0.09
+
+// dashed draws a ring of dots, one pixel in two, round a rectangle: a place that is
+// there, and not yet filled.
+func dashed(cv *pixel.Canvas, x, y, w, h int) {
+	for i := 0; i < w; i += 2 {
+		cv.Set(x+i, y, true)
+		cv.Set(x+i, y+h-1, true)
+	}
+	for j := 0; j < h; j += 2 {
+		cv.Set(x, y+j, true)
+		cv.Set(x+w-1, y+j, true)
 	}
 }
