@@ -47,7 +47,7 @@ var settingsPages = []settingsPage{
 	{"notifications", locales.PageNotifications, glyph("f7-bell"), false},
 	{"keyboard", locales.PageKeyboard, glyph("f7-keyboard"), false},
 	{"agents", locales.PageAgents, glyph("f7-sparkles"), false},
-	{"games", locales.PageGames, glyph("f7-sparkles"), false},
+	{"games", locales.PageGames, gameIcon, false},
 	{"hosts", locales.PageHosts, hostIcon, true},
 	{"advanced", locales.PageAdvanced, glyph("f7-slider-horizontal-3"), false},
 }
