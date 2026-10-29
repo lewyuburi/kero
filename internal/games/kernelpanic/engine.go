@@ -202,26 +202,82 @@ type game struct {
 	flashLane    int
 	best         int
 	message      string // what the last try at placing said, for the hint
+	// The sector being played, which conduits are in it, and which programs the
+	// player has; the progress and where it is kept; and which screen it is:
+	// the sectors (a menu), the sector, or the program a sector gave.
+	lv       *Level
+	lanes    [Rows]bool
+	open     [kinds]bool
+	campaign bool
+	prog     Progress
+	st       store
+	levelIdx int
+	screen   screen
+	menuSel  int
+	menuHov  int  // the sector the pointer is over, -1 for none
+	menuDown int  // and the one it went down on
+	reward   Kind // the program a sector just gave, rewardNone if none
+	chips    int  // the mark of the sector just cleared
 }
 
-// New is a game with the waves it deals from seed.
-func New(seed int64) games.Game { return newGame(seed) }
+// A screen is what the game shows: the play, the sectors to choose from, or what
+// the sector just cleared gave. The play is the first, so that a game is in it
+// unless it is made to start at the sectors.
+type screen int
 
-func newGame(seed int64) *game {
-	g := &game{rng: rand.New(rand.NewSource(seed))}
+const (
+	screenPlay screen = iota
+	screenMenu
+	screenReward
+)
+
+// New is the game: at the sectors, with the progress that was kept, which it keeps
+// as it goes, and the waves dealt from seed.
+func New(seed int64) games.Game { return newCampaign(seed, fileStore{}) }
+
+// newCampaign is the game with a store for its progress.
+func newCampaign(seed int64, st store) *game {
+	g := &game{rng: rand.New(rand.NewSource(seed)), campaign: true, st: st, lv: &campaign[0]}
+	g.prog = st.load()
+	g.screen = screenMenu
+	g.menuSel = g.prog.next()
+	g.menuHov, g.menuDown, g.reward = -1, -1, rewardNone
 	g.reset()
 	return g
 }
 
+// newGame is the classic sector alone, with every program and no sectors to go
+// back to, for the tests to play.
+func newGame(seed int64) *game {
+	g := &game{rng: rand.New(rand.NewSource(seed)), lv: &classic, st: &memStore{}}
+	g.menuHov, g.menuDown, g.reward = -1, -1, rewardNone
+	g.reset()
+	return g
+}
+
+// startLevel plays sector i of the campaign.
+func (g *game) startLevel(i int) {
+	g.levelIdx, g.lv, g.screen = i, &campaign[i], screenPlay
+	g.reset()
+}
+
 func (g *game) reset() {
 	g.tick, g.started, g.paused, g.won, g.over = 0, false, false, false, false
-	g.watts, g.core = startWatts, startCore
+	g.watts, g.core = g.lv.Watts, startCore
+	g.lanes = [Rows]bool{}
+	for _, r := range g.lv.Lanes {
+		g.lanes[r] = true
+	}
+	for k := Kind(0); k < kinds; k++ {
+		g.open[k] = !g.campaign || g.prog.unlocked(k)
+	}
+	g.reward, g.chips = rewardNone, 0
 	g.cells = [Rows][Cols]*defender{}
 	g.enemies, g.bolts, g.sparks = nil, nil, nil
 	for k := Kind(0); k < kinds; k++ {
 		g.cards[k] = card{kind: k}
 	}
-	g.selected, g.curC, g.curR = -1, 0, Rows/2
+	g.selected, g.curC, g.curR = -1, 0, g.lv.Lanes[len(g.lv.Lanes)/2]
 	g.hoverC, g.hoverR, g.hoverCard, g.downCard = -1, -1, -1, -1
 	g.downSpark, g.dragging = false, false
 	g.shake, g.flash, g.wattsBlink, g.message = 0, 0, 0, ""
@@ -229,46 +285,16 @@ func (g *game) reset() {
 	g.deal()
 }
 
-// deal makes the waves: drones alone, then worms, then trojans, in groups that
-// grow, the last of all three. Where in the wave each comes, and in which
-// conduit, is the rng's.
+// deal makes the waves of the sector. Where in the wave each malware comes, and
+// in which of the conduits in play, is the rng's.
 func (g *game) deal() {
 	g.spawns, g.next = nil, 0
-	for w := 0; w < waves; w++ {
-		var group []enemyKind
-		add := func(k enemyKind, n int) {
-			for i := 0; i < n; i++ {
-				group = append(group, k)
+	for w, groups := range g.lv.Waves {
+		start := g.lv.Start + w*g.lv.Every
+		for _, gr := range groups {
+			for i := 0; i < gr.n; i++ {
+				g.spawns = append(g.spawns, spawn{at: start + g.rng.Intn(10*perSec), kind: gr.kind, lane: g.lv.Lanes[g.rng.Intn(len(g.lv.Lanes))]})
 			}
-		}
-		switch w {
-		case 0:
-			add(Drone, 2)
-		case 1:
-			add(Drone, 3)
-		case 2:
-			add(Drone, 3)
-			add(Worm, 1)
-		case 3:
-			add(Drone, 4)
-			add(Worm, 2)
-		case 4:
-			add(Trojan, 2)
-			add(Drone, 3)
-		case 5:
-			add(Trojan, 3)
-			add(Worm, 3)
-		case 6:
-			add(Trojan, 4)
-			add(Drone, 5)
-		default:
-			add(Trojan, 6)
-			add(Drone, 6)
-			add(Worm, 4)
-		}
-		start := firstWave + w*waveEvery
-		for _, k := range group {
-			g.spawns = append(g.spawns, spawn{at: start + g.rng.Intn(10*perSec), kind: k, lane: g.rng.Intn(Rows)})
 		}
 	}
 	sort.SliceStable(g.spawns, func(i, j int) bool { return g.spawns[i].at < g.spawns[j].at })
@@ -277,7 +303,7 @@ func (g *game) deal() {
 // Interval is a step while the sector is being held, and nothing while it
 // waits for the player, or is won or lost.
 func (g *game) Interval() time.Duration {
-	if !g.started || g.over || g.won || g.paused {
+	if g.screen != screenPlay || !g.started || g.over || g.won || g.paused {
 		return 0
 	}
 	return StepTime
@@ -312,12 +338,12 @@ func (g *game) Frame() {
 	}
 }
 
-// wave is the one now coming, 1 to waves.
+// wave is the one now coming, 1 to the sector's number of them.
 func (g *game) wave() int {
-	if g.tick < firstWave {
+	if g.tick < g.lv.Start {
 		return 0
 	}
-	return min((g.tick-firstWave)/waveEvery+1, waves)
+	return min((g.tick-g.lv.Start)/g.lv.Every+1, len(g.lv.Waves))
 }
 
 func (g *game) Status() (score, hint string) {
@@ -327,10 +353,24 @@ func (g *game) Status() (score, hint string) {
 		// figures, so that what is beside them does not move.
 		watts = strings.Map(func(rune) rune { return blankFigure }, watts)
 	}
-	score = watts + "  WAVE " + strconv.Itoa(max(g.wave(), 1)) + "/" + strconv.Itoa(waves)
+	if g.screen == screenMenu {
+		return "KERNEL PANIC", g.menuHint()
+	}
+	if g.screen == screenReward {
+		return "NEW PROGRAM", "SPACE TO GO ON"
+	}
+	label := ""
+	if g.campaign {
+		label = g.lv.ID + "  "
+	}
+	score = watts + "  " + label + "WAVE " + strconv.Itoa(max(g.wave(), 1)) + "/" + strconv.Itoa(len(g.lv.Waves))
 	switch {
+	case g.over && g.campaign:
+		hint = "SPACE: RETRY  ENTER: MENU"
 	case g.over:
 		hint = "SYSTEM DOWN - SPACE"
+	case g.won && g.campaign:
+		hint = "SECTOR CLEARED - SPACE"
 	case g.won:
 		hint = "SECTOR CLEARED - SPACE"
 	case g.dragging:
@@ -355,6 +395,12 @@ func (g *game) place(k Kind, c, r int) bool {
 	g.message = ""
 	switch {
 	case c < 0 || r < 0 || c >= Cols || r >= Rows:
+		return false
+	case !g.lanes[r]:
+		g.message = "CONDUIT CLOSED"
+		return false
+	case !g.open[k]:
+		g.message = "NOT YET YOURS"
 		return false
 	case g.cells[r][c] != nil:
 		g.message = "TILE TAKEN"
@@ -424,12 +470,20 @@ func (g *game) sparkIn(c, r int) int {
 }
 
 func (g *game) Key(k games.Key) {
+	switch g.screen {
+	case screenMenu:
+		g.menuKey(k)
+		return
+	case screenReward:
+		g.rewardKey(k)
+		return
+	}
 	switch {
 	case g.over || g.won:
-		if k == games.Action || k == games.Restart {
-			g.best = max(g.best, g.wave())
-			g.reset()
-		}
+		g.after(k)
+		return
+	case k == games.Menu && g.campaign:
+		g.toMenu()
 		return
 	case k == games.Left:
 		g.curC = max(g.curC-1, 0)
@@ -440,7 +494,13 @@ func (g *game) Key(k games.Key) {
 	case k == games.Down:
 		g.curR = min(g.curR+1, Rows-1)
 	case k == games.Restart:
-		g.selected = (g.selected + 1) % int(kinds)
+		// The next card the player has.
+		for i := 1; i <= int(kinds); i++ {
+			if next := (g.selected + i) % int(kinds); g.open[next] {
+				g.selected = next
+				break
+			}
+		}
 	case k == games.Action && !g.started && g.selected < 0:
 		g.started = true
 	case k == games.Action:
@@ -482,6 +542,14 @@ func tileAt(px, py int) (c, r int) {
 // places it where it is dropped; dropped off the sector, or let go of off the
 // screen, it is not placed. Any click begins the game.
 func (g *game) Pointer(p games.Pointer) {
+	switch g.screen {
+	case screenMenu:
+		g.menuPointer(p)
+		return
+	case screenReward:
+		g.rewardPointer(p)
+		return
+	}
 	switch p.Kind {
 	case games.PointerMove:
 		if card := g.cardAt(p.X, p.Y); card != g.hoverCard {
@@ -522,8 +590,7 @@ func (g *game) Pointer(p games.Pointer) {
 	case games.PointerUp:
 		if g.over || g.won {
 			if g.cardAt(p.X, p.Y) < 0 {
-				g.best = max(g.best, g.wave())
-				g.reset()
+				g.after(games.Action)
 			}
 			return
 		}
@@ -564,9 +631,11 @@ func (g *game) Step() {
 	// Sparks fall from the sky now and then, in a tile of the sector.
 	if g.tick >= g.nextSky {
 		g.nextSky = g.tick + skySparkEvery
-		g.sparks = append(g.sparks, spark{
-			x: float64(sectorX + g.rng.Intn(Cols)*TileW + sparkOff), y: float64(sectorY + g.rng.Intn(Rows)*TileH + sparkOff),
-			ttl: sparkLife, value: sparkValue})
+		if g.lv.Sky {
+			g.sparks = append(g.sparks, spark{
+				x: float64(sectorX + g.rng.Intn(Cols)*TileW + sparkOff), y: float64(sectorY + g.lv.Lanes[g.rng.Intn(len(g.lv.Lanes))]*TileH + sparkOff),
+				ttl: sparkLife, value: sparkValue})
+		}
 	}
 	for g.next < len(g.spawns) && g.spawns[g.next].at <= g.tick {
 		s := g.spawns[g.next]
@@ -591,7 +660,8 @@ func (g *game) Step() {
 	}
 	if g.next >= len(g.spawns) && len(g.enemies) == 0 && !g.over {
 		g.won = true
-		g.best = max(g.best, waves)
+		g.best = max(g.best, len(g.lv.Waves))
+		g.finish()
 	}
 }
 

@@ -52,6 +52,41 @@ Under them, the core, three chips, and the progress of the waves.
 The first at 20 seconds, then one every 25. Drones alone, then worms, then
 trojans, in groups that grow; the last, the eighth, is all three kinds.
 
+## The campaign
+
+Ten sectors, 1-1 to 1-10, one after another: each opens when the one before it is
+cleared, and brings one thing. The first has one conduit and the pulse alone;
+what a sector gives, when it is cleared the first time, is a program, which the
+player has from then on. Clearing it marks it with 1 to 3 chips, by the core that
+was kept; the best mark of each is kept.
+
+| Sector | Conduits | Brings                          | Gives  |
+| ------ | -------- | ------------------------------- | ------ |
+| 1-1    | 1        | the pulse, drones               | Dynamo |
+| 1-2    | 1        |                                 | Wall   |
+| 1-3    | 3        | worms                           | Mine   |
+| 1-4    | 3        | a blackout: no sparks from the sky | Cryo |
+| 1-5    | 5        | trojans                         |        |
+| 1-6    | 5        |                                 |        |
+| 1-7    | 5        | a blackout                      |        |
+| 1-8    | 5        | faster waves                    |        |
+| 1-9    | 5        | a blackout, and a lot           |        |
+| 1-10   | 5        | the classic eight waves, and a huge one |  |
+
+A conduit that is not in play is shaded over: malware does not come down it, and
+nothing is placed in it. A program the player has not got is a place with a lock.
+Progress is a file of Kero's, games/kernelpanic.json, on this machine.
+
+Losing a sector is trying it again (space), or going to the sectors (enter).
+M goes to the sectors from the play.
+
+## Balance
+
+A test plays every sector with bots that play as a person might: a good one wins
+the first four every time, the fifth to seventh nearly always, and fewer of the
+rest; an expert wins the first seven, most of the eighth and ninth, and about
+half of the last. `KP_SIM=1 go test -run Sim -v` prints the report.
+
 ## Controls
 
 The mouse: click a card, then a tile; click a spark to take it. The keyboard:

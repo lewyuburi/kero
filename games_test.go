@@ -527,3 +527,35 @@ func TestAGameUnderItsOldNameStillPlays(t *testing.T) {
 		t.Errorf("the header does not say the game's title; texts %q", tt.Texts())
 	}
 }
+
+// Kernel Panic opens at its sectors; Enter starts the one chosen, and M goes back
+// to them, through the pane's keys.
+func TestKernelPanicPlaysFromItsSectorsInAPane(t *testing.T) {
+	t.Setenv("KERO_HOME", t.TempDir())
+	a := testApp(t)
+	a.st.Sessions[0].Panes[1] = proto.Pane{ID: "b", URL: proto.GameURL("kernelpanic"), Status: proto.Idle, Progress: -1}
+	tt := ui.NewTester(a.view, 1400, 800)
+	for i := 0; i < 3; i++ {
+		tt.Frame()
+	}
+	play := a.games["b"]
+	if play == nil {
+		t.Fatal("no game in the pane")
+	}
+	score := func() string { s, _ := play.g.Status(); return s }
+	if score() != "KERNEL PANIC" {
+		t.Fatalf("it did not open at the sectors: %q", score())
+	}
+	a.paneRef("b").Focus()
+	tt.Frame()
+	tt.Key(0, ui.KeyEnter)
+	tt.Frame()
+	if !strings.Contains(score(), "1-1") {
+		t.Errorf("Enter did not start the first sector: %q", score())
+	}
+	tt.Key(0, ui.KeyM)
+	tt.Frame()
+	if score() != "KERNEL PANIC" {
+		t.Errorf("M did not go back to the sectors: %q", score())
+	}
+}

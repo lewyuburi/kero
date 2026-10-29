@@ -1,6 +1,6 @@
 // The sprites of KERNEL PANIC. # is ink, . is paper (inside a sprite), and _ is
 // transparent. Programs and malware are 24 by 24, in tiles of 28; what a card
-// does is 9 by 9; a spark is 14 by 14 and a chip of the core 10 by 10; the icon of the
+// does is 9 by 9; a spark is 14 by 14, a chip of the core 10 by 10 and a lock 12 by 12; the icon of the
 // game in the gallery is 32 by 32.
 
 // programs
@@ -457,6 +457,20 @@ __#.##.#__
 __######__
 ___#__#___
 ___#__#___
+
+sprite lock
+____________
+____####____
+___##__##___
+___#____#___
+__##____##__
+_##########_
+_##########_
+_####..####_
+_####..####_
+_####..####_
+_##########_
+_##########_
 
 sprite bolt
 ___#######
