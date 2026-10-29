@@ -79,14 +79,14 @@ func TestOpenGameWithoutSession(t *testing.T) {
 func TestScreenRect(t *testing.T) {
 	for _, room := range []ui.Rect{{W: 700, H: 520}, {W: 520, H: 900}, {W: 1200, H: 300}, {W: 300, H: 300}, {X: 40, Y: 10, W: 611, H: 487}} {
 		for _, dpr := range []float32{1, 2} {
-			fill := screenRect(room, dpr, 256, 192, false)
+			fill := screenRect(room, dpr, 256, 192, settings.GameScaleFill)
 			if d := fill.W/fill.H - 256.0/192; d > 0.01 || d < -0.01 {
 				t.Errorf("room %v dpr %v: fill is %vx%v, not 4:3", room, dpr, fill.W, fill.H)
 			}
 			if fill.W > room.W+0.01 || fill.H > room.H+0.01 || (room.W-fill.W > 2 && room.H-fill.H > 2) {
 				t.Errorf("room %v dpr %v: fill is %vx%v, which does not fill it one way", room, dpr, fill.W, fill.H)
 			}
-			whole := screenRect(room, dpr, 256, 192, true)
+			whole := screenRect(room, dpr, 256, 192, settings.GameScaleWhole)
 			scale := whole.W / 256
 			if n := scale * dpr; n != float32(int(n)) {
 				t.Errorf("room %v dpr %v: whole scale %v is not a whole number of display pixels", room, dpr, scale)
@@ -101,10 +101,10 @@ func TestScreenRect(t *testing.T) {
 		}
 	}
 	// On a display with two pixels to a DIP, whole goes in steps of a half.
-	if got := screenRect(ui.Rect{W: 700, H: 600}, 2, 256, 192, true); got.W != 640 {
+	if got := screenRect(ui.Rect{W: 700, H: 600}, 2, 256, 192, settings.GameScaleWhole); got.W != 640 {
 		t.Errorf("whole at 2 pixels to a DIP in 700 wide is %v wide, want 2.5x: 640", got.W)
 	}
-	if got := screenRect(ui.Rect{W: 700, H: 600}, 1, 256, 192, true); got.W != 512 {
+	if got := screenRect(ui.Rect{W: 700, H: 600}, 1, 256, 192, settings.GameScaleWhole); got.W != 512 {
 		t.Errorf("whole at 1 pixel to a DIP in 700 wide is %v wide, want 2x: 512", got.W)
 	}
 }
@@ -155,5 +155,29 @@ func TestGamesPageFollowsFlag(t *testing.T) {
 	tt.Frame()
 	if !tt.HasText("Game screen") || !tt.HasText("Whole pixels") {
 		t.Errorf("the Games page lacks the screen's setting; texts %q", tt.Texts())
+	}
+}
+
+// Snap fills the pane, but is whole where whole keeps nine tenths of what
+// filling takes: close to a whole scale it is whole, far from one it fills.
+func TestScreenRectSnap(t *testing.T) {
+	// 1 pixel to a DIP: 540 wide fits 2.11x, whole is 2x, which is 94.8% of it.
+	near := ui.Rect{W: 540, H: 600}
+	if got := screenRect(near, 1, 256, 192, settings.GameScaleSnap); got.W != 512 {
+		t.Errorf("snap near a whole scale is %v wide, want the whole 512", got.W)
+	}
+	// 700 wide fits 2.73x, and whole 2x keeps 73%: it fills.
+	far := ui.Rect{W: 700, H: 600}
+	snap := screenRect(far, 1, 256, 192, settings.GameScaleSnap)
+	fill := screenRect(far, 1, 256, 192, settings.GameScaleFill)
+	if snap != fill || snap.W != 700 {
+		t.Errorf("snap far from a whole scale is %v, want it to fill like %v", snap, fill)
+	}
+	// And it stays in proportion either way.
+	for _, r := range []ui.Rect{near, far, {W: 300, H: 900}} {
+		got := screenRect(r, 1, 256, 192, settings.GameScaleSnap)
+		if d := got.W/got.H - 256.0/192; d > 0.02 || d < -0.02 {
+			t.Errorf("room %v: snap is %vx%v, not 4:3", r, got.W, got.H)
+		}
 	}
 }

@@ -2662,11 +2662,11 @@ func (msgs Messages) SetGameScale() string {
 	return Catalog.Format(msgs.locale, "setGameScale", nil)
 }
 
-// SetGameScaleDetail says "Whole pixels: each game pixel is a whole number of screen pixels, crisp, with room left around. Fill: as large as the…"
+// SetGameScaleDetail says "Whole pixels: each game pixel is a whole number of screen pixels, crisp, with room left around. Snap: as large as the…"
 // in the language the app shows.
 func SetGameScaleDetail() string { return In(i18n.Locale()).SetGameScaleDetail() }
 
-// SetGameScaleDetail says "Whole pixels: each game pixel is a whole number of screen pixels, crisp, with room left around. Fill: as large as the…"
+// SetGameScaleDetail says "Whole pixels: each game pixel is a whole number of screen pixels, crisp, with room left around. Snap: as large as the…"
 // in the language of msgs.
 func (msgs Messages) SetGameScaleDetail() string {
 	return Catalog.Format(msgs.locale, "setGameScaleDetail", nil)
@@ -2680,6 +2680,16 @@ func SetGameScaleFill() string { return In(i18n.Locale()).SetGameScaleFill() }
 // in the language of msgs.
 func (msgs Messages) SetGameScaleFill() string {
 	return Catalog.Format(msgs.locale, "setGameScaleFill", nil)
+}
+
+// SetGameScaleSnap says "Snap"
+// in the language the app shows.
+func SetGameScaleSnap() string { return In(i18n.Locale()).SetGameScaleSnap() }
+
+// SetGameScaleSnap says "Snap"
+// in the language of msgs.
+func (msgs Messages) SetGameScaleSnap() string {
+	return Catalog.Format(msgs.locale, "setGameScaleSnap", nil)
 }
 
 // SetGameScaleWhole says "Whole pixels"

@@ -196,10 +196,12 @@ const (
 
 // How a game's screen fills its pane, always in proportion: only at a whole
 // number of the display's pixels to a pixel of the screen, which is crisp and
-// leaves room around, and what a new install has; or as large as the pane
-// allows, at any scale.
+// leaves room around, and what a new install has; as large as the pane allows
+// but whole where that gives up little (snap); or as large as the pane allows,
+// at any scale.
 const (
 	GameScaleWhole = "whole"
+	GameScaleSnap  = "snap" // as large as fits, but whole where that gives up little
 	GameScaleFill  = "fill"
 )
 
@@ -403,7 +405,7 @@ func (s *Settings) normalize() {
 	oneOf(&s.NewSessionDir, d.NewSessionDir, "current", "project", "home")
 	oneOf(&s.Appearance, d.Appearance, "system", "light", "dark")
 	oneOf(&s.TabLayout, d.TabLayout, TabsVertical, TabsHorizontal)
-	oneOf(&s.GameScale, d.GameScale, GameScaleFill, GameScaleWhole)
+	oneOf(&s.GameScale, d.GameScale, GameScaleWhole, GameScaleSnap, GameScaleFill)
 	oneOf(&s.Language, d.Language, append([]string{"system"}, Languages...)...)
 	oneOf(&s.Cursor, d.Cursor, "block", "bar", "underline")
 	oneOf(&s.Clipboard, d.Clipboard, "ask", "allow", "deny")

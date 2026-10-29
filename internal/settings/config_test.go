@@ -495,6 +495,9 @@ func TestGameScaleIsAChoice(t *testing.T) {
 	if len(probs) != 0 || s.GameScale != GameScaleFill {
 		t.Errorf("game-scale = fill: %q, problems %q", s.GameScale, probs)
 	}
+	if s, probs := parse("game-scale = snap"); len(probs) != 0 || s.GameScale != GameScaleSnap {
+		t.Errorf("game-scale = snap: %q, problems %q", s.GameScale, probs)
+	}
 	if s, probs := parse("game-scale = huge"); len(probs) != 1 || s.GameScale != GameScaleWhole {
 		t.Errorf("game-scale = huge: %q, problems %q", s.GameScale, probs)
 	}

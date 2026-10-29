@@ -501,8 +501,8 @@ func (a *App) gamesPage(c *ui.Context, pal *palette) {
 	s := &a.set
 	settingsGroup(c, pal, "", "", func() {
 		settingRow(c, pal, locales.SetGameScale(), locales.SetGameScaleDetail(), func() {
-			segmented(c, "gamescale", &s.GameScale, []string{settings.GameScaleWhole, settings.GameScaleFill},
-				[]string{locales.SetGameScaleWhole(), locales.SetGameScaleFill()})
+			segmented(c, "gamescale", &s.GameScale, []string{settings.GameScaleWhole, settings.GameScaleSnap, settings.GameScaleFill},
+				[]string{locales.SetGameScaleWhole(), locales.SetGameScaleSnap(), locales.SetGameScaleFill()})
 		})
 	})
 }

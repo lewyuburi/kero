@@ -133,7 +133,7 @@ func (a *App) paneGame(c *ui.Context, pal *palette, s *proto.Session, p *proto.P
 	}
 	body.Children(func() {
 		ui.Box(c.Key("screen")).Grow(1).MinWidth(0).MinHeight(0).AlignSelf(ui.Stretch).Draw(func(p *ui.Painter, r ui.Rect) {
-			p.ImageRegion(play.bm, ui.Rect{}, screenRect(r, p.Scale(), play.cv.W, play.cv.H, a.set.GameScale == settings.GameScaleWhole), ui.ImageOptions{})
+			p.ImageRegion(play.bm, ui.Rect{}, screenRect(r, p.Scale(), play.cv.W, play.cv.H, a.set.GameScale), ui.ImageOptions{})
 		})
 	})
 }
@@ -148,22 +148,29 @@ func (a *App) gamePaper(p *proto.Pane, dark bool) ui.Color {
 	return ui.RGB(theme.Paper.R, theme.Paper.G, theme.Paper.B)
 }
 
+// snapKeeps is how much of the room a whole scale must keep, of what filling
+// would take, for snap to choose it: one in ten is given up for crisp pixels.
+const snapKeeps = 0.9
+
 // screenRect is where a screen of w by h pixels goes in the middle of r, in
-// proportion, as large as fits. Filling, the scale is whatever fits, snapped
-// down to the display's pixels so that the edges are crisp; whole, it is a
-// whole number of them to a pixel of the screen, so that each is a square
-// of whole pixels of the display, none wider than the next, as on a handheld.
-// dpr is how many pixels of the display a DIP is; where it is more than one
-// the whole scales go in steps smaller than a DIP.
-func screenRect(r ui.Rect, dpr float32, w, h int, whole bool) ui.Rect {
+// proportion, as large as fits (settings.GameScale). Filling, the scale is
+// whatever fits; whole, it is a whole number of the display's pixels to a
+// pixel of the screen, so that each is a square of whole pixels of the
+// display, none wider than the next, as on a handheld; snap fills, but is
+// whole when whole keeps most of what filling takes. dpr is how many pixels of
+// the display a DIP is; where it is more than one the whole scales go in steps
+// smaller than a DIP. The size and the place are in whole pixels of the
+// display, so that the edges fall between them.
+func screenRect(r ui.Rect, dpr float32, w, h int, mode string) ui.Rect {
 	dpr = max(dpr, 1)
 	fit := min(r.W/float32(w), r.H/float32(h))
+	whole := float32(int(fit*dpr)) / dpr
 	scale := fit
-	if whole {
-		scale = float32(int(fit*dpr)) / dpr
+	switch {
+	case mode == settings.GameScaleWhole, mode == settings.GameScaleSnap && whole >= fit*snapKeeps:
+		scale = whole
 	}
 	scale = max(scale, 1/dpr)
-	// In whole device pixels, so that the edges fall between them.
 	sw, sh := float32(int(scale*float32(w)*dpr))/dpr, float32(int(scale*float32(h)*dpr))/dpr
 	return ui.Rect{
 		X: r.X + float32(int((r.W-sw)*dpr/2))/dpr,
