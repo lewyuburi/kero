@@ -213,17 +213,18 @@ func TestTheTooltipIsDrawnOverTheScreenAndSaysWhatTheCardDoes(t *testing.T) {
 	}
 }
 
-// A dynamo is drawn with its bolt at a step of the pulse, which the game's tick
-// moves, and the steps differ in the bolt and nowhere else; two dynamos are not
-// in the same step of it.
-func TestADynamoPulsesOnTheScreen(t *testing.T) {
+// A dynamo is drawn in the frame of its bolt that its step says, and the frames
+// differ in the bolt and nowhere else; one that holds its spark is solid and does
+// not change.
+func TestADynamoIsAnimatedOnTheScreenWhileItWorks(t *testing.T) {
 	g := newGame(1)
 	g.started = true
-	g.cells[2][3] = &defender{kind: Dynamo, hp: 12}
-	a, b := pixel.NewCanvas(games.Width, games.Height), pixel.NewCanvas(games.Width, games.Height)
+	d := &defender{kind: Dynamo, hp: 12}
+	g.cells[2][3] = d
+	a, b, c := pixel.NewCanvas(games.Width, games.Height), pixel.NewCanvas(games.Width, games.Height), pixel.NewCanvas(games.Width, games.Height)
 	g.tick = 0
 	draw(g, a)
-	g.tick = 10 // this dynamo is 27 steps on: 27 is solid, and 37 is dimmed
+	g.tick = 10 // another frame of the three
 	draw(g, b)
 	x, y := sectorX+3*TileW+spriteOff, sectorY+2*TileH+spriteOff
 	diff := 0
@@ -232,18 +233,25 @@ func TestADynamoPulsesOnTheScreen(t *testing.T) {
 			if a.Get(px, py) != b.Get(px, py) {
 				diff++
 				if px < x || px >= x+spriteSize || py < y || py >= y+spriteSize {
-					t.Fatalf("the pulse changed %d,%d, outside the dynamo", px, py)
+					t.Fatalf("the frames differ at %d,%d, outside the dynamo", px, py)
 				}
 			}
 		}
 	}
-	if diff < 20 {
-		t.Errorf("the bolt changed by %d pixels between steps of the pulse: nearly nothing", diff)
+	if diff < 10 {
+		t.Errorf("two frames of the bolt differ by %d pixels: nearly nothing", diff)
 	}
-	// Two dynamos side by side are out of step with each other.
-	g.cells[2][4] = &defender{kind: Dynamo, hp: 12}
+	// Holding its spark it is still: the same at any step.
+	d.holding = true
 	g.tick = 0
-	if dynamoSprite(g.tick+3*7+2*3) == dynamoSprite(g.tick+4*7+2*3) {
-		t.Error("two neighbouring dynamos are in the same step of the pulse")
+	draw(g, a)
+	g.tick = 17
+	draw(g, c)
+	for py := 0; py < games.Height; py++ {
+		for px := 0; px < games.Width; px++ {
+			if a.Get(px, py) != c.Get(px, py) {
+				t.Fatalf("a dynamo holding its spark changed at %d,%d between steps", px, py)
+			}
+		}
 	}
 }

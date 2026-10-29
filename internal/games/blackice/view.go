@@ -121,7 +121,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 			name := programSprites[d.kind]
 			if d.kind == Dynamo {
 				// Each dynamo a little out of step with the next, by where it is.
-				name = dynamoSprite(g.tick + c*7 + r*3)
+				name = dynamoSprite(d, g.tick+c*7+r*3)
 			}
 			cv.Draw(sheet.Image(name), x, y, pixel.Copy)
 			switch {

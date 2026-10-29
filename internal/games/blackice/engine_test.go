@@ -764,47 +764,109 @@ func TestClickOnTheTileTakesItsSparks(t *testing.T) {
 	}
 }
 
-// A dynamo's bolt pulses while the game runs, to say that it is working: dimmed
-// and filling in to solid in a second, four steps, and again; and it is still
-// when the game is.
-func TestDynamoBoltPulsesWhileItWorks(t *testing.T) {
+// A dynamo that is working goes through three frames of its bolt in a second,
+// and again; once it has made a spark it is still, with a solid bolt, until the
+// spark is taken.
+func TestDynamoWorksInThreeFramesThenWaits(t *testing.T) {
+	working := &defender{kind: Dynamo}
 	var seen []string
 	last := ""
 	for tick := 0; tick < 3*perSec; tick++ {
-		name := dynamoSprite(tick)
+		name := dynamoSprite(working, tick)
 		if name != last {
 			seen = append(seen, name)
 			last = name
 		}
 	}
-	want := []string{"dynamo-1", "dynamo-2", "dynamo-3", "dynamo"}
-	if len(seen) != 3*len(want) {
+	want := []string{"dynamo-1", "dynamo-2", "dynamo-3"}
+	if len(seen) != 9 {
 		t.Fatalf("the bolt went through %v in 3 seconds, want three rounds of %v", seen, want)
 	}
 	for i, n := range seen {
-		if n != want[i%len(want)] {
-			t.Errorf("step %d of the pulse is %s, want %s", i, n, want[i%len(want)])
+		if n != want[i%3] {
+			t.Errorf("frame %d is %s, want %s", i, n, want[i%3])
 		}
 	}
-	// A second of it is the four steps, each about a quarter, solid the longest.
-	counts := map[string]int{}
-	for tick := 0; tick < perSec; tick++ {
-		counts[dynamoSprite(tick)]++
+	if dynamoSprite(working, 0) != dynamoSprite(working, perSec) {
+		t.Error("the frames do not repeat every second")
 	}
-	for _, n := range want {
-		if counts[n] < 6 || counts[n] > 9 {
-			t.Errorf("%s lasts %d steps of the 30", n, counts[n])
+	// Made its spark, it is still, whatever the step.
+	holding := &defender{kind: Dynamo, holding: true}
+	for tick := 0; tick < 2*perSec; tick++ {
+		if dynamoSprite(holding, tick) != "dynamo" {
+			t.Fatalf("a dynamo holding its spark is animated at step %d: %s", tick, dynamoSprite(holding, tick))
 		}
 	}
-	if dynamoSprite(0) != dynamoSprite(perSec) {
-		t.Error("the pulse does not repeat every second")
+}
+
+// A dynamo makes a spark and waits: it makes no other until that one is taken,
+// or lost, and then it starts again.
+func TestDynamoWaitsForItsSparkToBeTaken(t *testing.T) {
+	g := begun()
+	g.nextSky = 1 << 30
+	g.place(Dynamo, 2, 1)
+	d := g.cells[1][2]
+	run(g, programs[Dynamo].every)
+	if len(g.sparks) != 1 || !d.holding || g.sparks[0].owner != 1+1*Cols+2 {
+		t.Fatalf("after its time: %d sparks, holding %v", len(g.sparks), d.holding)
 	}
-	// The game's steps are what moves it: a game that waits is still.
-	g := newGame(1)
-	g.cells[1][1] = &defender{kind: Dynamo, hp: 12}
-	before := g.tick
-	g.Step()
-	if g.tick != before {
-		t.Fatal("a step went by in a game that had not begun")
+	// It waits: well past another cycle, and short of the spark's life, there is
+	// no second spark.
+	run(g, sparkLife-5)
+	if len(g.sparks) != 1 {
+		t.Fatalf("a dynamo holding a spark made another: %d sparks", len(g.sparks))
+	}
+	// Taken, it starts again, and makes its next after a whole cycle.
+	g.collect(0)
+	if d.holding {
+		t.Fatal("a dynamo that was taken from is still holding")
+	}
+	run(g, programs[Dynamo].every-1)
+	if len(g.sparks) != 0 {
+		t.Error("a dynamo made a spark before its time was up")
+	}
+	run(g, 1)
+	if len(g.sparks) != 1 || !d.holding {
+		t.Errorf("a dynamo did not make its next spark after a cycle: %d", len(g.sparks))
+	}
+	// Lost, the same: it starts again.
+	run(g, sparkLife)
+	if len(g.sparks) != 0 || d.holding {
+		t.Fatalf("a spark that was not taken stayed (%d) or its dynamo is still holding (%v)", len(g.sparks), d.holding)
+	}
+	run(g, programs[Dynamo].every)
+	if len(g.sparks) != 1 {
+		t.Errorf("a dynamo did not start again when its spark was lost: %d", len(g.sparks))
+	}
+	// A spark from the sky has no dynamo to release, and a dynamo that was eaten
+	// has none either: neither breaks anything.
+	g.sparks = []spark{{x: 50, y: 50, ttl: 3, value: 25}, {x: 60, y: 60, ttl: 100, value: 25, owner: 1 + 4*Cols + 8}}
+	run(g, 3)
+	g.collect(len(g.sparks) - 1)
+	// Two dynamos are held independently.
+	g = begun()
+	g.nextSky = 1 << 30
+	g.place(Dynamo, 0, 0)
+	run(g, programs[Dynamo].ready)
+	g.place(Dynamo, 0, 1)
+	run(g, programs[Dynamo].every)
+	if len(g.sparks) < 2 {
+		t.Fatalf("two dynamos made %d sparks", len(g.sparks))
+	}
+	first := g.sparks[0]
+	for i, s := range g.sparks {
+		if s == first {
+			g.collect(i)
+			break
+		}
+	}
+	held := 0
+	for r := 0; r < 2; r++ {
+		if g.cells[r][0].holding {
+			held++
+		}
+	}
+	if held != 1 {
+		t.Errorf("taking one dynamo's spark released %d of the two", 2-held)
 	}
 }

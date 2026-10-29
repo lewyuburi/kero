@@ -18,7 +18,9 @@ Under them, the core, three chips, and the progress of the waves.
 
 - **Watts** are what a program costs. The sector starts with 100. **Sparks** carry
   25: they fall in the sector now and then (every 9 seconds) and are given by
-  dynamos; they are gone in 14 seconds if not taken.
+  dynamos; they are gone in 14 seconds if not taken. A dynamo that has made a
+  spark waits, still, with nothing more to make, until that spark is taken or lost;
+  working, its bolt goes through three frames in a second, to say so.
 - A **card** is a program with a cost and a time it takes to be ready again. Choose
   a card, then a tile: it is placed if the tile is free, the card ready and the
   watts enough.
@@ -32,7 +34,7 @@ Under them, the core, three chips, and the progress of the waves.
 | Card   | Cost | Ready  | Does                                                    |
 | ------ | ---- | ------ | ------------------------------------------------------- |
 | PULSE  | 50   | 5 s    | Fires a bolt down its conduit every 1.4 s (2 damage)    |
-| DYNAMO | 25   | 4 s    | Makes a spark every 9 s                                 |
+| DYNAMO | 25   | 4 s    | Makes a spark in 9 s, and waits until it is taken or lost |
 | WALL   | 50   | 20 s   | Nothing; takes a lot to be eaten                        |
 | MINE   | 25   | 30 s   | Arms in 4 s; blows up what steps on it and its neighbours |
 | CRYO   | 75   | 5 s    | Fires a bolt that does 1 damage and slows for 3 s       |

@@ -128,6 +128,9 @@ type defender struct {
 	hp    float64
 	cd    int // steps to its next bolt or spark
 	armed int // steps left before a mine is armed
+	// holding is a dynamo that has made a spark and waits, with nothing more to
+	// make, until it is taken or lost.
+	holding bool
 }
 
 type enemy struct {
@@ -148,6 +151,7 @@ type spark struct {
 	x, y  float64 // pixels of the screen
 	ttl   int
 	value int
+	owner int // 1 and the tile of the dynamo that made it (r*Cols+c), 0 from the sky
 }
 
 type spawn struct {
@@ -283,20 +287,16 @@ func (g *game) Animating() bool {
 	return g.shake > 0 || g.flash > 0 || g.wattsBlink > 0 || (g.hoverCard >= 0 && g.hoverTicks < tipDelay)
 }
 
-// dynamoSprite is the sprite of a dynamo at a step: its bolt, which says to the
-// player that it is working, comes dimmed and fills in to solid, in four steps,
-// in a second, and again, for as long as the game runs. The steps are the
-// game's, so that it is still when the game is.
-func dynamoSprite(tick int) string {
-	switch phase := tick % perSec; {
-	case phase < 7:
-		return "dynamo-1"
-	case phase < 14:
-		return "dynamo-2"
-	case phase < 21:
-		return "dynamo-3"
+// dynamoSprite is the sprite of a dynamo at a step: working, its bolt goes
+// through three frames, dim, half, and nearly solid, in a second, and again, to
+// say to the player that it is making a spark; once it has, it is still, with a
+// solid bolt, until the spark is taken. The frames are the game's steps, so that
+// they stop when the game does.
+func dynamoSprite(d *defender, tick int) string {
+	if d.holding {
+		return "dynamo"
 	}
-	return "dynamo"
+	return [...]string{"dynamo-1", "dynamo-2", "dynamo-3"}[(tick/10)%3]
 }
 
 // tipShown tells whether the tooltip of the card under the pointer shows: after
@@ -385,7 +385,19 @@ func (g *game) place(k Kind, c, r int) bool {
 func (g *game) collect(i int) {
 	g.watts += g.sparks[i].value
 	g.wattsBlink = blinkFrames
+	owner := g.sparks[i].owner
 	g.sparks = append(g.sparks[:i], g.sparks[i+1:]...)
+	g.release(owner)
+}
+
+// release lets the dynamo that made a spark, taken or lost, make another.
+func (g *game) release(owner int) {
+	if owner <= 0 {
+		return
+	}
+	if d := g.cells[(owner-1)/Cols][(owner-1)%Cols]; d != nil && d.kind == Dynamo {
+		d.holding = false
+	}
 }
 
 // sparkAt is the spark under a point of the screen, -1 for none: a spark is
@@ -565,12 +577,18 @@ func (g *game) Step() {
 	g.stepBolts()
 	g.stepEnemies()
 	live := g.sparks[:0]
+	var lost []int
 	for _, s := range g.sparks {
 		if s.ttl--; s.ttl > 0 {
 			live = append(live, s)
+		} else {
+			lost = append(lost, s.owner)
 		}
 	}
 	g.sparks = live
+	for _, owner := range lost {
+		g.release(owner)
+	}
 	if g.next >= len(g.spawns) && len(g.enemies) == 0 && !g.over {
 		g.won = true
 		g.best = max(g.best, waves)
@@ -596,9 +614,13 @@ func (g *game) stepDefenders() {
 			}
 			switch d.kind {
 			case Dynamo:
+				// One that has made a spark waits for it to be taken, or lost.
+				if d.holding {
+					continue
+				}
 				if d.cd--; d.cd <= 0 {
-					d.cd = programs[Dynamo].every
-					g.sparks = append(g.sparks, spark{x: float64(sectorX + c*TileW + sparkOff), y: float64(sectorY + r*TileH + sparkOff), ttl: sparkLife, value: sparkValue})
+					d.cd, d.holding = programs[Dynamo].every, true
+					g.sparks = append(g.sparks, spark{x: float64(sectorX + c*TileW + sparkOff), y: float64(sectorY + r*TileH + sparkOff), ttl: sparkLife, value: sparkValue, owner: 1 + r*Cols + c})
 				}
 			case Pulse, Cryo:
 				if d.cd > 0 {
