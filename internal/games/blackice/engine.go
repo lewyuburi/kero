@@ -18,11 +18,14 @@ import (
 const (
 	Cols, Rows   = 9, 5
 	TileW, TileH = 24, 24
-	// The sector's top left, the cards' row above it, and the core below.
-	sectorX, sectorY = (games.Width - Cols*TileW) / 2, 48
-	cardsY           = 18
+	// The sector's top left, under the band of the score and the hint; the
+	// cards' row under it, near the pointer that plays in the sector; and
+	// under them the core and the waves.
+	sectorX, sectorY = (games.Width - Cols*TileW) / 2, games.HUDHeight + 5
+	cardsY           = sectorY + Rows*TileH + 8
 	cardW, cardH     = 40, 24
 	cardGap          = 4
+	infoY            = cardsY + cardH + 4
 )
 
 // A step is a 30th of a second; the engine counts everything in steps.
@@ -101,6 +104,8 @@ const (
 	waveEvery     = 25 * perSec
 	waves         = 8
 	shakeFrames   = 12
+	dragSlop      = 3  // pixels of the screen
+	tipDelay      = 12 // frames on a card before its tooltip shows
 	blinkFrames   = 18 // the watts blink three times as they change
 	flashFrames   = 6
 )
@@ -169,11 +174,17 @@ type game struct {
 	hoverCard      int
 	downCard       int // the card the pointer went down on, -1 for none
 	downSpark      bool
-	shake, flash   int
-	wattsBlink     int
-	flashLane      int
-	best           int
-	message        string // what the last try at placing said, for the hint
+	// A card dragged: where the pointer went down, and where it is. A press
+	// that moves more than dragSlop pixels is a drag, and not a click.
+	dragging     bool
+	downX, downY int
+	dragX, dragY int
+	shake, flash int
+	wattsBlink   int
+	hoverTicks   int // frames the pointer has been on the card it is on
+	flashLane    int
+	best         int
+	message      string // what the last try at placing said, for the hint
 }
 
 // New is a game with the waves it deals from seed.
@@ -195,7 +206,7 @@ func (g *game) reset() {
 	}
 	g.selected, g.curC, g.curR = -1, 0, Rows/2
 	g.hoverC, g.hoverR, g.hoverCard, g.downCard = -1, -1, -1, -1
-	g.downSpark = false
+	g.downSpark, g.dragging = false, false
 	g.shake, g.flash, g.wattsBlink, g.message = 0, 0, 0, ""
 	g.nextSky = skySparkEvery / 2
 	g.deal()
@@ -255,10 +266,21 @@ func (g *game) Interval() time.Duration {
 	return StepTime
 }
 
-func (g *game) Animating() bool { return g.shake > 0 || g.flash > 0 || g.wattsBlink > 0 }
+func (g *game) Animating() bool {
+	return g.shake > 0 || g.flash > 0 || g.wattsBlink > 0 || (g.hoverCard >= 0 && g.hoverTicks < tipDelay)
+}
+
+// tipShown tells whether the tooltip of the card under the pointer shows: after
+// the pointer has stayed on it a moment, and not while a card is dragged.
+func (g *game) tipShown() bool {
+	return g.hoverCard >= 0 && g.hoverTicks >= tipDelay && !g.dragging
+}
 
 func (g *game) Frame() {
 	g.shake, g.flash, g.wattsBlink = max(g.shake-1, 0), max(g.flash-1, 0), max(g.wattsBlink-1, 0)
+	if g.hoverCard >= 0 && g.hoverTicks < tipDelay {
+		g.hoverTicks++
+	}
 }
 
 // wave is the one now coming, 1 to waves.
@@ -281,6 +303,8 @@ func (g *game) Status() (score, hint string) {
 		hint = "SYSTEM DOWN - SPACE"
 	case g.won:
 		hint = "SECTOR CLEARED - SPACE"
+	case g.dragging:
+		hint = "DROP ON A TILE"
 	case !g.started:
 		hint = "SPACE OR CLICK TO BEGIN"
 	case g.paused:
@@ -412,18 +436,29 @@ func tileAt(px, py int) (c, r int) {
 
 // Pointer: over a card or a tile it hovers; a click that goes down and up on a
 // card chooses it (or puts it down again), on a tile places the card in hand
-// there, and on a spark takes it. Any click begins the game.
+// there, and on a spark takes it. A card can also be dragged to a tile, which
+// places it where it is dropped; dropped off the sector, or let go of off the
+// screen, it is not placed. Any click begins the game.
 func (g *game) Pointer(p games.Pointer) {
 	switch p.Kind {
 	case games.PointerMove:
-		g.hoverCard = g.cardAt(p.X, p.Y)
+		if card := g.cardAt(p.X, p.Y); card != g.hoverCard {
+			g.hoverCard, g.hoverTicks = card, 0
+		}
 		g.hoverC, g.hoverR = tileAt(p.X, p.Y)
+		if g.downCard >= 0 && !g.over && !g.won {
+			g.dragX, g.dragY = p.X, p.Y
+			if dx, dy := p.X-g.downX, p.Y-g.downY; !g.dragging && dx*dx+dy*dy > dragSlop*dragSlop {
+				g.dragging = true
+			}
+		}
 	case games.PointerLeave:
-		g.hoverCard, g.hoverC, g.hoverR = -1, -1, -1
-		g.downCard, g.downSpark = -1, false
+		g.hoverCard, g.hoverC, g.hoverR, g.hoverTicks = -1, -1, -1, 0
+		g.downCard, g.downSpark, g.dragging = -1, false, false
 	case games.PointerDown:
 		g.downCard = g.cardAt(p.X, p.Y)
 		g.downSpark = g.sparkAt(p.X, p.Y) >= 0
+		g.downX, g.downY, g.dragX, g.dragY, g.dragging = p.X, p.Y, p.X, p.Y, false
 		if g.over || g.won {
 			return
 		}
@@ -439,8 +474,15 @@ func (g *game) Pointer(p games.Pointer) {
 			}
 			return
 		}
-		down, spark := g.downCard, g.downSpark
-		g.downCard, g.downSpark = -1, false
+		down, spark, dragged := g.downCard, g.downSpark, g.dragging
+		g.downCard, g.downSpark, g.dragging = -1, false, false
+		if dragged && down >= 0 {
+			if c, r := tileAt(p.X, p.Y); c >= 0 {
+				g.curC, g.curR = c, r
+				g.place(Kind(down), c, r)
+			}
+			return
+		}
 		switch i := g.cardAt(p.X, p.Y); {
 		case i >= 0 && i == down:
 			if g.selected == i {

@@ -177,3 +177,38 @@ func TestEveryCardSaysWhatItDoes(t *testing.T) {
 		}
 	}
 }
+
+func TestTheTooltipIsDrawnOverTheScreenAndSaysWhatTheCardDoes(t *testing.T) {
+	for k := Kind(0); k < kinds; k++ {
+		if cardTips[k][0] == "" || cardTips[k][1] == "" {
+			t.Errorf("card %d has no tooltip text", k)
+		}
+	}
+	differ := func(a, b *pixel.Canvas) (n int) {
+		for py := 0; py < games.Height; py++ {
+			for px := 0; px < games.Width; px++ {
+				if a.Get(px, py) != b.Get(px, py) {
+					n++
+					if py < games.HUDHeight {
+						t.Fatalf("something is drawn in the band of the score, at %d,%d", px, py)
+					}
+				}
+			}
+		}
+		return n
+	}
+	g := newGame(1)
+	plain, tip, early := pixel.NewCanvas(games.Width, games.Height), pixel.NewCanvas(games.Width, games.Height), pixel.NewCanvas(games.Width, games.Height)
+	draw(g, plain)
+	g.hoverCard, g.hoverTicks = int(Mine), tipDelay
+	draw(g, tip)
+	if n := differ(plain, tip); n < 200 {
+		t.Errorf("the tooltip changed %d pixels: it is not drawn", n)
+	}
+	// Before its time there is only the ring round the card.
+	g.hoverTicks = tipDelay - 1
+	draw(g, early)
+	if n := differ(plain, early); n > 200 {
+		t.Errorf("%d pixels differ before the tooltip's time: it is drawn too early", n)
+	}
+}

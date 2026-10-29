@@ -482,12 +482,16 @@ func TestStepTimeIsAThirtiethOfASecond(t *testing.T) {
 func TestLayoutFitsTheScreen(t *testing.T) {
 	for i := 0; i < int(kinds); i++ {
 		x, y, w, h := cardRect(i)
-		if x < 0 || y < games.HUDHeight || x+w > games.Width || y+h > sectorY {
-			t.Errorf("card %d at %d,%d %dx%d is off its place", i, x, y, w, h)
+		if x < 0 || y < sectorY+Rows*TileH || x+w > games.Width || y+h > infoY {
+			t.Errorf("card %d at %d,%d %dx%d is off its place, under the sector", i, x, y, w, h)
 		}
 	}
-	if sectorX < 0 || sectorX+Cols*TileW > games.Width || sectorY+Rows*TileH > games.Height {
+	if sectorX < 0 || sectorX+Cols*TileW > games.Width || sectorY < games.HUDHeight || sectorY+Rows*TileH > games.Height {
 		t.Error("the sector is off the screen")
+	}
+	// The core and the waves fit under the cards, on the screen.
+	if infoY+9 > games.Height {
+		t.Errorf("the core and the waves, at %d, are off the screen", infoY)
 	}
 	if c, r := tileAt(sectorX, sectorY); c != 0 || r != 0 {
 		t.Errorf("the first tile is %d,%d", c, r)
@@ -553,5 +557,158 @@ func TestWattsBlinkAsTheyChange(t *testing.T) {
 	g.place(Wall, 4, 4)
 	if g.wattsBlink != 0 {
 		t.Error("a placing that failed blinked")
+	}
+}
+
+func ptr(g *game, k games.PointerKind, x, y int) {
+	g.Pointer(games.Pointer{Kind: k, X: x, Y: y})
+}
+
+// A card dragged to a tile is placed where it is dropped; it is a drag when the
+// pointer moves more than a few pixels, and not a click.
+func TestDraggingACardToATile(t *testing.T) {
+	g := newGame(1)
+	cx, cy, cw, ch := cardRect(int(Pulse))
+	fx, fy := cx+cw/2, cy+ch/2
+	ptr(g, games.PointerMove, fx, fy)
+	ptr(g, games.PointerDown, fx, fy)
+	if g.dragging {
+		t.Error("a press is a drag before it moves")
+	}
+	ptr(g, games.PointerMove, fx+1, fy+1)
+	if g.dragging {
+		t.Error("a move of a pixel is a drag")
+	}
+	tx, ty := centerOf(4, 1)
+	ptr(g, games.PointerMove, fx+10, fy-30)
+	if !g.dragging {
+		t.Fatal("a move of many pixels is not a drag")
+	}
+	if _, hint := g.Status(); !strings.Contains(hint, "DROP") {
+		t.Errorf("hint while dragging: %q", hint)
+	}
+	ptr(g, games.PointerMove, tx, ty)
+	if g.hoverC != 4 || g.hoverR != 1 {
+		t.Errorf("the drag is over tile %d,%d", g.hoverC, g.hoverR)
+	}
+	ptr(g, games.PointerUp, tx, ty)
+	if d := g.cells[1][4]; d == nil || d.kind != Pulse {
+		t.Fatalf("a pulse dropped on a tile was not placed: %+v", d)
+	}
+	if g.dragging || g.downCard != -1 {
+		t.Error("the drag is not over after the drop")
+	}
+	if g.selected != -1 {
+		t.Errorf("a drag chose card %d: it is not a click", g.selected)
+	}
+	if !g.started || g.watts != startWatts-50 {
+		t.Errorf("started %v, watts %d", g.started, g.watts)
+	}
+}
+
+func TestADragThatDoesNotLandIsNotPlaced(t *testing.T) {
+	cx, cy, cw, ch := cardRect(int(Dynamo))
+	fx, fy := cx+cw/2, cy+ch/2
+	tx, ty := centerOf(2, 2)
+	for name, drop := range map[string]func(g *game){
+		"off the sector": func(g *game) { ptr(g, games.PointerUp, 3, games.Height-3) },
+		"out of the screen": func(g *game) {
+			ptr(g, games.PointerLeave, tx, ty)
+			ptr(g, games.PointerUp, tx, ty) // a release that never comes from the pane
+		},
+	} {
+		g := newGame(1)
+		ptr(g, games.PointerDown, fx, fy)
+		ptr(g, games.PointerMove, tx, ty)
+		if !g.dragging {
+			t.Fatalf("%s: no drag", name)
+		}
+		drop(g)
+		for r := range g.cells {
+			for c := range g.cells[r] {
+				if g.cells[r][c] != nil {
+					t.Errorf("%s: a program was placed at %d,%d", name, c, r)
+				}
+			}
+		}
+		if g.dragging || g.watts != startWatts {
+			t.Errorf("%s: dragging %v, watts %d", name, g.dragging, g.watts)
+		}
+	}
+	// Dropped on a tile that is taken, it says so and spends nothing.
+	g := begun()
+	g.cells[2][2] = &defender{kind: Wall, hp: 80}
+	ptr(g, games.PointerDown, fx, fy)
+	ptr(g, games.PointerMove, tx, ty)
+	ptr(g, games.PointerUp, tx, ty)
+	if g.message != "TILE TAKEN" || g.watts != startWatts {
+		t.Errorf("a drop on a program: message %q, watts %d", g.message, g.watts)
+	}
+}
+
+func TestAClickOnACardStillChoosesIt(t *testing.T) {
+	g := newGame(1)
+	cx, cy, cw, ch := cardRect(int(Cryo))
+	ptr(g, games.PointerDown, cx+cw/2, cy+ch/2)
+	ptr(g, games.PointerMove, cx+cw/2+1, cy+ch/2)
+	ptr(g, games.PointerUp, cx+cw/2+1, cy+ch/2)
+	if g.selected != int(Cryo) {
+		t.Errorf("a click with a slip chose %d", g.selected)
+	}
+}
+
+// The tooltip of a card shows after the pointer has stayed on it a moment, goes
+// when it leaves or moves to another, and is not shown while a card is dragged;
+// the game asks for frames only while it waits for it.
+func TestCardTooltipShowsAfterAMoment(t *testing.T) {
+	g := newGame(1)
+	cx, cy, cw, ch := cardRect(int(Wall))
+	ox, oy := cx+cw/2, cy+ch/2
+	if g.tipShown() || g.Animating() {
+		t.Fatal("a tooltip, or frames, with no pointer")
+	}
+	ptr(g, games.PointerMove, ox, oy)
+	if g.tipShown() || !g.Animating() {
+		t.Fatal("the tooltip is there at once, or no frames are asked for to wait")
+	}
+	for i := 0; i < tipDelay-1; i++ {
+		g.Frame()
+	}
+	if g.tipShown() {
+		t.Error("the tooltip shows before its time")
+	}
+	g.Frame()
+	if !g.tipShown() {
+		t.Fatal("the tooltip does not show after its time")
+	}
+	if g.Animating() {
+		t.Error("frames are asked for while a tooltip stays")
+	}
+	// Moving within the card keeps it; to another card starts over.
+	ptr(g, games.PointerMove, ox+3, oy-2)
+	if !g.tipShown() {
+		t.Error("moving within the card hid the tooltip")
+	}
+	nx, ny, nw, nh := cardRect(int(Mine))
+	ptr(g, games.PointerMove, nx+nw/2, ny+nh/2)
+	if g.tipShown() || g.hoverTicks != 0 {
+		t.Error("another card kept the tooltip")
+	}
+	for i := 0; i < tipDelay; i++ {
+		g.Frame()
+	}
+	ptr(g, games.PointerLeave, 0, 0)
+	if g.tipShown() || g.Animating() {
+		t.Error("the tooltip stayed after the pointer left")
+	}
+	// Dragging hides it.
+	ptr(g, games.PointerMove, ox, oy)
+	for i := 0; i < tipDelay; i++ {
+		g.Frame()
+	}
+	ptr(g, games.PointerDown, ox, oy)
+	ptr(g, games.PointerMove, ox+20, oy-20)
+	if g.tipShown() {
+		t.Error("the tooltip is there while dragging")
 	}
 }

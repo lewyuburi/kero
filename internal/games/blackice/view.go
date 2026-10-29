@@ -29,6 +29,16 @@ var programSprites = [kinds]string{Pulse: "pulse", Dynamo: "dynamo", Wall: "wall
 // shields, it is a trap, it slows. The screen has no tooltips.
 var roleSprites = [kinds]string{Pulse: "role-attack", Dynamo: "role-power", Wall: "role-shield", Mine: "role-trap", Cryo: "role-slow"}
 
+// cardTips say what a card does, for the tooltip that shows when the pointer
+// stays on it: its name, and what it does.
+var cardTips = [kinds][2]string{
+	Pulse:  {"PULSE", "SHOOTS DOWN ITS CONDUIT"},
+	Dynamo: {"DYNAMO", "MAKES SPARKS: +25 WATTS"},
+	Wall:   {"WALL", "BLOCKS MALWARE"},
+	Mine:   {"MINE", "BLOWS UP WHAT STEPS ON IT"},
+	Cryo:   {"CRYO", "SLOWS MALWARE DOWN"},
+}
+
 // frames is the sprite of a malware's kind, in the frame of its walk: two,
 // which it goes between.
 func frames(k enemyKind, tick int) string {
@@ -68,7 +78,7 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 			span := programs[k].ready
 			cv.Rect(x+2, y+h-4, (w-4)*(span-left)/span, 2, true)
 		}
-		if g.tick < g.cards[i].ready || g.watts < k.Cost() {
+		if g.tick < g.cards[i].ready || g.watts < k.Cost() || (g.dragging && g.downCard == i) {
 			cv.Dither(x+1, y+1, w-2, h-2, 0.45, false)
 		}
 		if i == g.selected {
@@ -130,6 +140,22 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	}
 	bracket(cv, sectorX+hc*TileW, sectorY+hr*TileH, TileW, TileH)
 
+	// A card being dragged: its program, on the tile it is over if it can go
+	// there, else where the pointer is, lighter as it is further from a place.
+	if g.dragging && g.downCard >= 0 {
+		img := sheet.Image(programSprites[g.downCard])
+		if g.hoverC >= 0 && g.cells[g.hoverR][g.hoverC] == nil {
+			x, y := sectorX+g.hoverC*TileW+4, sectorY+g.hoverR*TileH+4
+			cv.Draw(img, x, y, pixel.Copy)
+			cv.Dither(x, y, 16, 16, 0.25, false)
+			bracket(cv, sectorX+g.hoverC*TileW, sectorY+g.hoverR*TileH, TileW, TileH)
+		} else {
+			x, y := g.dragX-8, g.dragY-8
+			cv.Draw(img, x, y, pixel.Copy)
+			cv.Dither(x, y, 16, 16, 0.5, false)
+		}
+	}
+
 	// Malware, in the frame of its walk, slowed ones frosted.
 	for _, e := range g.enemies {
 		x := sectorX + int(e.x*TileW) - 2
@@ -159,13 +185,13 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 
 	// Under the sector: the core, a chip for each that is left, and the waves.
 	for i := 0; i < startCore; i++ {
-		x, y := sectorX+i*10, sectorY+Rows*TileH+8
+		x, y := sectorX+i*10, infoY
 		cv.Draw(sheet.Image("core"), x, y, pixel.Copy)
 		if i >= g.core {
 			cv.Dither(x, y, 8, 8, 0.7, false)
 		}
 	}
-	barX, barY, barW := sectorX+40, sectorY+Rows*TileH+9, Cols*TileW-40
+	barX, barY, barW := sectorX+40, infoY+1, Cols*TileW-40
 	cv.Frame(barX, barY, barW, 6, 1)
 	total := firstWave + waves*waveEvery
 	cv.Rect(barX+1, barY+1, (barW-2)*min(g.tick, total)/total, 4, true)
@@ -176,6 +202,12 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 
 	if g.flash > 0 && g.flash%2 == 0 {
 		cv.Invert(sectorX, sectorY+g.flashLane*TileH, Cols*TileW, TileH)
+	}
+	// What a card does, in a box over it, once the pointer has stayed on it.
+	if g.tipShown() {
+		x, y, w, _ := cardRect(g.hoverCard)
+		tip := cardTips[g.hoverCard]
+		cv.Tooltip(tiny, x+w/2, y, sectorY, tip[0], tip[1])
 	}
 	if g.over || g.won {
 		// The sector washes out, and says how it ended in a box.
