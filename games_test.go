@@ -276,6 +276,30 @@ func TestPointerReachesTheGame(t *testing.T) {
 				t.Errorf("%s: event %d is %+v, want %+v", mode, i, ev[i], w)
 			}
 		}
+		// Leaving with the button down is a leave and no release: a drag out of
+		// the screen is not a drop on the last pixel.
+		before := len(testPointerGame.events)
+		x, y = at(40, 40)
+		tt.Move(x, y)
+		tt.Frame()
+		tt.Press(x, y)
+		tt.Frame()
+		tt.Move(box.X+box.W-2, box.Y+box.H-2)
+		tt.Frame()
+		tt.Release(box.X+box.W-2, box.Y+box.H-2)
+		tt.Frame()
+		var kinds []games.PointerKind
+		for _, e := range testPointerGame.events[before:] {
+			kinds = append(kinds, e.Kind)
+		}
+		for _, k := range kinds {
+			if k == games.PointerUp {
+				t.Errorf("%s: a release came for a drag that left: %v", mode, kinds)
+			}
+		}
+		if len(kinds) == 0 || kinds[len(kinds)-1] != games.PointerLeave {
+			t.Errorf("%s: the drag out did not end in a leave: %v", mode, kinds)
+		}
 		// Off the screen, in the pane's paper, it leaves.
 		tt.Move(box.X+box.W-2, box.Y+box.H-2)
 		tt.Frame()

@@ -185,3 +185,29 @@ func (cv *Canvas) Text(f *Font, x, y int, s string, m Mode) int {
 	}
 	return x
 }
+
+// Tooltip draws a box of text, lines of it, for a tooltip drawn on the screen as
+// the screen is: a frame in ink, paper inside it, and the text in the font.
+// anchorX, anchorY is what it is about; the box is centered over it, above if
+// there is room (not above top), else below, and always inside the canvas. It
+// returns where the box is.
+func (cv *Canvas) Tooltip(f *Font, anchorX, anchorY, top int, lines ...string) (x, y, w, h int) {
+	const pad = 3
+	tw := 0
+	for _, l := range lines {
+		tw = max(tw, f.Width(l))
+	}
+	lh := f.Height + 2
+	w, h = tw+2*pad+2, len(lines)*lh-2+2*pad+2
+	x = min(max(anchorX-w/2, 1), cv.W-w-1)
+	y = anchorY - h - 4
+	if y < top {
+		y = anchorY + 14
+	}
+	y = min(max(y, 1), cv.H-h-1)
+	cv.Frame(x, y, w, h, 1)
+	for i, l := range lines {
+		cv.Text(f, x+1+pad, y+1+pad+i*lh, l, Copy)
+	}
+	return x, y, w, h
+}

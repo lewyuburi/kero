@@ -193,10 +193,9 @@ func pointGame(screen ui.Element, play *gamePlay, pg games.Pointed) {
 	case on && (!play.hover || px != play.px || py != play.py):
 		pg.Pointer(games.Pointer{Kind: games.PointerMove, X: px, Y: py})
 	case !on && play.hover:
-		if play.pressed {
-			pg.Pointer(games.Pointer{Kind: games.PointerUp, X: play.px, Y: play.py})
-			play.pressed = false
-		}
+		// Leaving with a button down is not a release on the last pixel: a game
+		// that was being dragged on is told it left, and it is over.
+		play.pressed = false
 		pg.Pointer(games.Pointer{Kind: games.PointerLeave, X: play.px, Y: play.py})
 	}
 	if on {

@@ -55,7 +55,8 @@ type Pointer struct {
 }
 
 // A Pointed game takes the mouse. Pointers come between its steps, and a Down
-// is followed by an Up, or a Leave, at the end of a drag.
+// is followed by an Up, or by a Leave, if the pointer goes out of the screen
+// with the button down; a Leave then is the end of a drag with no drop.
 type Pointed interface {
 	Pointer(p Pointer)
 }

@@ -286,3 +286,50 @@ func TestThemes(t *testing.T) {
 		t.Error("the paper is not darker in the dark")
 	}
 }
+
+func TestTooltipFitsAndSaysItsLines(t *testing.T) {
+	f := FontNamed("tiny3x5")
+	cv := NewCanvas(160, 80)
+	x, y, w, h := cv.Tooltip(f, 80, 60, 10, "PULSE", "SHOOTS DOWN ITS CONDUIT")
+	if w < f.Width("SHOOTS DOWN ITS CONDUIT") || h < 2*f.Height {
+		t.Errorf("a box of %dx%d is too small for its text", w, h)
+	}
+	if x < 0 || y < 0 || x+w > cv.W || y+h > cv.H {
+		t.Errorf("the box at %d,%d %dx%d is off the canvas", x, y, w, h)
+	}
+	if y+h > 60 {
+		t.Errorf("with room above, the box is not above what it is about: y %d h %d", y, h)
+	}
+	// It has ink: the frame, and the text.
+	if count(cv) < 2*(w+h) {
+		t.Error("the tooltip is nearly blank")
+	}
+	// With no room above, it goes below; at the edges, it stays inside.
+	cv = NewCanvas(160, 80)
+	_, y, _, _ = cv.Tooltip(f, 80, 12, 10, "A", "B")
+	if y < 12 {
+		t.Errorf("with no room above, the box is at %d, over what it is about", y)
+	}
+	for _, ax := range []int{0, 159} {
+		cv = NewCanvas(160, 80)
+		x, _, w, _ := cv.Tooltip(f, ax, 60, 10, "SHOOTS DOWN ITS CONDUIT")
+		if x < 0 || x+w > cv.W {
+			t.Errorf("anchor %d: the box at %d (%d wide) is off the canvas", ax, x, w)
+		}
+	}
+	// Paper inside it: what was under it is hidden.
+	cv = NewCanvas(160, 80)
+	cv.Rect(0, 0, 160, 80, true)
+	x, y, w, h = cv.Tooltip(f, 80, 60, 10, "HI")
+	blank := 0
+	for py := y + 1; py < y+h-1; py++ {
+		for px := x + 1; px < x+w-1; px++ {
+			if !cv.Get(px, py) {
+				blank++
+			}
+		}
+	}
+	if blank < (w-2)*(h-2)/2 {
+		t.Errorf("only %d of the box's %d inside pixels are paper", blank, (w-2)*(h-2))
+	}
+}
