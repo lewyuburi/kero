@@ -446,16 +446,18 @@ func TestTheGameKeepsProgressInAFile(t *testing.T) {
 	}
 }
 
-// A conduit out of play is quiet, and the one in play stands out by a frame: it is
-// the one with dots in all its tiles, and lines along its sides.
-func TestClosedConduitsAreQuietAndTheOneInPlayIsFramed(t *testing.T) {
+// A conduit out of play has a lock where it begins and nothing else in it, and the
+// one in play has the dots of its tiles and a line along each side: it is plain
+// which is which.
+func TestClosedConduitsHaveALockAndTheOneInPlayIsFramed(t *testing.T) {
 	g, _ := freshCampaign(nil)
 	g.startLevel(0)
+	g.curC = Cols - 1 // the keyboard's corners are not at the start of the conduit
 	cv := pixel.NewCanvas(games.Width, games.Height)
 	draw(g, cv)
-	density := func(r int) (n int) {
+	inRect := func(r, x0, x1 int) (n int) {
 		for y := sectorY + r*TileH + 2; y < sectorY+(r+1)*TileH-2; y++ {
-			for x := sectorX; x < sectorX+Cols*TileW; x++ {
+			for x := x0; x < x1; x++ {
 				if cv.Get(x, y) {
 					n++
 				}
@@ -464,28 +466,142 @@ func TestClosedConduitsAreQuietAndTheOneInPlayIsFramed(t *testing.T) {
 		return n
 	}
 	for _, r := range []int{0, 1, 3, 4} {
-		if n := density(r); n > Cols/2+2 { // a dot in every other tile, and no more
-			t.Errorf("conduit %d, out of play, has %d inked pixels: not quiet", r, n)
+		if n := inRect(r, sectorX, sectorX+TileW); n < 40 {
+			t.Errorf("conduit %d, out of play, has %d inked pixels where its lock is: no lock", r, n)
+		}
+		if n := inRect(r, sectorX+TileW, sectorX+Cols*TileW); n != 0 {
+			t.Errorf("conduit %d, out of play, has %d inked pixels past its lock: it is not plain", r, n)
 		}
 	}
-	if n := density(2); n < Cols-1 {
+	if n := inRect(2, sectorX+TileW, sectorX+Cols*TileW); n < Cols-2 {
 		t.Errorf("the conduit in play has %d inked pixels: its tiles have no dots", n)
 	}
+	if n := inRect(2, sectorX, sectorX+TileW); n > 3 {
+		t.Errorf("the conduit in play has a lock, or something: %d inked pixels at its start", n)
+	}
 	// Lines along both sides of the one in play, and not along a conduit out of play.
-	for x := sectorX; x < sectorX+Cols*TileW; x += 17 {
+	for x := sectorX + TileW; x < sectorX+Cols*TileW; x += 17 {
 		if !cv.Get(x, sectorY+2*TileH) || !cv.Get(x, sectorY+3*TileH-1) {
 			t.Fatalf("the conduit in play is not framed at x %d", x)
 		}
-		if cv.Get(x, sectorY+TileH+TileH/2+3) {
-			t.Errorf("something is drawn in a conduit out of play at x %d", x)
-		}
 	}
-	// With every conduit in play, no extra lines are drawn inside the sector's own.
+	// With every conduit in play, there is no lock and no line inside the sector's own.
 	full, _ := freshCampaign(map[string]int{"1-1": 3, "1-2": 3, "1-3": 3, "1-4": 3})
 	full.startLevel(4)
+	full.curC = Cols - 1
 	c2 := pixel.NewCanvas(games.Width, games.Height)
 	draw(full, c2)
 	if c2.Get(sectorX+5, sectorY+1) {
 		t.Error("a line inside the top of a sector with every conduit in play")
 	}
+	for r := 0; r < Rows; r++ {
+		n := 0
+		for y := sectorY + r*TileH + 2; y < sectorY+(r+1)*TileH-2; y++ {
+			for x := sectorX; x < sectorX+TileW; x++ {
+				if c2.Get(x, y) {
+					n++
+				}
+			}
+		}
+		if n > 3 {
+			t.Errorf("conduit %d of a sector with every one in play has a lock: %d pixels", r, n)
+		}
+	}
+}
+
+// Why a program cannot be placed is one thing, said by cannotPlace, which place
+// and the view both go by.
+func TestWhyAProgramCannotBePlaced(t *testing.T) {
+	g, _ := freshCampaign(nil)
+	g.startLevel(0)
+	g.started = true
+	for _, tc := range []struct {
+		k    Kind
+		c, r int
+		want string
+	}{
+		{Pulse, 3, 2, ""},
+		{Pulse, 3, 0, "CONDUIT CLOSED"},
+		{Wall, 3, 2, "NOT YET YOURS"},
+		{Pulse, -1, 2, "-"},
+		{Pulse, 3, Rows, "-"},
+	} {
+		if got := g.cannotPlace(tc.k, tc.c, tc.r); got != tc.want {
+			t.Errorf("%s at %d,%d: %q, want %q", tc.k.Name(), tc.c, tc.r, got, tc.want)
+		}
+	}
+	g.place(Pulse, 3, 2)
+	if got := g.cannotPlace(Pulse, 3, 2); got != "TILE TAKEN" {
+		t.Errorf("on a program: %q", got)
+	}
+	if got := g.cannotPlace(Pulse, 4, 2); got != "NOT READY" {
+		t.Errorf("a card not ready: %q", got)
+	}
+	g.cards[Pulse].ready = 0
+	g.watts = 10
+	if got := g.cannotPlace(Pulse, 4, 2); got != "NOT ENOUGH WATTS" {
+		t.Errorf("without watts: %q", got)
+	}
+	// Asking changes nothing; placing says it, but says nothing of a tile off the sector.
+	if g.watts != 10 || g.cells[2][4] != nil {
+		t.Error("asking why not placed something or spent something")
+	}
+	g.message = "x"
+	if g.place(Pulse, -3, 2) || g.message != "" {
+		t.Errorf("a tile off the sector: message %q", g.message)
+	}
+}
+
+// A card being dragged, or in hand, is dimmed where it cannot go, and almost solid
+// where it can.
+func TestAProgramIsDimmedWhereItCannotGo(t *testing.T) {
+	ghost := func(g *game, c, r int) int {
+		cv := pixel.NewCanvas(games.Width, games.Height)
+		draw(g, cv)
+		n := 0
+		x, y := sectorX+c*TileW+spriteOff, sectorY+r*TileH+spriteOff
+		for py := y; py < y+spriteSize; py++ {
+			for px := x; px < x+spriteSize; px++ {
+				if cv.Get(px, py) {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	g, _ := freshCampaign(nil)
+	g.startLevel(0)
+	g.started = true
+	// In hand, over a tile of the conduit in play, and over a closed one.
+	g.selected = int(Pulse)
+	g.hoverC, g.hoverR = 4, 2
+	okInHand := ghost(g, 4, 2)
+	g.hoverC, g.hoverR = 4, 0
+	closedInHand := ghost(g, 4, 0)
+	if okInHand <= closedInHand+8 {
+		t.Errorf("in hand, the ghost where it goes has %d inked pixels, and over a closed conduit %d: not dimmed", okInHand, closedInHand)
+	}
+	// Dragged: to a tile where it can go, snapped there; where it cannot, with the
+	// pointer, dimmed.
+	g.selected = -1
+	g.dragging, g.downCard = true, int(Pulse)
+	g.hoverC, g.hoverR = 5, 2
+	good := ghost(g, 5, 2)
+	if good < 40 {
+		t.Errorf("dragged over a tile it can go on, the ghost has %d inked pixels there", good)
+	}
+	g.hoverC, g.hoverR = 5, 0 // closed
+	g.dragX, g.dragY = sectorX+5*TileW+TileW/2, sectorY+0*TileH+TileH/2
+	if refused := ghost(g, 5, 0); refused > good-20 {
+		t.Errorf("dragged over a closed conduit, the ghost has %d inked pixels, against %d where it can go: not dimmed", refused, good)
+	}
+	// And off the sector, or over a tile that is taken, it is dimmed as well.
+	g.cells[2][6] = &defender{kind: Wall, hp: 80}
+	g.hoverC, g.hoverR = 6, 2
+	g.dragX, g.dragY = sectorX+6*TileW+TileW/2, sectorY+2*TileH+TileH/2
+	cv := pixel.NewCanvas(games.Width, games.Height)
+	draw(g, cv)
+	g.hoverC, g.hoverR = -1, -1
+	g.dragX, g.dragY = 5, 5
+	draw(g, cv)
 }

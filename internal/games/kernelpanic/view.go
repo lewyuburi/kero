@@ -116,11 +116,9 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	cv.Frame(sectorX-3, sectorY-3, Cols*TileW+6, Rows*TileH+6, 2)
 	for r := 0; r < Rows; r++ {
 		if !g.lanes[r] {
-			// Out of play: a dot in every other tile, which is what the tiles of the
-			// conduits in play have, less of, so that it is there and does not call.
-			for c := 0; c < Cols; c += 2 {
-				cv.Set(sectorX+c*TileW+TileW/2, sectorY+r*TileH+TileH/2, true)
-			}
+			// Out of play: a lock where it begins, and no dots in its tiles, which
+			// the conduits in play have: it is plain which is which.
+			cv.Draw(sheet.Image("lock"), sectorX+(TileW-12)/2, sectorY+r*TileH+(TileH-12)/2, pixel.Copy)
 		} else {
 			// In play: framed where it meets a conduit out of play.
 			if r > 0 && !g.lanes[r-1] {
@@ -175,9 +173,14 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 		hc, hr = g.curC, g.curR
 	}
 	if g.selected >= 0 && g.cells[hr][hc] == nil && !g.over && !g.won {
+		// The card in hand over a tile: dimmed, and dimmed more where it cannot go.
 		x, y := sectorX+hc*TileW+spriteOff, sectorY+hr*TileH+spriteOff
 		cv.Draw(sheet.Image(programSprites[g.selected]), x, y, pixel.Copy)
-		cv.Dither(x, y, spriteSize, spriteSize, 0.5, false)
+		shade := float32(0.5)
+		if g.cannotPlace(Kind(g.selected), hc, hr) != "" {
+			shade = refusedShade
+		}
+		cv.Dither(x, y, spriteSize, spriteSize, shade, false)
 	}
 	bracket(cv, sectorX+hc*TileW, sectorY+hr*TileH, TileW, TileH)
 
@@ -185,15 +188,17 @@ func draw(gm games.Game, cv *pixel.Canvas) {
 	// there, else where the pointer is, lighter as it is further from a place.
 	if g.dragging && g.downCard >= 0 {
 		img := sheet.Image(programSprites[g.downCard])
-		if g.hoverC >= 0 && g.cells[g.hoverR][g.hoverC] == nil {
+		if g.hoverC >= 0 && g.cannotPlace(Kind(g.downCard), g.hoverC, g.hoverR) == "" {
+			// A place where it can be dropped: it goes there, almost solid.
 			x, y := sectorX+g.hoverC*TileW+spriteOff, sectorY+g.hoverR*TileH+spriteOff
 			cv.Draw(img, x, y, pixel.Copy)
 			cv.Dither(x, y, spriteSize, spriteSize, 0.25, false)
 			bracket(cv, sectorX+g.hoverC*TileW, sectorY+g.hoverR*TileH, TileW, TileH)
 		} else {
+			// Where it cannot: it stays with the pointer, dimmed.
 			x, y := g.dragX-spriteSize/2, g.dragY-spriteSize/2
 			cv.Draw(img, x, y, pixel.Copy)
-			cv.Dither(x, y, spriteSize, spriteSize, 0.5, false)
+			cv.Dither(x, y, spriteSize, spriteSize, refusedShade, false)
 		}
 	}
 
@@ -392,6 +397,9 @@ func drawReward(g *game, cv *pixel.Canvas) {
 		cv.Rect(cx0+p[0], cy0+p[1]-2, 1, 5, true)
 	}
 }
+
+// refusedShade is how much a program being placed is dimmed where it cannot go.
+const refusedShade = 0.75
 
 // closedShade is how much of a place that is not the player's yet is shaded: one
 // pixel in sixteen, so that it is there without calling for the eye.

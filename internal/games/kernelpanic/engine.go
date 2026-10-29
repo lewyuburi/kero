@@ -389,27 +389,36 @@ func (g *game) Status() (score, hint string) {
 
 // ---------------------------------------------------------------- acting
 
+// cannotPlace says why a program cannot be placed on a tile, "" if it can: the
+// conduit is not in play, the program is not the player's yet, the tile is taken,
+// the card is not ready or the watts are not enough. A tile off the sector is not
+// a place: it says so with "-".
+func (g *game) cannotPlace(k Kind, c, r int) string {
+	switch {
+	case c < 0 || r < 0 || c >= Cols || r >= Rows:
+		return "-"
+	case !g.lanes[r]:
+		return "CONDUIT CLOSED"
+	case !g.open[k]:
+		return "NOT YET YOURS"
+	case g.cells[r][c] != nil:
+		return "TILE TAKEN"
+	case g.tick < g.cards[k].ready:
+		return "NOT READY"
+	case g.watts < programs[k].cost:
+		return "NOT ENOUGH WATTS"
+	}
+	return ""
+}
+
 // place puts the program of a card on a tile, if the tile is free, the card
 // ready and the watts enough; it says why not.
 func (g *game) place(k Kind, c, r int) bool {
 	g.message = ""
-	switch {
-	case c < 0 || r < 0 || c >= Cols || r >= Rows:
-		return false
-	case !g.lanes[r]:
-		g.message = "CONDUIT CLOSED"
-		return false
-	case !g.open[k]:
-		g.message = "NOT YET YOURS"
-		return false
-	case g.cells[r][c] != nil:
-		g.message = "TILE TAKEN"
-		return false
-	case g.tick < g.cards[k].ready:
-		g.message = "NOT READY"
-		return false
-	case g.watts < programs[k].cost:
-		g.message = "NOT ENOUGH WATTS"
+	if why := g.cannotPlace(k, c, r); why != "" {
+		if why != "-" {
+			g.message = why
+		}
 		return false
 	}
 	g.watts -= programs[k].cost
