@@ -186,9 +186,14 @@ func TestSnakeSpritesAreWhole(t *testing.T) {
 		}
 	}
 	for _, n := range names {
+		want := sprite // the snake has room round it
+		switch n {
+		case "apple", "cherry", "star", "clock":
+			want = Cell // what it eats fills its cell
+		}
 		img := sheet.Image(n)
-		if img == nil || img.W != sprite || img.H != sprite {
-			t.Errorf("sprite %q is missing or not %d by %d", n, sprite, sprite)
+		if img == nil || img.W != want || img.H != want {
+			t.Errorf("sprite %q is missing or not %d by %d", n, want, want)
 		}
 	}
 	if sprite != Cell-2 {

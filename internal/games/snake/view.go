@@ -57,11 +57,13 @@ func draw(g games.Game, cv *pixel.Canvas) {
 	}
 	// What is in a cell is a pixel in from its edges.
 	cell := func(p point) (int, int) { return ox + p.x*Cell + pad, oy + p.y*Cell + pad }
-	fx, fy := cell(sn.food)
+	// What it eats fills its cell: it is not the snake, which has room round it.
+	whole := func(p point) (int, int) { return ox + p.x*Cell, oy + p.y*Cell }
+	fx, fy := whole(sn.food)
 	cv.Draw(sheet.Image("apple"), fx, fy, pixel.Copy)
 	// A bonus that is about to go blinks.
 	if b := sn.bonus; b != nil && (b.ttl > 12 || b.ttl%2 == 1) {
-		bx, by := cell(b.at)
+		bx, by := whole(b.at)
 		cv.Draw(sheet.Image(map[bonusKind]string{bonusCherry: "cherry", bonusStar: "star", bonusClock: "clock"}[b.kind]), bx, by, pixel.Copy)
 	}
 	n := len(sn.body)

@@ -1,5 +1,6 @@
 // The sprites of the snake: 8 by 8 pixels, in cells of 10, so that there is a
-// pixel of room all round; # ink, . paper, _ transparent. The head looks four
+// pixel of room all round; what it eats and the bonuses are 10 by 10, the whole
+// cell. # ink, . paper, _ transparent. The head looks four
 // ways, and the tail points away from the body the same four. The icon of the
 // game in the gallery is 32 by 32.
 
@@ -108,44 +109,52 @@ _######_
 // what it eats, and the bonuses that come and go
 
 sprite apple
-____##__
-____#___
-_######_
-_#.####_
-########
-########
-_######_
-__####__
+______##__
+_____#_#__
+___####___
+__#....#__
+_#....#.#_
+_#.....##_
+_#....#.#_
+_#.....##_
+__#.#.##__
+___####___
 
 sprite cherry
-_____#__
-____##__
-___#_#__
-_######_
-########
-########
-#######_
-_###____
+______###_
+_____##___
+_____#_#__
+____#__#__
+___#_####_
+_####....#
+_#.......#
+#....#..#_
+_##.#_##__
+_####_____
 
 sprite star
-________
-___##___
-___##___
-_######_
-_######_
-___##___
-___##___
-________
+__________
+____##____
+____##____
+___#..#___
+_##.##.##_
+__#....#__
+___#..#___
+___####___
+__#____#__
+__________
 
 sprite clock
-___##___
-_##..##_
-_#..#.#_
-#...#..#
-#...#..#
-_#...##_
-_##..##_
-___##___
+____##____
+__##.###__
+_#...#..#_
+_#...#..#_
+#....#...#
+##...#..##
+_#....###_
+_#......#_
+__##.###__
+____##____
 
 // the picture of the game in the gallery
 
