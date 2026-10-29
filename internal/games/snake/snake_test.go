@@ -2,6 +2,7 @@ package snake
 
 import (
 	"testing"
+	"time"
 
 	"kero/internal/games"
 	"kero/internal/pixel"
@@ -52,7 +53,7 @@ func TestSnakeEatsAndGrows(t *testing.T) {
 	if contains(g.body, g.food) {
 		t.Errorf("the food %v is under the snake", g.food)
 	}
-	if g.Interval() >= 140*1e6 {
+	if g.Interval() >= 170*time.Millisecond {
 		t.Errorf("it did not speed up: %v", g.Interval())
 	}
 }

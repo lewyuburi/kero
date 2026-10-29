@@ -18,16 +18,17 @@ func init() {
 }
 
 // The snake's screen, drawn in a one-bit canvas: cells of Cell pixels in a
-// framed board that casts a dithered shadow. What is in a cell is Cell-2
-// pixels, so that there is a pixel of room all round it, and the body is a band
-// of that width, its segments joined. The board is 30 by 21 cells of 10
-// pixels, 300 by 210, in the middle of the area the game has under the band
-// of the score and the hint, with 4 pixels for its frame at each side and its
-// shadow below and to the right.
+// framed board that casts a dithered shadow. The snake is Cell-2 pixels in its
+// cell, so that there is a pixel of room all round it, and its body is a band of
+// that width, its segments joined; what it eats fills the cell. The board is
+// 19 by 13 cells of 16 pixels, 304 by 208, in the middle of the area the game
+// has under the band of the score and the hint, with 4 pixels for its frame at
+// each side and its shadow below and to the right. The cells are large enough
+// to draw what is in them.
 const (
-	Cell = 10
-	Cols = 30
-	Rows = 21
+	Cell = 16
+	Cols = 19
+	Rows = 13
 	// What is in a cell, and the room round it.
 	pad    = 1
 	sprite = Cell - 2*pad

@@ -80,8 +80,9 @@ func (g *snake) Interval() time.Duration {
 	if !g.started || g.over || g.paused {
 		return 0
 	}
-	// Faster as it grows, to a limit, and slower while a clock lasts.
-	iv := max(60*time.Millisecond, 140*time.Millisecond-time.Duration(g.score)*3*time.Millisecond)
+	// Faster as it grows, to a limit, and slower while a clock lasts. The cells
+	// are large, so a step covers more screen than it did: it starts slower.
+	iv := max(80*time.Millisecond, 170*time.Millisecond-time.Duration(g.score)*3*time.Millisecond)
 	if g.slow > 0 {
 		iv = iv * 8 / 5
 	}
