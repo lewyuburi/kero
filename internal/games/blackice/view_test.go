@@ -27,7 +27,7 @@ func TestBlackIceIsInTheCatalogWithAnIcon(t *testing.T) {
 }
 
 func TestEverySpriteIsInTheSheet(t *testing.T) {
-	for _, name := range append(programSprites[:], "spark", "core", "bolt", "cryobolt", "icon") {
+	for _, name := range append(programSprites[:], "dynamo-1", "dynamo-2", "dynamo-3", "spark", "core", "bolt", "cryobolt", "icon") {
 		if sheet.Image(name) == nil {
 			t.Errorf("no sprite %q", name)
 		}
@@ -39,7 +39,7 @@ func TestEverySpriteIsInTheSheet(t *testing.T) {
 			}
 		}
 	}
-	for _, name := range append(programSprites[:], "drone", "worm", "trojan") {
+	for _, name := range append(programSprites[:], "dynamo-1", "dynamo-2", "dynamo-3", "drone", "worm", "trojan") {
 		if img := sheet.Image(name); img.W != spriteSize || img.H != spriteSize {
 			t.Errorf("sprite %s is %dx%d, not %dx%d", name, img.W, img.H, spriteSize, spriteSize)
 		}
@@ -210,5 +210,40 @@ func TestTheTooltipIsDrawnOverTheScreenAndSaysWhatTheCardDoes(t *testing.T) {
 	draw(g, early)
 	if n := differ(plain, early); n > 200 {
 		t.Errorf("%d pixels differ before the tooltip's time: it is drawn too early", n)
+	}
+}
+
+// A dynamo is drawn with its bolt at a step of the pulse, which the game's tick
+// moves, and the steps differ in the bolt and nowhere else; two dynamos are not
+// in the same step of it.
+func TestADynamoPulsesOnTheScreen(t *testing.T) {
+	g := newGame(1)
+	g.started = true
+	g.cells[2][3] = &defender{kind: Dynamo, hp: 12}
+	a, b := pixel.NewCanvas(games.Width, games.Height), pixel.NewCanvas(games.Width, games.Height)
+	g.tick = 0
+	draw(g, a)
+	g.tick = 10 // this dynamo is 27 steps on: 27 is solid, and 37 is dimmed
+	draw(g, b)
+	x, y := sectorX+3*TileW+spriteOff, sectorY+2*TileH+spriteOff
+	diff := 0
+	for py := 0; py < games.Height; py++ {
+		for px := 0; px < games.Width; px++ {
+			if a.Get(px, py) != b.Get(px, py) {
+				diff++
+				if px < x || px >= x+spriteSize || py < y || py >= y+spriteSize {
+					t.Fatalf("the pulse changed %d,%d, outside the dynamo", px, py)
+				}
+			}
+		}
+	}
+	if diff < 20 {
+		t.Errorf("the bolt changed by %d pixels between steps of the pulse: nearly nothing", diff)
+	}
+	// Two dynamos side by side are out of step with each other.
+	g.cells[2][4] = &defender{kind: Dynamo, hp: 12}
+	g.tick = 0
+	if dynamoSprite(g.tick+3*7+2*3) == dynamoSprite(g.tick+4*7+2*3) {
+		t.Error("two neighbouring dynamos are in the same step of the pulse")
 	}
 }

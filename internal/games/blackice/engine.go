@@ -283,6 +283,22 @@ func (g *game) Animating() bool {
 	return g.shake > 0 || g.flash > 0 || g.wattsBlink > 0 || (g.hoverCard >= 0 && g.hoverTicks < tipDelay)
 }
 
+// dynamoSprite is the sprite of a dynamo at a step: its bolt, which says to the
+// player that it is working, comes dimmed and fills in to solid, in four steps,
+// in a second, and again, for as long as the game runs. The steps are the
+// game's, so that it is still when the game is.
+func dynamoSprite(tick int) string {
+	switch phase := tick % perSec; {
+	case phase < 7:
+		return "dynamo-1"
+	case phase < 14:
+		return "dynamo-2"
+	case phase < 21:
+		return "dynamo-3"
+	}
+	return "dynamo"
+}
+
 // tipShown tells whether the tooltip of the card under the pointer shows: after
 // the pointer has stayed on it a moment, and not while a card is dragged.
 func (g *game) tipShown() bool {

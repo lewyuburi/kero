@@ -763,3 +763,48 @@ func TestClickOnTheTileTakesItsSparks(t *testing.T) {
 		t.Error("a spark was taken while paused")
 	}
 }
+
+// A dynamo's bolt pulses while the game runs, to say that it is working: dimmed
+// and filling in to solid in a second, four steps, and again; and it is still
+// when the game is.
+func TestDynamoBoltPulsesWhileItWorks(t *testing.T) {
+	var seen []string
+	last := ""
+	for tick := 0; tick < 3*perSec; tick++ {
+		name := dynamoSprite(tick)
+		if name != last {
+			seen = append(seen, name)
+			last = name
+		}
+	}
+	want := []string{"dynamo-1", "dynamo-2", "dynamo-3", "dynamo"}
+	if len(seen) != 3*len(want) {
+		t.Fatalf("the bolt went through %v in 3 seconds, want three rounds of %v", seen, want)
+	}
+	for i, n := range seen {
+		if n != want[i%len(want)] {
+			t.Errorf("step %d of the pulse is %s, want %s", i, n, want[i%len(want)])
+		}
+	}
+	// A second of it is the four steps, each about a quarter, solid the longest.
+	counts := map[string]int{}
+	for tick := 0; tick < perSec; tick++ {
+		counts[dynamoSprite(tick)]++
+	}
+	for _, n := range want {
+		if counts[n] < 6 || counts[n] > 9 {
+			t.Errorf("%s lasts %d steps of the 30", n, counts[n])
+		}
+	}
+	if dynamoSprite(0) != dynamoSprite(perSec) {
+		t.Error("the pulse does not repeat every second")
+	}
+	// The game's steps are what moves it: a game that waits is still.
+	g := newGame(1)
+	g.cells[1][1] = &defender{kind: Dynamo, hp: 12}
+	before := g.tick
+	g.Step()
+	if g.tick != before {
+		t.Fatal("a step went by in a game that had not begun")
+	}
+}
