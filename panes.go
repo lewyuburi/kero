@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
+	"kero/internal/games"
 	"kero/internal/proto"
 
 	"kero/locales"
@@ -518,6 +519,9 @@ func (a *App) paneHeader(c *ui.Context, pal *palette, bar ui.TitleBar, shown flo
 				}
 			}
 			title, size := p.PaneName(), float32(13.5)
+			if k, ok := games.Lookup(p.Game()); ok {
+				title = k.Title // a game's name, not its address
+			}
 			if !multi {
 				title, size = s.DisplayName(a.set.SessionName), 14
 			}

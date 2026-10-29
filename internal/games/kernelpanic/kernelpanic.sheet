@@ -1,4 +1,4 @@
-// The sprites of BLACK ICE. # is ink, . is paper (inside a sprite), and _ is
+// The sprites of KERNEL PANIC. # is ink, . is paper (inside a sprite), and _ is
 // transparent. Programs and malware are 24 by 24, in tiles of 28; what a card
 // does is 9 by 9; a spark is 14 by 14 and a chip of the core 10 by 10; the icon of the
 // game in the gallery is 32 by 32.

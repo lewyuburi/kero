@@ -1,4 +1,4 @@
-package blackice
+package kernelpanic
 
 import (
 	_ "embed"
@@ -11,14 +11,16 @@ import (
 
 func init() {
 	games.Register(games.Kind{
-		ID: "blackice", Title: "Black Ice",
-		New:  func() games.Game { return New(time.Now().UnixNano()) },
-		Draw: draw,
-		Icon: sheet.Image("icon"),
+		ID: "kernelpanic", Title: "Kernel Panic",
+		// What it was called, so that a pane that was showing it still does.
+		Aliases: []string{"blackice"},
+		New:     func() games.Game { return New(time.Now().UnixNano()) },
+		Draw:    draw,
+		Icon:    sheet.Image("icon"),
 	})
 }
 
-//go:embed blackice.sheet
+//go:embed kernelpanic.sheet
 var sheetSource string
 
 var sheet = pixel.MustSheet(sheetSource)

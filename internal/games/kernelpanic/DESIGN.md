@@ -1,4 +1,4 @@
-# BLACK ICE
+# KERNEL PANIC
 
 A megacorporation's mainframe has fallen and its sector fills with malware. You
 are a daemon, and the sector is yours to hold: five conduits of data run across

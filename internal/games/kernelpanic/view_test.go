@@ -1,4 +1,4 @@
-package blackice
+package kernelpanic
 
 import (
 	"testing"
@@ -8,9 +8,16 @@ import (
 )
 
 func TestBlackIceIsInTheCatalogWithAnIcon(t *testing.T) {
-	k, ok := games.Lookup("blackice")
+	k, ok := games.Lookup("kernelpanic")
 	if !ok {
-		t.Fatal("BLACK ICE is not in the catalog")
+		t.Fatal("KERNEL PANIC is not in the catalog")
+	}
+	// A pane that has it under its old name is the same game.
+	if old, ok := games.Lookup("blackice"); !ok || old.ID != k.ID {
+		t.Error("the old name does not find the game")
+	}
+	if k.Title != "Kernel Panic" {
+		t.Errorf("title %q", k.Title)
 	}
 	if k.Hidden || k.Title == "" {
 		t.Errorf("kind %+v", k)

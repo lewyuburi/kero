@@ -1,4 +1,4 @@
-package blackice
+package kernelpanic
 
 import (
 	"strings"

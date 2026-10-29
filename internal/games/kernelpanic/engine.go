@@ -1,8 +1,8 @@
-// Package blackice is BLACK ICE, a game of defense by lanes: malware comes
+// Package kernelpanic is KERNEL PANIC, a game of defense by lanes: malware comes
 // down five conduits of a fallen mainframe, and programs the player places
 // hold it off. The engine here knows nothing of the window; see DESIGN.md for
 // the game, and view.go for how it is drawn.
-package blackice
+package kernelpanic
 
 import (
 	"math/rand"

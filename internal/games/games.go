@@ -6,6 +6,7 @@
 package games
 
 import (
+	"slices"
 	"time"
 
 	"kero/internal/pixel"
@@ -102,6 +103,8 @@ type Kind struct {
 	Font string
 	// Theme is the colors of the screen, "" for the usual.
 	Theme string
+	// Aliases are other names a pane may have for the game, as it had before.
+	Aliases []string
 	// Icon is the game's picture in the gallery, 32 by 32 pixels, nil for a
 	// question mark; Hidden keeps a game out of the gallery, as the gallery is.
 	Icon   *pixel.Image
@@ -119,7 +122,7 @@ func Kinds() []Kind { return append([]Kind(nil), kinds...) }
 // Lookup is the game with that ID.
 func Lookup(id string) (Kind, bool) {
 	for _, k := range kinds {
-		if k.ID == id {
+		if k.ID == id || slices.Contains(k.Aliases, id) {
 			return k, true
 		}
 	}

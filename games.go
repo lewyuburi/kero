@@ -8,8 +8,8 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"kero/internal/games"
-	_ "kero/internal/games/blackice"
 	_ "kero/internal/games/gallery" // the games there are: each registers itself
+	_ "kero/internal/games/kernelpanic"
 	_ "kero/internal/games/snake"
 	"kero/internal/pixel"
 	"kero/internal/proto"
@@ -43,10 +43,10 @@ type gamePlay struct {
 // gameFor is the game a pane plays, made as it is first shown; nil for a
 // name no game has.
 func (a *App) gameFor(p *proto.Pane) *gamePlay {
-	if play := a.games[p.ID]; play != nil && play.kind.ID == p.Game() {
+	k, ok := games.Lookup(p.Game())
+	if play := a.games[p.ID]; play != nil && ok && play.kind.ID == k.ID {
 		return play
 	}
-	k, ok := games.Lookup(p.Game())
 	if !ok {
 		return nil
 	}

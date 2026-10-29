@@ -506,3 +506,24 @@ func TestBackButtonInAGamesHeader(t *testing.T) {
 		t.Fatal("the button did not go back")
 	}
 }
+
+// A pane that was showing a game under its old name still shows it, as one
+// game that is not made again each frame, and the header says its title.
+func TestAGameUnderItsOldNameStillPlays(t *testing.T) {
+	a := testApp(t)
+	a.st.Sessions[0].Panes[1] = proto.Pane{ID: "b", URL: proto.GameURL("blackice"), Status: proto.Idle, Progress: -1}
+	tt := ui.NewTester(a.view, 1400, 800)
+	tt.Frame()
+	play := a.games["b"]
+	if play == nil || play.kind.ID != "kernelpanic" {
+		t.Fatalf("the old name did not find the game: %+v", play)
+	}
+	tt.Frame()
+	tt.Frame()
+	if a.games["b"] != play {
+		t.Error("the game was made again in a later frame")
+	}
+	if !tt.HasText("Kernel Panic") {
+		t.Errorf("the header does not say the game's title; texts %q", tt.Texts())
+	}
+}
