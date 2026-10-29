@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"kero/internal/games"
@@ -19,7 +20,7 @@ const (
 	TileW, TileH = 24, 24
 	// The sector's top left, the cards' row above it, and the core below.
 	sectorX, sectorY = (games.Width - Cols*TileW) / 2, 48
-	cardsY           = 19
+	cardsY           = 18
 	cardW, cardH     = 40, 24
 	cardGap          = 4
 )
@@ -100,6 +101,7 @@ const (
 	waveEvery     = 25 * perSec
 	waves         = 8
 	shakeFrames   = 12
+	blinkFrames   = 18 // the watts blink three times as they change
 	flashFrames   = 6
 )
 
@@ -168,6 +170,7 @@ type game struct {
 	downCard       int // the card the pointer went down on, -1 for none
 	downSpark      bool
 	shake, flash   int
+	wattsBlink     int
 	flashLane      int
 	best           int
 	message        string // what the last try at placing said, for the hint
@@ -193,7 +196,7 @@ func (g *game) reset() {
 	g.selected, g.curC, g.curR = -1, 0, Rows/2
 	g.hoverC, g.hoverR, g.hoverCard, g.downCard = -1, -1, -1, -1
 	g.downSpark = false
-	g.shake, g.flash, g.message = 0, 0, ""
+	g.shake, g.flash, g.wattsBlink, g.message = 0, 0, 0, ""
 	g.nextSky = skySparkEvery / 2
 	g.deal()
 }
@@ -252,10 +255,10 @@ func (g *game) Interval() time.Duration {
 	return StepTime
 }
 
-func (g *game) Animating() bool { return g.shake > 0 || g.flash > 0 }
+func (g *game) Animating() bool { return g.shake > 0 || g.flash > 0 || g.wattsBlink > 0 }
 
 func (g *game) Frame() {
-	g.shake, g.flash = max(g.shake-1, 0), max(g.flash-1, 0)
+	g.shake, g.flash, g.wattsBlink = max(g.shake-1, 0), max(g.flash-1, 0), max(g.wattsBlink-1, 0)
 }
 
 // wave is the one now coming, 1 to waves.
@@ -267,7 +270,12 @@ func (g *game) wave() int {
 }
 
 func (g *game) Status() (score, hint string) {
-	score = strconv.Itoa(g.watts) + "W  WAVE " + strconv.Itoa(max(g.wave(), 1)) + "/" + strconv.Itoa(waves) + "  CORE " + strconv.Itoa(g.core)
+	watts := strconv.Itoa(g.watts) + "W"
+	if g.wattsBlink > 0 && (g.wattsBlink/3)%2 == 1 {
+		// Off, as the watts blink when they change.
+		watts = strings.Repeat(" ", len(watts))
+	}
+	score = watts + "  WAVE " + strconv.Itoa(max(g.wave(), 1)) + "/" + strconv.Itoa(waves)
 	switch {
 	case g.over:
 		hint = "SYSTEM DOWN - SPACE"
@@ -305,6 +313,7 @@ func (g *game) place(k Kind, c, r int) bool {
 		return false
 	}
 	g.watts -= programs[k].cost
+	g.wattsBlink = blinkFrames
 	g.cards[k].ready = g.tick + programs[k].ready
 	d := &defender{kind: k, hp: programs[k].hp, cd: programs[k].every}
 	switch k {
@@ -321,6 +330,7 @@ func (g *game) place(k Kind, c, r int) bool {
 // collect takes the spark at index i.
 func (g *game) collect(i int) {
 	g.watts += g.sparks[i].value
+	g.wattsBlink = blinkFrames
 	g.sparks = append(g.sparks[:i], g.sparks[i+1:]...)
 }
 

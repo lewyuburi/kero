@@ -9,6 +9,7 @@ internal/pixel            the screen: canvas, images and modes, fonts, sheets, t
 internal/games            the interface a game keeps, and the catalog
 internal/games/gallery    the game that shows the others: Games in the palette opens it
 internal/games/snake      a game: engine, view, sprites
+internal/games/blackice   BLACK ICE, defense by lanes, with its DESIGN.md
 ```
 
 Games in the palette is the gallery, which has a tile for each game, with the

@@ -313,18 +313,26 @@ func TestGalleryOpensTheGameChosen(t *testing.T) {
 	tt.Key(0, ui.KeyEnter)
 	tt.Frame()
 	tt.Frame()
+	// The first tile is the first game of the catalog that is not hidden.
+	var first string
+	for _, k := range games.Kinds() {
+		if !k.Hidden {
+			first = k.ID
+			break
+		}
+	}
 	select {
 	case p := <-got:
-		if p.ID != "b" || p.URL != proto.GameURL("snake") {
-			t.Errorf("the daemon was told %+v, want pane b at the snake", p)
+		if p.ID != "b" || p.URL != proto.GameURL(first) {
+			t.Errorf("the daemon was told %+v, want pane b at %s", p, first)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("the daemon was not told of the game chosen")
 	}
-	if pane := a.st.Sessions[0].PaneByID("b"); pane.Game() != "snake" {
+	if pane := a.st.Sessions[0].PaneByID("b"); pane.Game() != first {
 		t.Errorf("the pane plays %q", pane.Game())
 	}
-	if play := a.games["b"]; play == nil || play.kind.ID != "snake" {
+	if play := a.games["b"]; play == nil || play.kind.ID != first {
 		t.Errorf("the pane did not take the game: %+v", play)
 	}
 }

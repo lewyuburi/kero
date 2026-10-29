@@ -496,3 +496,62 @@ func TestLayoutFitsTheScreen(t *testing.T) {
 		t.Error("a point left of the sector is on a tile")
 	}
 }
+
+// The watts blink as they change, spent or gained, three times, and are shown
+// when the blinking is over.
+func TestWattsBlinkAsTheyChange(t *testing.T) {
+	g := begun()
+	g.nextSky = 1 << 30
+	if g.Animating() || g.wattsBlink != 0 {
+		t.Fatal("blinking with no change")
+	}
+	shown := func() bool {
+		score, _ := g.Status()
+		return strings.HasPrefix(score, strings.TrimSpace(score)) && strings.TrimSpace(score) != "" && !strings.HasPrefix(score, " ")
+	}
+	g.place(Pulse, 0, 0) // spends 50
+	if g.wattsBlink != blinkFrames || !g.Animating() {
+		t.Fatalf("spending did not start the blink: %d", g.wattsBlink)
+	}
+	blanks, shows := 0, 0
+	for g.Animating() {
+		if shown() {
+			shows++
+		} else {
+			blanks++
+		}
+		g.Frame()
+	}
+	if blanks < 6 || shows < 6 {
+		t.Errorf("the watts were off for %d frames and on for %d: not blinking", blanks, shows)
+	}
+	if !shown() {
+		t.Error("the watts are off when the blink is over")
+	}
+	if score, _ := g.Status(); !strings.HasPrefix(score, "50W") {
+		t.Errorf("score %q, want the 50 watts left", score)
+	}
+	// Gaining blinks too, and the text keeps its width, so that the rest does not move.
+	g.sparks = []spark{{x: 10, y: 10, ttl: 100, value: 25}}
+	g.collect(0)
+	if g.wattsBlink != blinkFrames {
+		t.Error("taking a spark did not start the blink")
+	}
+	var widths = map[int]bool{}
+	for g.Animating() {
+		score, _ := g.Status()
+		widths[len(score)] = true
+		g.Frame()
+	}
+	if len(widths) != 1 {
+		t.Errorf("the score changed its width while blinking: %v", widths)
+	}
+	// A card that cannot be placed spends nothing, and does not blink.
+	g.wattsBlink = 0
+	g.watts = 1
+	g.place(Wall, 5, 5)
+	g.place(Wall, 4, 4)
+	if g.wattsBlink != 0 {
+		t.Error("a placing that failed blinked")
+	}
+}

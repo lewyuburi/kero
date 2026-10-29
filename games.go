@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"kero/internal/games"
+	_ "kero/internal/games/blackice"
 	_ "kero/internal/games/gallery" // the games there are: each registers itself
 	_ "kero/internal/games/snake"
 	"kero/internal/pixel"
