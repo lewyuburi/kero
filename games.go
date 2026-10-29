@@ -102,7 +102,7 @@ var gameKeys = []struct {
 	{ui.KeyDown, games.Down}, {ui.KeyS, games.Down},
 	{ui.KeyLeft, games.Left}, {ui.KeyA, games.Left},
 	{ui.KeyRight, games.Right}, {ui.KeyD, games.Right},
-	{ui.KeySpace, games.Action}, {ui.KeyEnter, games.Restart},
+	{ui.KeySpace, games.Action}, {ui.KeyEnter, games.Restart}, {ui.KeyM, games.Menu},
 }
 
 // paneGame is a game pane's body, under the header a pane has: the screen of

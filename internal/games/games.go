@@ -22,6 +22,7 @@ const (
 	Right
 	Action  // space: pause, or begin
 	Restart // enter
+	Menu    // m: to the menu of a game that has one
 )
 
 // A Game steps at the interval it asks, takes keys, and tells the player how
