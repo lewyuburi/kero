@@ -129,8 +129,8 @@ func (a *App) flagRow(c *ui.Context, pal *palette, f settings.Flag, name, detail
 				}
 				ui.Text(c, f.ID).Font("monospace").FontSize(13).FontWeight(600).TextColor(pal.text).SingleLine()
 				ui.Text(c, name).FontSize(12.5).TextColor(pal.textMuted).SingleLine().Ellipsis("…").MinWidth(0)
+				infoTip(c, pal, f.ID, detail)
 			})
-			ui.Text(c, detail).FontSize(12).TextColor(pal.textMuted).LineHeight(1.35)
 		})
 		v := a.flagChoice(f.ID)
 		popup(c, "flag-"+f.ID, v, []string{settings.StateDefault, settings.StateEnabled, settings.StateDisabled}, flagStateName(f.ID), 150, pal)

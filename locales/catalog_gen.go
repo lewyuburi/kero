@@ -526,6 +526,16 @@ func (msgs Messages) CommonNoResults() string {
 	return Catalog.Format(msgs.locale, "commonNoResults", nil)
 }
 
+// CommonMoreInfo says "More information"
+// in the language the app shows.
+func CommonMoreInfo() string { return In(i18n.Locale()).CommonMoreInfo() }
+
+// CommonMoreInfo says "More information"
+// in the language of msgs.
+func (msgs Messages) CommonMoreInfo() string {
+	return Catalog.Format(msgs.locale, "commonMoreInfo", nil)
+}
+
 // CommonCancel says "Cancel"
 // in the language the app shows.
 func CommonCancel() string { return In(i18n.Locale()).CommonCancel() }

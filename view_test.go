@@ -1196,13 +1196,14 @@ func TestFlagAndTabsPersist(t *testing.T) {
 	tt.Advance(time.Second)
 	tt.Frame()
 	// A pop-up per flag, each at Default (disabled): the one on the row of
-	// Horizontal tabs is at that row's height, in the first one's column.
+	// Horizontal tabs is at that row's height, in the first one's column. A
+	// row is one line, its details being in a tooltip.
 	pop, ok := tt.Find("Default (disabled)")
 	row, ok2 := tt.Find("Horizontal tabs")
 	if !ok || !ok2 {
 		t.Fatalf("no pop-up or row; texts %q", tt.Texts())
 	}
-	tt.ClickAt(pop.X+pop.W/2, row.Y+row.H/2+22)
+	tt.ClickAt(pop.X+pop.W/2, row.Y+row.H/2)
 	tt.Frame()
 	if err := tt.Click("Enabled"); err != nil {
 		t.Fatal(err)

@@ -40,6 +40,17 @@ Kero changes under them is settled once, in a merge.
   is `third_party/mygo-traffic-light-position.patch`; see `third_party/README.md`.
 - **`mygo.json`:** the name, the identifier and no updates.
 
+## Design
+
+The fork's interface says as little as it can, and lets the design explain.
+No secondary labels or descriptions that the layout already makes clear. What a
+person needs in order to act is on the screen: a name, a control, a value.
+What explains or warns, why a value is what it is or what a setting does, is not
+loose text under the control, and never red text under a field: it is a tooltip
+on an icon of information beside the thing it is about (`infoTip`). A row of
+Settings and a flag have their details there. The pixel screens of the games
+say only the score and what to press.
+
 ## Keeping up with Kero
 
 ```sh

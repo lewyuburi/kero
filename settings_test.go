@@ -684,3 +684,22 @@ func TestAdListToggles(t *testing.T) {
 		t.Error("the lists show while Block ads is off")
 	}
 }
+
+// A row of Settings says its name, and its details are in a tooltip by an
+// icon of information: no line of them under it.
+func TestRowDetailsAreInTooltips(t *testing.T) {
+	a := testApp(t)
+	a.ss.page = "general"
+	tt := ui.NewTester(a.settingsView, 820, 640)
+	tt.Frame()
+	tt.Advance(time.Second)
+	tt.Frame()
+	if !tt.HasText(locales.SetSessionName()) {
+		t.Fatalf("no %q on General; texts %q", locales.SetSessionName(), tt.Texts())
+	}
+	for _, detail := range []string{locales.SetSessionNameDetail(), locales.SetFocusFollowsMouseDetail(), locales.SetRestoreSessionsDetail()} {
+		if tt.HasText(detail) {
+			t.Errorf("the detail %q is on the page, not in a tooltip", detail)
+		}
+	}
+}

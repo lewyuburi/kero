@@ -51,6 +51,7 @@ var (
 	openFileIcon    = glyph("f7-arrow-up-right-square")
 	globeIcon       = glyph("f7-globe")
 	gameIcon        = glyph("f7-sparkles")
+	infoIcon        = glyph("f7-info-circle")
 	chevronLeftIcon = glyph("f7-chevron-left")
 	reloadIcon      = glyph("f7-arrow-clockwise")
 	copyIcon        = glyph("f7-doc-on-doc")

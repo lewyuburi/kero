@@ -447,14 +447,28 @@ func settingRow(c *ui.Context, pal *palette, label, detail string, control func(
 	row := ui.Row(c.Key("row-"+label)).Padding(11, 0).Gap(16).AlignItems(ui.Center)
 	row.Children(func() {
 		searchHighlight(c, row, label, pal, 10, -2)
-		ui.Column(c).Grow(1).MinWidth(0).Gap(3).Children(func() {
+		// What a row has to say besides its name is in a tooltip, by an icon
+		// of information, and not under it: the design says the rest.
+		ui.Row(c).Grow(1).MinWidth(0).Gap(6).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, label).FontSize(13.5).TextColor(pal.text)
-			if detail != "" {
-				ui.Text(c, detail).FontSize(12).TextColor(pal.textMuted).LineHeight(1.35)
-			}
+			infoTip(c, pal, label, detail)
 		})
 		ui.Row(c).Shrink(0).Gap(8).AlignItems(ui.Center).Children(control)
 	})
+}
+
+// infoTip is an icon of information that says, in a tooltip, what a label has
+// not room for: the reason for a setting, a warning, what it does. Nothing of
+// it is on the page. With no text it is nothing.
+func infoTip(c *ui.Context, pal *palette, key, text string) {
+	if text == "" {
+		return
+	}
+	tip := ui.Row(c.Key("info-"+key)).Size(18, 18).Center().Shrink(0).Radius(9).TextColor(pal.textFaint).Label(locales.CommonMoreInfo()).Tooltip(text)
+	if tip.Hovered() {
+		tip.TextColor(pal.textMuted)
+	}
+	tip.Children(func() { ui.Icon(c, infoIcon).Size(13, 13) })
 }
 
 // segmented chooses one of ids into value, as macOS's segmented control
